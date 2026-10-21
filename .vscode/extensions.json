@@ -1,0 +1,19 @@
+{
+  "recommendations": [
+    "anthropic.claude-code",
+    "eamodio.gitlens",
+    "yzhang.markdown-all-in-one",
+    "streetsidesoftware.code-spell-checker",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-typescript-next",
+    "formulahendry.auto-rename-tag",
+    "Prisma.prisma",
+    "dsznajder.es7-react-js-snippets",
+    "ms-python.python",
+    "ms-python.black-formatter",
+    "charliermarsh.ruff",
+    "ms-python.vscode-pylance"
+  ]
+}
