@@ -10,7 +10,8 @@
 | 4 | Fase 4 — Sistema de Rotas e Integração Google Maps | 10 dias |
 | 5 | Fase 5 — Agentes de IA e Features Inteligentes | 10 dias |
 | 6 | Fase 6 — Compartilhamento, Polimento Visual e Deploy Final | 10 dias |
-| | **Total** | **70 dias (10.0 semanas)** |
+| 7 | Fase 7 — Sistema Social (Seguir, Grupos) e Notificações | 16 dias |
+| | **Total** | **86 dias (12.3 semanas)** |
 
 ---
 
@@ -158,6 +159,40 @@
 - Aplicação deployada em produção com domínio customizado
 - README de portfólio com screenshots, demo GIF e documentação técnica completa
 - Monitoramento Sentry ativo em produção
+
+---
+
+### Fase 7: Fase 7 — Sistema Social (Seguir, Grupos) e Notificações (16 dias)
+
+> Planejada em 23/10/2026, a pedido do dono do projeto. Formaliza e expande uma ideia já registrada como "v2+" em 22/10/2026 (grupos com visibilidade compartilhada — ver `SPRINTS.md`), somando o pedido novo de seguir contas individuais e de notificações in-app.
+
+#### Tarefas
+
+- [ ] Modelar schema: tabelas `follows` (follower_id, followed_id, únique, índice), `groups` (id, name, owner_id, created_at), `group_members` (group_id, user_id, role, joined_at), `notifications` (id, user_id, type, actor_id, poi_id nullable, group_id nullable, payload, read_at nullable, created_at)
+- [ ] Migrar `POI.is_public` (booleano) para um campo `visibility` (enum: `public` / `followers` / `group` / `private`) + `group_id` opcional quando `visibility=group` — migration Alembic com backfill (`is_public=True` → `public`, `is_public=False` → `private`) para não quebrar POIs já existentes
+- [ ] Endpoints de seguir: `POST/DELETE /users/{id}/follow`, `GET /users/{id}/followers`, `GET /users/{id}/following`, `GET /users/me/following`
+- [ ] Endpoint de busca/descoberta de usuários: `GET /users/search?q=` — expõe só nome/avatar/id, nunca email
+- [ ] Ajustar `GET /pois` (query geoespacial) para incluir: meus POIs + públicos + de quem eu sigo (`visibility=followers`) + dos grupos dos quais participo (`visibility=group`), sem perder a performance do filtro por bounding box
+- [ ] Endpoints de grupos: `POST /groups`, `GET /groups` (meus grupos), `PUT /groups/{id}`, `POST /groups/{id}/members`, `DELETE /groups/{id}/members/{user_id}`
+- [ ] Trocar o checkbox "Visível publicamente" do formulário de POI por um seletor de visibilidade (Público / Seguidores / Grupo específico / Só eu)
+- [ ] UI de perfil de usuário básico: nome, avatar, contagem de seguidores/seguindo, botão seguir/deixar de seguir — pré-requisito inexistente hoje (não há nenhuma tela que mostre outro usuário)
+- [ ] UI de busca/descoberta de usuários para seguir
+- [ ] UI de grupos: criar grupo, adicionar/remover membros, listar meus grupos
+- [ ] Gerar notificação nos eventos: alguém começou a te seguir, alguém reagiu a um POI seu (reação já existe desde a Sprint 3, só falta notificar), POI novo de alguém que você segue, convite para um grupo
+- [ ] Endpoints de notificação: `GET /notifications` (paginado, mais recentes primeiro), `POST /notifications/{id}/read`, `POST /notifications/read-all`
+- [ ] Sininho de notificações no HUD header: badge com contagem de não lidas, painel com a lista, atualização via polling (`refetchInterval` do React Query) — sem WebSocket por enquanto, para não introduzir infraestrutura nova antes de validar o uso real do recurso
+
+#### Entregáveis
+
+- Seguir/deixar de seguir usuários funcionando, com busca/descoberta básica
+- Grupos funcionando: criar, adicionar/remover membros
+- Novo modelo de visibilidade de POI (público/seguidores/grupo/privado) substituindo o booleano atual, com migration segura dos dados existentes
+- Mapa mostrando POIs de quem você segue e dos seus grupos, além dos seus e dos públicos
+- Notificações in-app funcionando (sininho + lista + marcar como lida) para: novo seguidor, reação ao seu POI, novo POI de quem você segue, convite de grupo
+
+#### Observação de escopo
+
+Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (escopo inflado), a ordem de prioridade dentro da fase é: (1) seguir usuários + notificações + visibilidade `followers` no mapa primeiro — isso sozinho já entrega o pedido original; (2) grupos depois, como extensão do mesmo modelo (`group_members` + `visibility=group`). Se o prazo apertar, grupos podem virar uma Fase 7.1 separada sem bloquear o resto.
 
 ---
 

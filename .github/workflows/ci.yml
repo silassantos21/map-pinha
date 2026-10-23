@@ -34,4 +34,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
-      - run: ruff check app
+      - run: ruff check app alembic

@@ -1,6 +1,8 @@
 # Estimativa de Investimento e Precificação — MapPin — Mapa Interativo Gamificado com Pontos de Interesse Personalizados
 
 > ⚠️ **Documento de uso interno** — apoia a decisão de quanto cobrar do cliente. Não confundir com [05_COST_ANALYSIS.md](05_COST_ANALYSIS.md), que trata do custo *operacional* (infra/APIs) do projeto já pronto.
+>
+> ⚠️ **Pendente:** os valores abaixo ainda refletem só as Fases 1–6 (70h→245h). A Fase 7 (Sistema Social e Notificações, 16 dias, ver `docs/04_TIMELINE.md`) foi planejada em 23/10/2026 e ainda não entrou nesse cálculo — recalcular horas/preço quando for cobrar por ela.
 
 ## Resumo
 

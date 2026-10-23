@@ -1,19 +1,7 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-      },
-    },
-  },
-  plugins: [],
-};
+// Tailwind v4: tokens de tema (cores, fontes, radius) vivem em src/app/globals.css
+// via @theme. Este arquivo fica só para eventuais plugins/overrides futuros.
+const config: Config = {};
+
 export default config;

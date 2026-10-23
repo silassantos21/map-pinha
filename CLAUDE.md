@@ -41,6 +41,7 @@ mappin-mapa-gamificado-poi/
 - Sistema de rotas: cálculo de distância/tempo da localização atual até qualquer POI cadastrado
 - Atalho de deep-link para abrir rota diretamente no Google Maps (ou Apple Maps no iOS)
 - Navegação fluida pelo mapa com zoom, pan e busca por nome/categoria
+- Sistema social (Fase 7): seguir usuários e grupos fechados, visibilidade de POI por público/seguidores/grupo/privado, notificações in-app
 
 ## Agentes de IA Disponíveis
 
@@ -52,9 +53,9 @@ Prompts completos em [docs/03_AI_AGENTS.md](docs/03_AI_AGENTS.md).
 
 ## Estimativa
 
-- **Total:** 70 dias (10.0 semanas) — 245.0h de desenvolvimento
+- **Total:** 86 dias (12.3 semanas) — inclui a Fase 7 (Sistema Social e Notificações, 16 dias, planejada em 23/10/2026)
 - **Custo Mensal:** USD 15.00 / BRL 85.50
-- **Preço Sugerido:** R$ 22932.00 – R$ 29302.00 (ver [docs/06_PRICING.md](docs/06_PRICING.md))
+- **Preço Sugerido:** R$ 22932.00 – R$ 29302.00 (ver [docs/06_PRICING.md](docs/06_PRICING.md)) — valores ainda não recalculados pra Fase 7, ver nota em `docs/06_PRICING.md`
 
 ## Arquitetura
 

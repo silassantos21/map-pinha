@@ -1,27 +1,183 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@custom-variant dark (&:is(.dark *));
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Dark HUD gamer — paleta única por enquanto (ver SPRINTS.md Sprint 1) */
+  --background: #0b0e14;
+  --foreground: #e7e9ee;
+  --card: #141821;
+  --card-foreground: #e7e9ee;
+  --popover: #141821;
+  --popover-foreground: #e7e9ee;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #1c2130;
+  --secondary-foreground: #e7e9ee;
+  --muted: #1c2130;
+  --muted-foreground: #8b93a7;
+  --accent: #1c2130;
+  --accent-foreground: #e7e9ee;
+  --destructive: #ef4444;
+  --border: rgb(255 255 255 / 10%);
+  --input: rgb(255 255 255 / 15%);
+  --ring: #8b5cf6;
+  --sidebar: #0f1219;
+  --sidebar-foreground: #e7e9ee;
+  --sidebar-primary: #8b5cf6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1c2130;
+  --sidebar-accent-foreground: #e7e9ee;
+  --sidebar-border: rgb(255 255 255 / 10%);
+  --sidebar-ring: #8b5cf6;
+
+  /* Categorias de POI (MVP: 6 de 9 do POICategorizerAgent, ver docs/03_AI_AGENTS.md) */
+  --category-alimentacao: #ff7a50;
+  --category-comercio: #4a90ff;
+  --category-saude: #22d3b8;
+  --category-lazer: #9be15d;
+  --category-entretenimento: #d15bff;
+  --category-residencial: #ffc94a;
+  --category-status: #fb5b8d;
+
+  /* Temas visuais do mapa (5, ver docs/04_TIMELINE.md Sprint 2) */
+  --map-theme-cartoon: #ff9f4a;
+  --map-theme-rpg: #8b5cf6;
+  --map-theme-vintage: #c9a66b;
+  --map-theme-urbano: #64748b;
+  --map-theme-satelite: #22d3ee;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-silkscreen);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-category-alimentacao: var(--category-alimentacao);
+  --color-category-comercio: var(--category-comercio);
+  --color-category-saude: var(--category-saude);
+  --color-category-lazer: var(--category-lazer);
+  --color-category-entretenimento: var(--category-entretenimento);
+  --color-category-residencial: var(--category-residencial);
+  --color-category-status: var(--category-status);
+
+  --color-map-cartoon: var(--map-theme-cartoon);
+  --color-map-rpg: var(--map-theme-rpg);
+  --color-map-vintage: var(--map-theme-vintage);
+  --color-map-urbano: var(--map-theme-urbano);
+  --color-map-satelite: var(--map-theme-satelite);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* O Leaflet usa um cinza claro fixo (#ddd) como fundo enquanto tiles ainda
+     não carregaram — contrasta mal com o HUD escuro e chama atenção como se
+     tivesse quebrado. Troca pro tom "muted" do nosso design system. */
+  .leaflet-container {
+    background: var(--muted) !important;
+  }
+
+  /* O Leaflet cravava fundo branco fixo nos popups (#fff, texto #333) — nosso
+     conteúdo usa tons claros pensados pro tema escuro do app, então ficava
+     ilegível em cima de branco. O `!important` aqui é necessário mesmo: essas
+     regras vivem dentro de `@layer base` do Tailwind v4, e uma regra em
+     camada SEMPRE perde pra uma regra sem camada (como as do leaflet.css),
+     não importa a ordem/especificidade — só `!important` vence isso.
+     PoiCardPopup (`poi-card-popup.tsx`) passou a desenhar seu próprio cartão
+     (fundo, borda colorida por categoria, cantos arredondados), então o
+     wrapper do Leaflet vira só um contêiner invisível por trás. */
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .leaflet-popup-tip-container {
+    display: none !important;
+  }
+  .leaflet-popup-content {
+    margin: 0 !important;
+  }
+  .leaflet-container a.leaflet-popup-close-button {
+    display: none !important;
+  }
+
+  /* Navegadores não dão cursor:pointer de graça em <button> (só em <a>) —
+     aplicamos globalmente pra todo elemento clicável do app, em vez de
+     repetir `cursor-pointer` em cada componente. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a,
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+
+  /* Barra de rolagem do conteúdo do popup do POI — por padrão o navegador
+     desenha uma trilha cinza clara do próprio sistema, que destoa do fundo
+     escuro do card. */
+  .popup-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--popover);
+  }
+  .popup-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .popup-scroll::-webkit-scrollbar-track {
+    background: var(--popover);
+  }
+  .popup-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
   }
 }

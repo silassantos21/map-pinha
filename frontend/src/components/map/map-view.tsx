@@ -1,0 +1,148 @@
+"use client";
+
+import L from "leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
+
+import { BoundsWatcher } from "@/components/map/bounds-watcher";
+import { MapCompass } from "@/components/map/compass";
+import { MapControls } from "@/components/map/map-controls";
+import { DraftFlyToWatcher } from "@/components/map/draft-flyto-watcher";
+import { DraftPoiMarker } from "@/components/map/draft-poi-marker";
+import { LocationLoadingOverlay } from "@/components/map/location-loading-overlay";
+import { Minimap } from "@/components/map/minimap";
+import { PoiCardPopup } from "@/components/map/poi-card-popup";
+import { PoiPlacementHandler } from "@/components/map/poi-placement-handler";
+import { createPoiIcon } from "@/components/map/poi-marker-icon";
+import { SelectedPoiFlyTo } from "@/components/map/selected-poi-flyto";
+import { useCategories } from "@/hooks/use-categories";
+import { useGeolocation } from "@/hooks/use-geolocation";
+import { usePois } from "@/hooks/use-pois";
+import { MAP_THEMES } from "@/lib/map-themes";
+import { useMapStore } from "@/stores/map-store";
+
+const DEFAULT_CENTER: [number, number] = [-23.5505, -46.6333]; // São Paulo
+
+const USER_MARKER_ICON = L.divIcon({
+  html: '<div style="width:18px;height:18px;border-radius:9999px;background:var(--primary);border:3px solid white;box-shadow:0 0 0 4px rgba(139,92,246,0.3);"></div>',
+  className: "",
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+interface UserLocationMarkerProps {
+  position: { lat: number; lng: number } | null;
+}
+
+function UserLocationMarker({ position }: UserLocationMarkerProps) {
+  const map = useMap();
+  const hasCenteredRef = useRef(false);
+
+  // Centraliza só na primeira localização obtida — atualizações seguintes do
+  // watchPosition não devem "puxar" o mapa de volta enquanto o usuário navega
+  // (isso é o que o botão de centralizar em MapControls faz, sob demanda).
+  useEffect(() => {
+    if (position && !hasCenteredRef.current) {
+      hasCenteredRef.current = true;
+      map.flyTo([position.lat, position.lng], 15, { duration: 1.2 });
+    }
+  }, [position, map]);
+
+  if (!position) return null;
+
+  return (
+    <Marker position={[position.lat, position.lng]} icon={USER_MARKER_ICON}>
+      <Popup>Você está aqui</Popup>
+    </Marker>
+  );
+}
+
+interface MapViewProps {
+  userId?: string | null;
+}
+
+export function MapView({ userId }: MapViewProps) {
+  const activeTheme = useMapStore((s) => s.activeTheme);
+  const theme = MAP_THEMES[activeTheme];
+  const { position, error: locationError } = useGeolocation();
+
+  // Mostra o overlay de loading só até a geolocalização resolver pela
+  // primeira vez (sucesso OU erro/permissão negada) — depois disso nunca
+  // mais reaparece, mesmo que uma atualização de posição falhe mais tarde.
+  const [hasResolvedLocation, setHasResolvedLocation] = useState(false);
+  useEffect(() => {
+    if (position || locationError) setHasResolvedLocation(true);
+  }, [position, locationError]);
+
+  const { data: categories } = useCategories();
+  const { data: pois = [] } = usePois(userId);
+
+  const categoryBySlugLookup = useMemo(
+    () => new Map((categories ?? []).map((category) => [category.id, category.slug])),
+    [categories],
+  );
+
+  const poiIcons = useMemo(
+    () =>
+      Object.fromEntries(
+        pois.map((poi) => [poi.id, createPoiIcon(categoryBySlugLookup.get(poi.category_id) ?? "")]),
+      ),
+    [pois, categoryBySlugLookup],
+  );
+
+  // Rede de segurança: se a geolocalização nunca chamar sucesso nem erro
+  // (acontece em alguns navegadores quando o prompt de permissão é ignorado),
+  // não deixa o overlay de loading preso pra sempre.
+  useEffect(() => {
+    const timeout = setTimeout(() => setHasResolvedLocation(true), 8000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div className="relative h-full w-full">
+      <LocationLoadingOverlay show={!hasResolvedLocation} />
+      <MapContainer
+        center={DEFAULT_CENTER}
+        zoom={13}
+        zoomControl={false}
+        // Sem isso, cliques em certos elementos dentro do conteúdo React do
+        // popup (ex: tocar áudio) podiam ser mal-interpretados como "clique
+        // fora do popup" e fechá-lo sozinho.
+        closePopupOnClick={false}
+        className="h-full w-full"
+      >
+        <TileLayer
+          key={theme.id}
+          url={theme.tileUrl}
+          attribution={theme.attribution}
+          maxZoom={theme.maxZoom}
+          // Evita competir por tiles novos durante a própria animação de zoom
+          // (gerava o "flash" cinza — o Leaflet pedia tiles do zoom final antes
+          // da transição acabar); mantém um buffer maior de tiles já
+          // carregados pra sumir menos área enquanto os novos chegam.
+          updateWhenZooming={false}
+          keepBuffer={4}
+        />
+        <BoundsWatcher />
+        <PoiPlacementHandler />
+        <MarkerClusterGroup chunkedLoading>
+          {pois.map((poi) => (
+            <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={poiIcons[poi.id]}>
+              <Popup maxWidth={440} minWidth={260} closeButton={false}>
+                <PoiCardPopup poi={poi} currentUserId={userId} />
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+        <DraftPoiMarker />
+        <DraftFlyToWatcher />
+        <SelectedPoiFlyTo />
+        <UserLocationMarker position={position} />
+        <MapControls userPosition={position} />
+        <MapCompass />
+        <Minimap />
+      </MapContainer>
+    </div>
+  );
+}

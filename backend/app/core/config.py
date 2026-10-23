@@ -9,5 +9,17 @@ class Settings(BaseSettings):
     environment: str = "development"
     allowed_origins: list[str] = ["http://localhost:3000"]
 
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    r2_public_url: str = ""
+
+    # Segredo compartilhado com o Next.js: autentica chamadas server-to-server
+    # vindas do proxy confiável do Next.js (NextAuth sync, e a partir da Sprint 3
+    # todo endpoint de escrita de POI/categoria/mídia) — nunca é exposto ao
+    # navegador. Ver SPRINTS.md Sprint 1/3.
+    internal_api_secret: str = ""
+
 
 settings = Settings()

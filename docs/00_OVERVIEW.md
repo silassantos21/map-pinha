@@ -4,7 +4,7 @@
 
 **Tipo de Projeto:** `fullstack_web`
 **Gerado em:** 21/10/2026 20:59
-**Estimativa Total:** 70 dias (10.0 semanas)
+**Estimativa Total:** 86 dias (12.3 semanas) — inclui a Fase 7 (Sistema Social e Notificações), planejada em 23/10/2026
 **Custo Mensal Estimado:** USD 15.00 / BRL 85.50
 
 ---
@@ -29,6 +29,8 @@ Desenvolvedores que buscam um projeto de portfólio impressionante, criadores de
 - Sistema de autenticação para salvar mapas e POIs por usuário
 - Minimap de visão geral estilo HUD de videogame
 - Compartilhamento de POIs e mapas via link público
+- Sistema social: seguir outros usuários e grupos fechados, com POIs visíveis conforme a visibilidade escolhida (público, seguidores, grupo ou só você) — ver Fase 7 em `docs/04_TIMELINE.md`
+- Notificações in-app: novo seguidor, reação ao seu POI, POI novo de quem você segue, convite de grupo
 
 ## Diferenciais
 
