@@ -404,6 +404,36 @@ Fechei a vulnerabilidade registrada na seção de Pendências de Segurança no t
 
 **Validado:** `type-check`/`lint` limpos. Testado via `curl`: FastAPI direto sem o segredo → `401` (antes era `200`, vazando POIs privados de qualquer `user_id` informado); FastAPI direto com o segredo → continua `200` (o BFF ainda funciona); `GET /api/pois` e `GET /api/pois/{id}` pelo Next.js (anônimo, sem login) → `200`, só com POIs públicos — confirmando que a navegação sem login no mapa não quebrou. Dev server recompilou limpo.
 
+### 20. Primeiro commit real do projeto — Sprints 1-3 + todas as extensões (23-25/10/2026)
+
+Até aqui, só existia um commit no repositório ("chore: setup inicial do monorepo") — todo o trabalho das Sprints 1-3 e dos itens 1-19 acima ficou como alteração não commitada na árvore de trabalho a sessão inteira. A seu pedido, revisei tudo (118 arquivos — `.gitignore` confirmado cobrindo `.env`/`node_modules`/`.next`; `.env.example` conferidos, só placeholders; nenhum binário ou arquivo de credencial estranho na lista de novos arquivos) e consolidei num único commit (`f2c1650`), com a mensagem resumindo as três sprints e as extensões — histórico detalhado de cada mudança fica aqui no `SPRINTS.md`, não duplicado na mensagem do commit.
+
+- **Push travou:** o Git Credential Manager (`credential.helper=manager`) não tinha nenhuma credencial do GitHub salva nesta máquina e tentou abrir um fluxo de login interativo (janela/navegador) que não existe nesta sessão sem interface — três tentativas de `git push` ficaram penduradas sem erro nenhum até eu investigar com `GCM_INTERACTIVE=never` e achar a causa real (`fatal: Cannot prompt because user interactivity has been disabled`). Matei os processos `git`/`git-credential-manager`/`git-remote-https` travados antes de prosseguir.
+- Você forneceu um Personal Access Token direto no chat. Usei `git credential approve` (via stdin, não como argumento de comando nem salvo em arquivo do repo) pra gravar a credencial no Credential Manager do Windows — o token não foi escrito em nenhum arquivo do projeto nem commitado. Push concluído: `df53887..f2c1650 main -> main`.
+- **Aviso de segurança dado a você:** como o token foi colado em texto puro no chat, sugeri considerar revogá-lo/gerar um novo em `github.com/settings/tokens` por precaução — não é urgente (repositório pessoal), mas é a prática mais segura.
+
+**Status:** repositório remoto (`origin/main`) agora reflete o estado real do projeto pela primeira vez desde o commit inicial.
+
+### 21. Primeiro teste no navegador: bug de ZodError + 4 ajustes de UI (pedido em 25/10/2026)
+
+- **Bug real encontrado: formulário de POI quebrava com "Unhandled Runtime Error: ZodError" ao tentar salvar sem categoria (e, na prática, em qualquer erro de validação).** Causa raiz: `@hookform/resolvers@3.9.0` foi fixado na Sprint 3 por causa de um conflito de peer-dependency com o pacote `effect` (não usado por nós, só puxado pelo CLI do shadcn) — só que essa versão do resolver foi escrita pra Zod v3, que expõe os erros de validação em `error.errors`. O projeto usa **Zod v4** (`^4.6.7`), que renomeou esse campo pra `error.issues` e não tem mais `.errors` nenhum. O resolver checava `Array.isArray(error?.errors)` pra decidir se era um erro de validação do Zod (e aí converter pros `errors` do react-hook-form) — como `.errors` vinha `undefined`, essa checagem falhava **toda vez** e o `ZodError` bruto era relançado sem tratamento, estourando como erro não capturado na tela. Confirmei isso reproduzindo o erro isolado via `node -e` antes de mexer em qualquer coisa. Corrigido fazendo o upgrade pra `@hookform/resolvers@6.0.0` (`npm install @hookform/resolvers@latest --legacy-peer-deps` — o mesmo conflito de peer-dependency do `effect` de antes, mesma solução), confirmado que a versão nova lê `.issues` em vez de `.errors`. Reiniciei o dev server (limpando `.next`) pra garantir que pegou a dependência nova.
+- **Diálogo de confirmação de exclusão deixou de ser o `window.confirm()` nativo do navegador.** Adicionei `frontend/src/components/ui/alert-dialog.tsx` (componente do design system, Base UI `alert-dialog`, criado manualmente igual ao `toast.tsx` — pulei o `npx shadcn add` porque ele sobrescreveria `button.tsx` pra uma versão sem `forwardRef`, incompatível com React 18) e troquei o botão de excluir do popup do POI (`poi-card-popup.tsx`) por um `AlertDialog` controlado, com botões "Cancelar"/"Excluir" de verdade, no estilo visual do app.
+- **Removidos o botão "voltar pra vista inicial" (bússola, `compass.tsx`) e o minimapa do canto inferior esquerdo (`minimap.tsx`)** — nenhum dos dois era usado em mais nenhum lugar, deletei os arquivos e as referências em `map-view.tsx`.
+- **Copiar endereço e latitude/longitude no card do POI:** novo componente `CopyField` (local, em `poi-card-popup.tsx`) com ícone que vira um check por 1.5s ao copiar (via `navigator.clipboard`), usado ao lado do endereço (quando existe) e numa nova linha com as coordenadas (`lat, lng`), que agora sempre aparece no card, independente de ter endereço/descrição ou não.
+
+**Validado:** `type-check`/`lint` limpos; bug do ZodError reproduzido isoladamente via Node antes da correção, e a correção confirmada lendo o bundle instalado (`.issues` em vez de `.errors`). Dev server reiniciado do zero, compilando limpo. **Precisa da sua validação visual** — principalmente tentar salvar um POI sem categoria de novo (não deve mais quebrar a tela, só mostrar o erro no campo), testar o diálogo de exclusão novo, confirmar que a bússola/minimapa sumiram, e testar os botões de copiar endereço/coordenadas.
+
+### 22. Número do endereço faltando na geocodificação reversa — investigado, decisão: deixar como está (pedido em 25/10/2026)
+
+Você notou que o endereço preenchido automaticamente às vezes não traz o número. Investiguei contra o Nominatim de verdade antes de propor qualquer coisa:
+
+- Pro ponto testado, o Nominatim nem achou um prédio/endereço numerado perto — devolveu a **rua inteira** como resultado (`osm_type: "way"`), sem `house_number` nenhum no payload.
+- Fui além: busquei **todos** os pontos já cadastrados nessa mesma rua no OpenStreetMap — nenhum tem número mapeado. Não é o Nominatim escondendo um dado que ele tem; é um buraco real de dados do OSM, comum em ruas residenciais no Brasil.
+- **Por que "estimar" (interpolação) não ajudaria aqui:** precisa de pelo menos dois números de referência na mesma rua pra interpolar um valor entre eles — e não existe nenhum nessa rua pra começar. Construir isso bateria exatamente nos casos que estão incomodando, sem resolver nada ali.
+- Apresentei duas alternativas reais: manter como está (campo de endereço já é editável, usuário completa o número à mão) ou trocar de provedor de geocodificação (Google/Mapbox, com número melhor coberto no Brasil, mas sai do "grátis sem API key" escolhido de propósito, com custo/limite de uso).
+
+**Decisão sua:** deixar como está — nenhuma mudança de código feita. Documentando aqui pra não reabrir essa investigação à toa numa sessão futura.
+
 ---
 
 ## Sprint 4 — Sistema de Rotas e Integração Google Maps

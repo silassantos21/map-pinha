@@ -4,8 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Howl } from "howler";
 import {
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Pause,
   Pencil,
   Play,
@@ -18,6 +20,17 @@ import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 
 import { getCategoryIcon } from "@/components/map/poi-marker-icon";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -61,6 +74,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   const startEditingPoi = useMapStore((s) => s.startEditingPoi);
   const { data: categories } = useCategories();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   const category = categories?.find((c) => c.id === poi.category_id);
@@ -75,9 +89,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     await queryClient.invalidateQueries({ queryKey: ["poi", poi.id] });
   };
 
-  const handleDelete = async (event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (!window.confirm(`Excluir "${poi.name}"? Essa ação não pode ser desfeita.`)) return;
+  const handleDelete = async () => {
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/pois/${poi.id}`, { method: "DELETE" });
@@ -94,6 +106,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
       });
     } finally {
       setIsDeleting(false);
+      setConfirmDeleteOpen(false);
     }
   };
 
@@ -178,10 +191,19 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
             <p className="text-xs text-muted-foreground">{poi.description}</p>
           )}
           {poi.address && (
-            <p className="mt-1 text-xs text-muted-foreground">{poi.address}</p>
+            <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1">{poi.address}</span>
+              <CopyField value={poi.address} label="endereço" />
+            </p>
           )}
         </div>
       )}
+      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span>
+          {poi.lat.toFixed(5)}, {poi.lng.toFixed(5)}
+        </span>
+        <CopyField value={`${poi.lat}, ${poi.lng}`} label="coordenadas" />
+      </p>
       {visuals.length === 0 && (
         <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <CalendarDays className="size-3" />
@@ -226,21 +248,44 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
             <TooltipContent>Editar</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  onClick={handleDelete}
+          <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+            <Tooltip>
+              <TooltipTrigger render={<span className="inline-flex" />}>
+                <AlertDialogTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      disabled={isDeleting}
+                      className="flex size-7 items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:opacity-50"
+                    />
+                  }
+                >
+                  <Trash2 className="size-3.5" />
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>{isDeleting ? "Excluindo..." : "Excluir"}</TooltipContent>
+            </Tooltip>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir POI</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Excluir &quot;{poi.name}&quot;? Essa ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
                   disabled={isDeleting}
-                  className="flex size-7 items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:opacity-50"
-                />
-              }
-            >
-              <Trash2 className="size-3.5" />
-            </TooltipTrigger>
-            <TooltipContent>{isDeleting ? "Excluindo..." : "Excluir"}</TooltipContent>
-          </Tooltip>
+                  onClick={handleDelete}
+                >
+                  {isDeleting ? "Excluindo..." : "Excluir"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
@@ -390,6 +435,39 @@ function ImageGallery({ poi, visuals }: { poi: Poi; visuals: PoiMedia[] }) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CopyField({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.add({ title: "Não foi possível copiar", type: "error" });
+    }
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex shrink-0 items-center text-muted-foreground hover:text-foreground"
+            aria-label={`Copiar ${label}`}
+          />
+        }
+      >
+        {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+      </TooltipTrigger>
+      <TooltipContent>{copied ? "Copiado!" : `Copiar ${label}`}</TooltipContent>
+    </Tooltip>
   );
 }
 

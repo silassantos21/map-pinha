@@ -6,12 +6,10 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 
 import { BoundsWatcher } from "@/components/map/bounds-watcher";
-import { MapCompass } from "@/components/map/compass";
 import { MapControls } from "@/components/map/map-controls";
 import { DraftFlyToWatcher } from "@/components/map/draft-flyto-watcher";
 import { DraftPoiMarker } from "@/components/map/draft-poi-marker";
 import { LocationLoadingOverlay } from "@/components/map/location-loading-overlay";
-import { Minimap } from "@/components/map/minimap";
 import { PoiCardPopup } from "@/components/map/poi-card-popup";
 import { PoiPlacementHandler } from "@/components/map/poi-placement-handler";
 import { createPoiIcon } from "@/components/map/poi-marker-icon";
@@ -140,8 +138,6 @@ export function MapView({ userId }: MapViewProps) {
         <SelectedPoiFlyTo />
         <UserLocationMarker position={position} />
         <MapControls userPosition={position} />
-        <MapCompass />
-        <Minimap />
       </MapContainer>
     </div>
   );
