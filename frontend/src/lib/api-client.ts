@@ -1,10 +1,30 @@
-import type { Category, MapBounds, Poi } from "@/types/poi";
+import type { Category, LatLng, MapBounds, Poi, RouteProfile, RouteResult } from "@/types/poi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function fetchCategories(): Promise<Category[]> {
   const res = await fetch(`${API_URL}/api/v1/categories`);
   if (!res.ok) throw new Error("Falha ao carregar categorias");
+  return res.json();
+}
+
+// Cálculo de rota não tem dado de usuário nem nada sensível — é só geometria
+// a partir de coordenadas, por isso chama o FastAPI direto, sem passar pelo
+// BFF (mesmo padrão de `fetchCategories`).
+export async function fetchRoute(
+  origin: LatLng,
+  destination: LatLng,
+  profile: RouteProfile,
+): Promise<RouteResult> {
+  const params = new URLSearchParams({
+    from_lat: String(origin.lat),
+    from_lng: String(origin.lng),
+    to_lat: String(destination.lat),
+    to_lng: String(destination.lng),
+    profile,
+  });
+  const res = await fetch(`${API_URL}/api/v1/routes?${params.toString()}`);
+  if (!res.ok) throw new Error("Falha ao calcular a rota");
   return res.json();
 }
 

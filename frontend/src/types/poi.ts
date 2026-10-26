@@ -33,6 +33,9 @@ export interface Poi {
   lat: number;
   lng: number;
   is_public: boolean;
+  // Ícone escolhido livremente pelo dono (só faz sentido na categoria
+  // "outros") — quando presente, sobrepõe o ícone fixo da categoria.
+  icon_name: string | null;
   created_at: string;
   updated_at: string;
   media: PoiMedia[];
@@ -44,4 +47,17 @@ export interface MapBounds {
   minLng: number;
   maxLat: number;
   maxLng: number;
+}
+
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export type RouteProfile = "driving" | "walking";
+
+export interface RouteResult {
+  distance_m: number;
+  duration_s: number;
+  geometry: [number, number][];
 }

@@ -49,6 +49,7 @@
   --category-entretenimento: #d15bff;
   --category-residencial: #ffc94a;
   --category-status: #fb5b8d;
+  --category-outros: #9ca3af;
 
   /* Temas visuais do mapa (5, ver docs/04_TIMELINE.md Sprint 2) */
   --map-theme-cartoon: #ff9f4a;
@@ -96,6 +97,7 @@
   --color-category-entretenimento: var(--category-entretenimento);
   --color-category-residencial: var(--category-residencial);
   --color-category-status: var(--category-status);
+  --color-category-outros: var(--category-outros);
 
   --color-map-cartoon: var(--map-theme-cartoon);
   --color-map-rpg: var(--map-theme-rpg);
@@ -179,5 +181,16 @@
   .popup-scroll::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 9999px;
+  }
+
+  /* Linha de rota (Sprint 4) com efeito "marching ants" estilo videogame —
+     tracejado que se move continuamente no sentido do destino. */
+  @keyframes mappin-route-dash {
+    to {
+      stroke-dashoffset: -24;
+    }
+  }
+  .mappin-route-line {
+    animation: mappin-route-dash 1s linear infinite;
   }
 }

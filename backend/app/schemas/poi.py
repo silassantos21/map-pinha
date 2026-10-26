@@ -28,6 +28,10 @@ class POICreate(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
     is_public: bool = True
+    # Ícone escolhido livremente pelo usuário (só faz sentido na categoria
+    # "outros" — as demais usam o ícone fixo da própria categoria). Nome de
+    # ícone do lucide-react em kebab-case, igual ao `icon_name` de categoria.
+    icon_name: str | None = Field(default=None, max_length=100)
     # Injetado pelo proxy confiável do Next.js a partir da sessão autenticada —
     # nunca é um campo que o usuário escolhe livremente no formulário.
     user_id: uuid.UUID
@@ -41,6 +45,7 @@ class POIUpdate(BaseModel):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     is_public: bool | None = None
+    icon_name: str | None = Field(default=None, max_length=100)
     # Quem está pedindo a alteração — usado só para o check de dono, injetado
     # pelo proxy confiável do Next.js.
     user_id: uuid.UUID
@@ -57,6 +62,7 @@ class POIRead(BaseModel):
     lat: float
     lng: float
     is_public: bool
+    icon_name: str | None
     created_at: datetime
     updated_at: datetime
     media: list[POIMediaRead] = []

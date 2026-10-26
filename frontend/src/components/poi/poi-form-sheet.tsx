@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { Loader2, LocateFixed, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { MediaUploader, type PendingMedia } from "@/components/poi/media-uploader";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import { useCategories } from "@/hooks/use-categories";
 import { usePoi } from "@/hooks/use-poi";
+import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
 import { poiFormSchema, type PoiFormValues } from "@/lib/poi-schema";
 import { attachMediaToPoi, uploadMediaFile } from "@/lib/upload-media";
 import { useMapStore } from "@/stores/map-store";
@@ -57,6 +58,8 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [removingMediaId, setRemovingMediaId] = useState<string | null>(null);
 
+  const [iconName, setIconName] = useState<string | null>(null);
+
   const [positionInputMode, setPositionInputMode] = useState<"address" | "latlng">("address");
   const [addressQuery, setAddressQuery] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -69,11 +72,22 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<PoiFormValues>({
     resolver: zodResolver(poiFormSchema),
     defaultValues: EMPTY_FORM_VALUES,
   });
+
+  // Seletor de ícone livre só faz sentido na categoria "outros" — as demais
+  // já têm ícone fixo próprio.
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+  const isOutrosCategory =
+    categories?.find((c) => c.id === selectedCategoryId)?.slug === "outros";
+
+  useEffect(() => {
+    if (!isOutrosCategory) setIconName(null);
+  }, [isOutrosCategory]);
 
   // Auto-preenche o endereço (geocodificação reversa) toda vez que a posição
   // do pino muda — clique no mapa, arrastar o marcador ou aplicar lat/lng.
@@ -112,6 +126,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         categoryId: editingPoi.category_id,
         isPublic: editingPoi.is_public,
       });
+      setIconName(editingPoi.icon_name);
       setExistingMedia(editingPoi.media);
     }
   }, [isEditMode, editingPoi, reset]);
@@ -126,6 +141,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
       setPendingMedia([]);
       setExistingMedia([]);
       setSubmitError(null);
+      setIconName(null);
       setPositionInputMode("address");
       setAddressQuery("");
       setLatInput("");
@@ -219,6 +235,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         lat: draftPosition.lat,
         lng: draftPosition.lng,
         is_public: values.isPublic,
+        icon_name: isOutrosCategory ? iconName : null,
       };
 
       let poiId: string;
@@ -424,6 +441,35 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
               <p className="text-xs text-destructive">{errors.categoryId.message}</p>
             )}
           </div>
+
+          {isOutrosCategory && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-foreground">Ícone</p>
+              <div className="grid grid-cols-6 gap-1.5 rounded-lg border border-border bg-muted/30 p-2">
+                {ICON_PICKER_OPTIONS.map((option) => {
+                  const Icon = resolveIconName(option.name);
+                  const selected = iconName === option.name;
+                  return (
+                    <button
+                      key={option.name}
+                      type="button"
+                      onClick={() => setIconName(option.name)}
+                      title={option.label}
+                      aria-label={option.label}
+                      className={cn(
+                        "flex size-9 items-center justify-center rounded-md border transition-colors",
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1">
             <label htmlFor="poi-description" className="text-xs font-medium text-foreground">

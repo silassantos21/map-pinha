@@ -1,0 +1,27 @@
+import type { LatLng, RouteProfile } from "@/types/poi";
+
+export function googleMapsUrl(origin: LatLng, destination: LatLng, profile: RouteProfile): string {
+  const params = new URLSearchParams({
+    api: "1",
+    origin: `${origin.lat},${origin.lng}`,
+    destination: `${destination.lat},${destination.lng}`,
+    travelmode: profile === "walking" ? "walking" : "driving",
+  });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+export function appleMapsUrl(origin: LatLng, destination: LatLng, profile: RouteProfile): string {
+  const params = new URLSearchParams({
+    saddr: `${origin.lat},${origin.lng}`,
+    daddr: `${destination.lat},${destination.lng}`,
+    dirflg: profile === "walking" ? "w" : "d",
+  });
+  return `https://maps.apple.com/?${params.toString()}`;
+}
+
+/** Só pra mostrar o botão "Abrir no Apple Maps" quando faz sentido —
+ * em outras plataformas o link funciona, mas não tem motivo pra oferecer. */
+export function isApplePlatform(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+}

@@ -1,12 +1,7 @@
 import { create } from "zustand";
 
 import { DEFAULT_MAP_THEME, type MapThemeId } from "@/lib/map-themes";
-import type { MapBounds } from "@/types/poi";
-
-interface LatLng {
-  lat: number;
-  lng: number;
-}
+import type { LatLng, MapBounds, RouteProfile } from "@/types/poi";
 
 interface MapState {
   activeTheme: MapThemeId;
@@ -51,6 +46,20 @@ interface MapState {
   // carregado na área visível atual do mapa (ex: favorito "longe").
   selectedPoiTarget: LatLng & { id: string } | null;
   flyToPoi: (poi: { id: string; lat: number; lng: number }) => void;
+
+  // Posição atual do usuário (geolocalização) — espelhada aqui a partir do
+  // `useGeolocation()` chamado em `MapView` (dentro da árvore do mapa) pra
+  // ficar disponível também pro painel de rota, que vive fora dela.
+  userPosition: LatLng | null;
+  setUserPosition: (position: LatLng | null) => void;
+
+  // Fluxo de rota: destino escolhido (via botão "Como chegar" num POI) +
+  // modo de transporte. A origem é sempre `userPosition`.
+  activeRouteTarget: (LatLng & { id: string; name: string }) | null;
+  startRouteTo: (poi: { id: string; name: string; lat: number; lng: number }) => void;
+  clearRoute: () => void;
+  routeProfile: RouteProfile;
+  setRouteProfile: (profile: RouteProfile) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -86,4 +95,13 @@ export const useMapStore = create<MapState>((set) => ({
 
   selectedPoiTarget: null,
   flyToPoi: (poi) => set({ selectedPoiTarget: poi }),
+
+  userPosition: null,
+  setUserPosition: (position) => set({ userPosition: position }),
+
+  activeRouteTarget: null,
+  startRouteTo: (poi) => set({ activeRouteTarget: poi }),
+  clearRoute: () => set({ activeRouteTarget: null }),
+  routeProfile: "driving",
+  setRouteProfile: (profile) => set({ routeProfile: profile }),
 }));

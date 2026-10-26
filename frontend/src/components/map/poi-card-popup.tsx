@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Navigation,
   Pause,
   Pencil,
   Play,
@@ -19,7 +20,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 
-import { getCategoryIcon } from "@/components/map/poi-marker-icon";
+import { getPoiIcon } from "@/components/map/poi-marker-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +73,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   const map = useMap();
   const queryClient = useQueryClient();
   const startEditingPoi = useMapStore((s) => s.startEditingPoi);
+  const startRouteTo = useMapStore((s) => s.startRouteTo);
   const { data: categories } = useCategories();
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -79,7 +81,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
 
   const category = categories?.find((c) => c.id === poi.category_id);
   const categoryColor = category?.color_hex ?? DEFAULT_BORDER_COLOR;
-  const CategoryIcon = getCategoryIcon(category?.slug ?? "");
+  const CategoryIcon = getPoiIcon(poi, category);
 
   const { data: favorites } = useFavorites(isAuthenticated);
   const isFavorited = favorites?.some((favorite) => favorite.id === poi.id) ?? false;
@@ -221,15 +223,34 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     </>
   );
 
-  const hasFooterContent = isOwner || isAuthenticated || poi.reactions.length > 0;
-  const footer = hasFooterContent && (
+  const footer = (
     <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-2">
       <div className="min-w-0">
         <ReactionsBar poi={poi} currentUserId={currentUserId} onReacted={invalidatePoi} />
       </div>
 
-      {isOwner && (
-        <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  map.closePopup();
+                  startRouteTo({ id: poi.id, name: poi.name, lat: poi.lat, lng: poi.lng });
+                }}
+                className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-foreground"
+              />
+            }
+          >
+            <Navigation className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipContent>Como chegar</TooltipContent>
+        </Tooltip>
+
+        {isOwner && (
+          <>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -286,8 +307,9 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 

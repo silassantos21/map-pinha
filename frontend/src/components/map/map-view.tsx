@@ -13,6 +13,7 @@ import { LocationLoadingOverlay } from "@/components/map/location-loading-overla
 import { PoiCardPopup } from "@/components/map/poi-card-popup";
 import { PoiPlacementHandler } from "@/components/map/poi-placement-handler";
 import { createPoiIcon } from "@/components/map/poi-marker-icon";
+import { RouteLayer } from "@/components/map/route-layer";
 import { SelectedPoiFlyTo } from "@/components/map/selected-poi-flyto";
 import { useCategories } from "@/hooks/use-categories";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -64,6 +65,14 @@ export function MapView({ userId }: MapViewProps) {
   const activeTheme = useMapStore((s) => s.activeTheme);
   const theme = MAP_THEMES[activeTheme];
   const { position, error: locationError } = useGeolocation();
+  const setUserPosition = useMapStore((s) => s.setUserPosition);
+
+  // Espelha a posição no store — o painel de rota (RoutePanel) vive fora da
+  // árvore do mapa e não tem como chamar `useGeolocation()` de novo sem abrir
+  // uma segunda assinatura de `watchPosition`.
+  useEffect(() => {
+    setUserPosition(position);
+  }, [position, setUserPosition]);
 
   // Mostra o overlay de loading só até a geolocalização resolver pela
   // primeira vez (sucesso OU erro/permissão negada) — depois disso nunca
@@ -76,17 +85,17 @@ export function MapView({ userId }: MapViewProps) {
   const { data: categories } = useCategories();
   const { data: pois = [] } = usePois(userId);
 
-  const categoryBySlugLookup = useMemo(
-    () => new Map((categories ?? []).map((category) => [category.id, category.slug])),
+  const categoriesById = useMemo(
+    () => new Map((categories ?? []).map((category) => [category.id, category])),
     [categories],
   );
 
   const poiIcons = useMemo(
     () =>
       Object.fromEntries(
-        pois.map((poi) => [poi.id, createPoiIcon(categoryBySlugLookup.get(poi.category_id) ?? "")]),
+        pois.map((poi) => [poi.id, createPoiIcon(poi, categoriesById.get(poi.category_id))]),
       ),
-    [pois, categoryBySlugLookup],
+    [pois, categoriesById],
   );
 
   // Rede de segurança: se a geolocalização nunca chamar sucesso nem erro
@@ -137,6 +146,7 @@ export function MapView({ userId }: MapViewProps) {
         <DraftFlyToWatcher />
         <SelectedPoiFlyTo />
         <UserLocationMarker position={position} />
+        <RouteLayer />
         <MapControls userPosition={position} />
       </MapContainer>
     </div>

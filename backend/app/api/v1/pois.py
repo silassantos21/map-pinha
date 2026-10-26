@@ -42,6 +42,7 @@ def _serialize(poi: POI) -> dict:
         "lat": point.y,
         "lng": point.x,
         "is_public": poi.is_public,
+        "icon_name": poi.icon_name,
         "created_at": poi.created_at,
         "updated_at": poi.updated_at,
         "media": poi.media,
@@ -146,6 +147,7 @@ def create_poi(payload: POICreate, db: Session = Depends(get_db)):
         address=payload.address,
         location=WKTElement(f"POINT({payload.lng} {payload.lat})", srid=4326),
         is_public=payload.is_public,
+        icon_name=payload.icon_name,
     )
     db.add(poi)
     db.commit()

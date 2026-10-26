@@ -438,34 +438,57 @@ Você notou que o endereço preenchido automaticamente às vezes não traz o nú
 
 ## Sprint 4 — Sistema de Rotas e Integração Google Maps
 
-**Status:** 🔜 Não iniciado · **Duração estimada:** 10 dias
+**Status:** 🚧 Em andamento (6/9) · **Duração estimada:** 10 dias
 
 ### Tarefas
-- [ ] Integrar OSRM API (gratuita, open-source): endpoint FastAPI proxy para calcular rota entre dois pontos
-- [ ] Implementar exibição de rota no mapa Leaflet: polyline com estilo gamificado (linha tracejada animada estilo videogame)
-- [ ] Criar painel de informações de rota: distância em km, tempo estimado (carro/a pé), turn-by-turn simplificado
-- [ ] Desenvolver deep-link para Google Maps: montar URL google.com/maps/dir/ com origem e destino, abrir em nova aba
-- [ ] Implementar deep-link para Apple Maps (detecção de iOS via user-agent)
-- [ ] Criar botão 'Como Chegar' em cada POI com opções: navegar no app ou abrir no Google/Apple Maps
-- [ ] Implementar cache Redis para rotas frequentes (origem-destino já calculados)
-- [ ] Adicionar indicador visual de rotas salvas: histórico de rotas do usuário
-- [ ] Desenvolver modo de navegação simplificado: seguir a rota com geolocalização em tempo real (watchPosition)
+- [x] Integrar OSRM API (gratuita, open-source): endpoint FastAPI proxy para calcular rota entre dois pontos
+- [x] Implementar exibição de rota no mapa Leaflet: polyline com estilo gamificado (linha tracejada animada estilo videogame)
+- [~] Criar painel de informações de rota: distância em km, tempo estimado (carro/a pé) — **sem** turn-by-turn, ver Decisões
+- [x] Desenvolver deep-link para Google Maps: montar URL google.com/maps/dir/ com origem e destino, abrir em nova aba
+- [x] Implementar deep-link para Apple Maps (detecção de iOS/Mac via user-agent)
+- [x] Criar botão 'Como Chegar' em cada POI com opções: ver rota no mapa, ou abrir no Google/Apple Maps
+- [ ] Implementar cache Redis para rotas frequentes (origem-destino já calculados) — adiado, ver Decisões
+- [ ] Adicionar indicador visual de rotas salvas: histórico de rotas do usuário — adiado, ver Decisões
+- [ ] Desenvolver modo de navegação simplificado: seguir a rota com geolocalização em tempo real (watchPosition) — adiado, ver Decisões
 
 ### Entregáveis
-- Cálculo de rotas funcionando via OSRM com exibição visual no mapa
-- Painel de rota com distância, tempo e instruções simplificadas
-- Deep-link para Google Maps e Apple Maps funcionando em todos os dispositivos
-- Cache de rotas no Redis implementado
-- Modo de navegação básico com atualização de posição em tempo real
+- [x] Cálculo de rotas funcionando via OSRM com exibição visual no mapa
+- [~] Painel de rota com distância e tempo (sem instruções turn-by-turn)
+- [x] Deep-link para Google Maps e Apple Maps funcionando
+- [ ] Cache de rotas no Redis — adiado
+- [ ] Modo de navegação básico com atualização de posição em tempo real — adiado
 
 ### Decisões e Pendências
-_(a levantar quando chegarmos nesta sprint)_
+- ✅ **Escopo cortado pra MVP da sprint, 3 tarefas adiadas de propósito** (cache Redis, histórico de rotas salvas, modo de navegação com `watchPosition`): são as três tarefas que mais se beneficiam de uso real antes de valer a pena construir — cache só compensa se houver repetição de consultas, histórico precisa de uma UI própria de "minhas rotas" que ninguém pediu ainda, e modo de navegação é complexo (recalcular/seguir a rota em tempo real) e sobrepõe parcialmente com só abrir no Google Maps (que já faz isso muito melhor). Entregue o essencial: calcular, ver no mapa, e sair pro Google/Apple Maps pra navegação de verdade. Podem voltar como continuação da sprint quando fizer sentido.
+- ✅ **Turn-by-turn simplificado não implementado** — o endpoint OSRM já devolve `overview=full` (geometria completa) mas não os `steps` turn-by-turn (não pedidos no `GET /route`); como o modo de navegação foi adiado também, não havia consumidor pra esse dado ainda. Fácil de adicionar depois (`steps=true` no OSRM + endpoint retornando a lista).
+- ✅ **Origem da rota é sempre a geolocalização do usuário** (`userPosition` no `map-store.ts`, espelhado de `useGeolocation()`) — não dá pra calcular rota entre dois POIs quaisquer ainda, só "daqui até ali". Suficiente pro pedido original ("calcular distância/tempo da localização atual até qualquer POI").
+- ✅ **Cálculo de rota é público, sem autenticação** — diferente de `GET /pois`, o endpoint `/routes` não tem nenhum dado sensível (só geometria a partir de coordenadas), então não precisa de `verify_internal_secret` nem passar pelo BFF; o frontend chama o FastAPI direto, mesmo padrão de `/categories`.
 
 ### Dificuldades
-_(nenhuma registrada ainda)_
+- **OSRM demo público se comporta de forma inconsistente pra coordenadas sem rota possível** (testei com `0,0` → `1,1`, no meio do oceano): às vezes devolve `400 InvalidUrl` com uma mensagem claramente incorreta ("URL string malformed... 'and'") em vez do esperado `200` com `{"code": "NoRoute"}`. Não investiguei mais a fundo por ser comportamento de um servidor de terceiros fora do nosso controle, e porque o tratamento de erro já cobre o caso de qualquer forma: `response.raise_for_status()` + `except httpx.HTTPError` devolve um `502` limpo ("Não foi possível calcular a rota agora") pro frontend em vez de vazar a mensagem estranha do OSRM ou quebrar o endpoint. Não deve aparecer na prática — rotas reais (localização do usuário até um POI cadastrado, ambos em terra firme) sempre caíram no caminho feliz nos testes.
 
 ### Notas
-_(nenhuma ainda)_
+- **Backend (`backend/app/api/v1/routes.py`):** novo endpoint `GET /routes?from_lat&from_lng&to_lat&to_lng&profile=driving|walking`, proxy pro OSRM público (`router.project-osrm.org`, sem API key). Inverte a ordem de coordenadas do OSRM (`[lng, lat]`, convenção GeoJSON) pra `[lat, lng]` (convenção já usada no resto da API). Dependência nova: `httpx` (adicionado ao `requirements.txt`, imagem do backend reconstruída com `docker compose up -d --build backend`).
+- **Modelo `Route` (`backend/app/models/route.py`) já existia desde a Sprint 1** (schema planejado com antecedência) mas segue sem uso — é a tabela que serviria pro cache Redis/histórico adiados, não precisou de migration nova agora.
+- **Frontend — estado da rota (`map-store.ts`):** `userPosition` (espelhado de `useGeolocation()` em `map-view.tsx`, já que o painel de rota vive fora da árvore do mapa e não pode chamar o hook de novo sem abrir uma segunda assinatura de geolocalização), `activeRouteTarget` (POI de destino, setado pelo botão "Como chegar"), `routeProfile` (carro/a pé).
+- **`RouteLayer` (`components/map/route-layer.tsx`, dentro do `MapContainer`):** busca a rota via `useRoute` (React Query) e desenha como `Polyline` tracejada com animação "marching ants" (`mappin-route-line` em `globals.css`, `stroke-dashoffset` animado). Enquadra o mapa (`fitBounds`) na rota inteira assim que os dados chegam.
+- **`RoutePanel` (`components/layout/route-panel.tsx`, fora da árvore do mapa, canto inferior esquerdo):** nome do destino, toggle carro/a pé, distância/tempo, botões "Google Maps"/"Apple Maps" (Apple só aparece em iOS/Mac, detectado via `navigator.userAgent` depois de montado, pra não divergir do SSR). Fecha a rota (botão X) e tudo limpa via `clearRoute()`.
+- **Botão "Como chegar" no popup do POI** (`poi-card-popup.tsx`): disponível pra **qualquer visitante**, não só o dono — diferente de Editar/Excluir. O rodapé do card deixou de ser condicional (`hasFooterContent`) porque agora sempre tem pelo menos esse botão.
+- **Deep-links (`lib/deep-links.ts`):** Google Maps sempre visível (`google.com/maps/dir/?api=1&origin=...&destination=...&travelmode=...`); Apple Maps só em iOS/Mac (`maps.apple.com/?saddr=...&daddr=...&dirflg=d|w`).
+- **Validado:** backend testado via `curl` direto (São Paulo, Av. Paulista → Ibirapuera: `driving` deu 6.25km/11min; mesmo trecho em `walking` com mais pontos de geometria, como esperado); `type-check`/`lint` limpos; dev server recompilando sem erro (um erro de sintaxe transiente apareceu no log no meio de uma sequência de edits do `poi-card-popup.tsx`, mas já tinha se auto-corrigido pela edit seguinte antes mesmo de eu notar — confirmado pelo recompile limpo logo depois e `type-check`/`lint` passando no estado final). **Precisa da sua validação visual** — clicar em "Como chegar" num POI, ver a linha tracejada animada no mapa, trocar entre carro/a pé, e testar os botões de abrir no Google/Apple Maps.
+
+### Correções e extensão pós-validação (26/10/2026)
+
+Você testou e reportou dois pontos: tempo de carro igual ao de a pé, e pediu uma categoria "Outros" com ícone livre.
+
+- **Bug real: carro e a pé davam o mesmo tempo.** Causa raiz, confirmada comparando as respostas HTTP byte a byte: o demo público oficial (`router.project-osrm.org`) só tem o perfil de **carro** carregado de verdade — qualquer outro nome de perfil na URL (ex: `foot`) é **ignorado silenciosamente** e devolve exatamente o mesmo resultado do carro, sem erro nenhum que denunciasse o problema. Troquei pra FOSSGIS (`routing.openstreetmap.de`, comunidade OSM alemã), que mantém instâncias **separadas de verdade** por perfil (`/routed-car/`, `/routed-foot/`), gratuitas e sem API key. Revalidei com a mesma rota de antes: agora carro dá 11min e a pé dá 55min pro mesmo trajeto de 6.3km — números batem com o que se espera na realidade (antes os dois davam o mesmo valor, o que já era a pista de que algo estava errado).
+- **Categoria "Outros" com ícone livre por POI:** implementado como pedido, com a ressalva de ser um conjunto curado (~30 ícones), não realmente qualquer ícone do lucide-react — acho que é o equilíbrio certo entre "livre o suficiente" e manter a UI previsível, mas me avise se quiser ampliar.
+  - **Backend:** nova coluna `pois.icon_name` (nullable — migration `7a2c9e4f1b36`) e nova categoria `outros` seedada (migration `f3d8b6a0c912`, ícone padrão `sparkles`, cor neutra `#9CA3AF`). Quando um POI tem `icon_name` próprio, ele sobrepõe o ícone fixo da categoria só naquele POI.
+  - **Frontend — descoberta no caminho:** o campo `category.icon_name` já existia no banco e na API desde a Sprint 1, mas o frontend **nunca usou isso** — tinha um mapa fixo `slug → ícone` hardcoded em `poi-marker-icon.tsx`. Aproveitei pra consertar essa divergência: agora os ícones (de categoria e de POI) vêm sempre do dado real (`icon_name`), nunca de um mapa fixo por slug.
+  - **Seletor no formulário:** grade de ~30 ícones aparece só quando a categoria selecionada é "Outros" (`poi-form-sheet.tsx`), com rótulos em pt-BR (Igreja, Notícia, Monumento, etc.).
+  - **Bug que eu mesmo causei e já corrigi antes de reportar:** o módulo de ícones importava `leaflet` no topo (necessário só pra `createPoiIcon`/`L.divIcon`). Isso nunca foi problema enquanto só `map-view.tsx`/`poi-card-popup.tsx` (ambos dentro da árvore do mapa, protegida com `ssr: false`) importavam dali — mas o seletor de ícone do formulário também passou a importar desse arquivo, e o formulário **não** tem essa proteção (é renderizado direto em `app-shell.tsx`, um Server Component). Resultado: `ReferenceError: window is not defined` quebrando a página inteira no SSR. Corrigido extraindo a parte sem Leaflet (registry de ícones, `ICON_PICKER_OPTIONS`, `resolveIconName`) pra um módulo novo e "limpo" (`frontend/src/lib/poi-icons.ts`), deixando `leaflet` isolado só em `createPoiIcon` (`components/map/poi-marker-icon.tsx`, que reexporta o resto pra não quebrar os imports existentes). Confirmado: SSR voltando a dar `200` depois da correção.
+
+**Validado:** rota testada via `curl` com os dois perfis dando tempos realistas e diferentes; fluxo de POI com ícone livre testado ponta a ponta via `curl` (criar com `category_id` de "outros" + `icon_name: "church"`, confirmar no retorno, depois excluído — era só um POI de teste); `type-check`/`lint` limpos; dev server reiniciado do zero, SSR confirmado saudável (`GET / 200`). **Precisa da sua validação visual** — trocar entre carro/a pé de novo pra confirmar tempos diferentes, e criar um POI na categoria "Outros" escolhendo um ícone.
 
 ---
 

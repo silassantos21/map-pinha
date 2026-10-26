@@ -33,6 +33,9 @@ class POI(Base):
     # GeoAlchemy2 já cria o índice espacial GIST automaticamente nesta coluna
     location: Mapped[str] = mapped_column(Geography(geometry_type="POINT", srid=4326))
     is_public: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Ícone escolhido livremente pelo usuário (categoria "outros") — quando
+    # presente, sobrepõe o ícone fixo da categoria só nesse POI.
+    icon_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
