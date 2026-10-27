@@ -1,4 +1,12 @@
-import type { Category, LatLng, MapBounds, Poi, RouteProfile, RouteResult } from "@/types/poi";
+import type {
+  Category,
+  LatLng,
+  MapBounds,
+  Poi,
+  RouteHistoryEntry,
+  RouteProfile,
+  RouteResult,
+} from "@/types/poi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -69,4 +77,36 @@ export async function fetchMyPois(): Promise<Poi[]> {
   const res = await fetch("/api/pois/mine");
   if (!res.ok) throw new Error("Falha ao carregar seus POIs");
   return res.json();
+}
+
+export async function fetchRouteHistory(): Promise<RouteHistoryEntry[]> {
+  const res = await fetch("/api/routes/history");
+  if (!res.ok) throw new Error("Falha ao carregar o histórico de rotas");
+  return res.json();
+}
+
+interface SaveRouteHistoryParams {
+  poiId: string;
+  origin: LatLng;
+  distanceM: number;
+  durationS: number;
+}
+
+export async function saveRouteHistory({
+  poiId,
+  origin,
+  distanceM,
+  durationS,
+}: SaveRouteHistoryParams): Promise<void> {
+  await fetch("/api/routes/history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      poi_id: poiId,
+      origin_lat: origin.lat,
+      origin_lng: origin.lng,
+      distance_m: distanceM,
+      duration_s: durationS,
+    }),
+  });
 }

@@ -60,6 +60,12 @@ interface MapState {
   clearRoute: () => void;
   routeProfile: RouteProfile;
   setRouteProfile: (profile: RouteProfile) => void;
+
+  // Modo de navegação simplificado: enquanto ativo, o mapa segue a posição
+  // do usuário em vez de ficar enquadrando a rota inteira (ver RouteLayer).
+  isNavigating: boolean;
+  startNavigating: () => void;
+  stopNavigating: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -100,8 +106,12 @@ export const useMapStore = create<MapState>((set) => ({
   setUserPosition: (position) => set({ userPosition: position }),
 
   activeRouteTarget: null,
-  startRouteTo: (poi) => set({ activeRouteTarget: poi }),
-  clearRoute: () => set({ activeRouteTarget: null }),
+  startRouteTo: (poi) => set({ activeRouteTarget: poi, isNavigating: false }),
+  clearRoute: () => set({ activeRouteTarget: null, isNavigating: false }),
   routeProfile: "driving",
   setRouteProfile: (profile) => set({ routeProfile: profile }),
+
+  isNavigating: false,
+  startNavigating: () => set({ isNavigating: true }),
+  stopNavigating: () => set({ isNavigating: false }),
 }));

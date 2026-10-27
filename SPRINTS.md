@@ -438,7 +438,7 @@ Você notou que o endereço preenchido automaticamente às vezes não traz o nú
 
 ## Sprint 4 — Sistema de Rotas e Integração Google Maps
 
-**Status:** 🚧 Em andamento (6/9) · **Duração estimada:** 10 dias
+**Status:** ✅ Concluído (9/9, com ressalva no turn-by-turn — ver Decisões) · **Duração estimada:** 10 dias
 
 ### Tarefas
 - [x] Integrar OSRM API (gratuita, open-source): endpoint FastAPI proxy para calcular rota entre dois pontos
@@ -447,19 +447,19 @@ Você notou que o endereço preenchido automaticamente às vezes não traz o nú
 - [x] Desenvolver deep-link para Google Maps: montar URL google.com/maps/dir/ com origem e destino, abrir em nova aba
 - [x] Implementar deep-link para Apple Maps (detecção de iOS/Mac via user-agent)
 - [x] Criar botão 'Como Chegar' em cada POI com opções: ver rota no mapa, ou abrir no Google/Apple Maps
-- [ ] Implementar cache Redis para rotas frequentes (origem-destino já calculados) — adiado, ver Decisões
-- [ ] Adicionar indicador visual de rotas salvas: histórico de rotas do usuário — adiado, ver Decisões
-- [ ] Desenvolver modo de navegação simplificado: seguir a rota com geolocalização em tempo real (watchPosition) — adiado, ver Decisões
+- [x] Implementar cache Redis para rotas frequentes (origem-destino já calculados)
+- [x] Adicionar indicador visual de rotas salvas: histórico de rotas do usuário
+- [x] Desenvolver modo de navegação simplificado: seguir a rota com geolocalização em tempo real (watchPosition)
 
 ### Entregáveis
 - [x] Cálculo de rotas funcionando via OSRM com exibição visual no mapa
 - [~] Painel de rota com distância e tempo (sem instruções turn-by-turn)
 - [x] Deep-link para Google Maps e Apple Maps funcionando
-- [ ] Cache de rotas no Redis — adiado
-- [ ] Modo de navegação básico com atualização de posição em tempo real — adiado
+- [x] Cache de rotas no Redis implementado
+- [x] Modo de navegação básico com atualização de posição em tempo real
 
 ### Decisões e Pendências
-- ✅ **Escopo cortado pra MVP da sprint, 3 tarefas adiadas de propósito** (cache Redis, histórico de rotas salvas, modo de navegação com `watchPosition`): são as três tarefas que mais se beneficiam de uso real antes de valer a pena construir — cache só compensa se houver repetição de consultas, histórico precisa de uma UI própria de "minhas rotas" que ninguém pediu ainda, e modo de navegação é complexo (recalcular/seguir a rota em tempo real) e sobrepõe parcialmente com só abrir no Google Maps (que já faz isso muito melhor). Entregue o essencial: calcular, ver no mapa, e sair pro Google/Apple Maps pra navegação de verdade. Podem voltar como continuação da sprint quando fizer sentido.
+- ✅ **Escopo cortado pra MVP da sprint, 3 tarefas adiadas de propósito** (cache Redis, histórico de rotas salvas, modo de navegação com `watchPosition`): são as três tarefas que mais se beneficiam de uso real antes de valer a pena construir — cache só compensa se houver repetição de consultas, histórico precisa de uma UI própria de "minhas rotas" que ninguém pediu ainda, e modo de navegação é complexo (recalcular/seguir a rota em tempo real) e sobrepõe parcialmente com só abrir no Google Maps (que já faz isso muito melhor). Entregue o essencial: calcular, ver no mapa, e sair pro Google/Apple Maps pra navegação de verdade. **Status (27/10/2026): as três foram fechadas** — ver "Fechando o que ficou de fora" abaixo.
 - ✅ **Turn-by-turn simplificado não implementado** — o endpoint OSRM já devolve `overview=full` (geometria completa) mas não os `steps` turn-by-turn (não pedidos no `GET /route`); como o modo de navegação foi adiado também, não havia consumidor pra esse dado ainda. Fácil de adicionar depois (`steps=true` no OSRM + endpoint retornando a lista).
 - ✅ **Origem da rota é sempre a geolocalização do usuário** (`userPosition` no `map-store.ts`, espelhado de `useGeolocation()`) — não dá pra calcular rota entre dois POIs quaisquer ainda, só "daqui até ali". Suficiente pro pedido original ("calcular distância/tempo da localização atual até qualquer POI").
 - ✅ **Cálculo de rota é público, sem autenticação** — diferente de `GET /pois`, o endpoint `/routes` não tem nenhum dado sensível (só geometria a partir de coordenadas), então não precisa de `verify_internal_secret` nem passar pelo BFF; o frontend chama o FastAPI direto, mesmo padrão de `/categories`.
@@ -489,6 +489,27 @@ Você testou e reportou dois pontos: tempo de carro igual ao de a pé, e pediu u
   - **Bug que eu mesmo causei e já corrigi antes de reportar:** o módulo de ícones importava `leaflet` no topo (necessário só pra `createPoiIcon`/`L.divIcon`). Isso nunca foi problema enquanto só `map-view.tsx`/`poi-card-popup.tsx` (ambos dentro da árvore do mapa, protegida com `ssr: false`) importavam dali — mas o seletor de ícone do formulário também passou a importar desse arquivo, e o formulário **não** tem essa proteção (é renderizado direto em `app-shell.tsx`, um Server Component). Resultado: `ReferenceError: window is not defined` quebrando a página inteira no SSR. Corrigido extraindo a parte sem Leaflet (registry de ícones, `ICON_PICKER_OPTIONS`, `resolveIconName`) pra um módulo novo e "limpo" (`frontend/src/lib/poi-icons.ts`), deixando `leaflet` isolado só em `createPoiIcon` (`components/map/poi-marker-icon.tsx`, que reexporta o resto pra não quebrar os imports existentes). Confirmado: SSR voltando a dar `200` depois da correção.
 
 **Validado:** rota testada via `curl` com os dois perfis dando tempos realistas e diferentes; fluxo de POI com ícone livre testado ponta a ponta via `curl` (criar com `category_id` de "outros" + `icon_name: "church"`, confirmar no retorno, depois excluído — era só um POI de teste); `type-check`/`lint` limpos; dev server reiniciado do zero, SSR confirmado saudável (`GET / 200`). **Precisa da sua validação visual** — trocar entre carro/a pé de novo pra confirmar tempos diferentes, e criar um POI na categoria "Outros" escolhendo um ícone.
+
+**Commit + push (27/10/2026):** todo esse trabalho (fix do ZodError + Sprint 4 inteira) foi consolidado em dois commits e enviado — `36e1f22` e `4ed0365`, `f2c1650..4ed0365 main -> main`. `origin/main` está em dia com o estado real do projeto.
+
+### Fechando o que ficou de fora (pedido em 27/10/2026)
+
+Você perguntou se dava pra fechar sozinho ou precisava de algo da sua parte — não precisava (Redis já rodava, o modelo `Route` já existia desde a Sprint 1). Só levantei uma dúvida de escopo pro modo de navegação antes de construir: você escolheu "só recentralizar + atualizar distância/tempo", sem turn-by-turn (abrir no Google Maps já resolve isso melhor).
+
+- **Cache Redis** (`backend/app/core/cache.py`): `GET /routes` agora cacheia por `(perfil, origem arredondada a ~11m, destino arredondada a ~11m)`, TTL de 5 minutos. Resiliente de propósito — se o Redis cair, o cache falha silenciosamente e a rota continua sendo calculada direto no OSRM, nunca derruba a requisição. Validado via `curl` cronometrado: primeira chamada ~930ms, segunda (mesmos parâmetros) ~74ms.
+- **Histórico de rotas** (`backend/app/models/route.py`, já existia sem uso): novos endpoints `POST /routes/history` e `GET /routes/history`, ambos atrás do `verify_internal_secret` — só o BFF autenticado grava/lê, `user_id` nunca vem do navegador (mesmo cuidado do achado de segurança do item 19). Novo painel "Minhas rotas" (`route-history-panel.tsx`, ícone de relógio/histórico, só pra quem está logado) — toque numa entrada pra traçar a rota de novo. `RoutePanel` salva automaticamente no histórico uma vez por destino escolhido (não a cada recálculo por GPS).
+- **Modo de navegação simplificado:** botão "Iniciar navegação" no `RoutePanel`. Enquanto ativo, o mapa passa a seguir a posição do usuário (`map.panTo`, com um `flyTo` mais próximo só na entrada) em vez de enquadrar a rota inteira — reaproveitei o `RouteLayer`, que já recalculava a rota a cada atualização de posição (ponto de atenção que virou ajuste: antes disso, o `fitBounds` rodava a cada recálculo, o que já estava reenquadrando o mapa toda hora mesmo fora do modo navegação; corrigido pra só enquadrar quando o **destino** muda). Detecção de chegada simples: quando a distância restante cai abaixo de 30m, mostra um toast "Você chegou!" e encerra a rota sozinho.
+- **Zoom do modo navegação ajustado por perfil** (pergunta sua: "o zoom é ajustado conforme a localização do usuário?"): não havia nenhum ajuste de zoom antes, só o recentralizar. Em vez de zoom dinâmico por velocidade (mais complexo, pedido explícito seu de manter simples), o `flyTo` de entrada no modo navegação agora usa um zoom fixo por perfil (`NAV_FOLLOW_ZOOM` em `route-layer.tsx`): 16 dirigindo (mais afastado, dá contexto da via à frente), 18 a pé (mais perto, onde precisão de poucos metros importa mais).
+
+**Validado:** cache testado via `curl` com tempos cronometrados; histórico testado ponta a ponta via `curl` (salvar + listar, depois removido — era só teste); `type-check`/`lint` limpos; dev server caiu sem erro no meio do teste (processo encerrado externamente, não uma falha de código) e foi religado, voltando saudável. **Precisa da sua validação visual** — testar o botão "Iniciar navegação" (o mapa deve seguir sua posição com o zoom certo por perfil), abrir o painel "Minhas rotas" depois de calcular pelo menos uma rota logado, e confirmar que chegar perto do destino mostra o toast de chegada.
+
+### Investigação: geocodificação imprecisa, três locais diferentes pro mesmo endereço (pedido em 27/10/2026)
+
+Você reportou (com 3 prints) que o Google Maps, o pino automático do nosso app, e uma coordenada colada manualmente do Google Maps mostravam **três lugares diferentes** pro mesmo endereço, e perguntou se dava pra ser mais exato com ajuda do Google Maps.
+
+- **Pino do app (Nominatim) vs Google Maps:** mesma causa raiz já identificada no item 22 (número de endereço ausente nos dados do OSM pra essa rua) — quando o Nominatim não acha o número exato, ele cai pro centro geométrico da via inteira (`osm_type: "way"`), não um ponto proporcional ao número. O Google tem base própria de endereços com número que o OSM não tem nessa região.
+- **Terceiro pino (coordenada colada manualmente), ainda mais distante:** não confirmado, mas hipótese provável é troca de latitude/longitude ao dividir o "lat, lng" copiado do Google entre os dois campos separados do formulário — `applyLatLng()` em `poi-form-sheet.tsx` não pegaria isso, porque lat e lng dessa região são ambos negativos e passam na validação de faixa mesmo trocados.
+- **Decisão (27/10/2026): por ora, continua manual** — arrastar o pino tracejado pro lugar certo depois da busca aproximada, sem nenhuma mudança de código. **Anotado pra decisão futura:** a API de geocodificação do Google daria precisão real de número de endereço no Brasil, mas exige chave de API no Google Cloud + conta de faturamento vinculada (cota mensal grátis deve cobrir o uso normal de um portfólio, mas precisa cadastro) — conflita com a preferência já estabelecida do projeto de evitar serviços pagos/com chave (Nominatim/OSRM). Se decidir seguir com isso no futuro, a abordagem de menor custo é usar o Google só como **fallback**: Nominatim primeiro (grátis), Google só quando o resultado vier impreciso (ex: match de `way` em vez de ponto exato).
 
 ---
 

@@ -61,3 +61,14 @@ export interface RouteResult {
   duration_s: number;
   geometry: [number, number][];
 }
+
+export interface RouteHistoryEntry {
+  id: string;
+  poi_id: string;
+  poi_name: string;
+  poi_lat: number;
+  poi_lng: number;
+  distance_m: number;
+  duration_s: number;
+  created_at: string;
+}

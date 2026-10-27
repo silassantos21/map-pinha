@@ -5,6 +5,7 @@ import { HudHeader } from "@/components/layout/hud-header";
 import { MyPoisPanel } from "@/components/layout/my-pois-panel";
 import { PoiCreateButton } from "@/components/layout/poi-create-button";
 import { PoiPanel } from "@/components/layout/poi-panel";
+import { RouteHistoryPanel } from "@/components/layout/route-history-panel";
 import { RoutePanel } from "@/components/layout/route-panel";
 import { MapViewLoader } from "@/components/map/map-view-loader";
 import { PoiFormSheet } from "@/components/poi/poi-form-sheet";
@@ -30,10 +31,11 @@ export async function AppShell() {
         <PoiCreateButton />
         <FavoritesPanel isAuthenticated={userId !== null} />
         <MyPoisPanel isAuthenticated={userId !== null} />
+        <RouteHistoryPanel isAuthenticated={userId !== null} />
         <PoiPanel userId={userId} />
       </div>
 
-      <RoutePanel />
+      <RoutePanel isAuthenticated={userId !== null} />
       <PoiFormSheet userId={userId} />
     </div>
   );
