@@ -19,7 +19,7 @@ const silkscreen = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "MapPin",
+  title: "MaPinha",
   description:
     "Mapa interativo gamificado com pontos de interesse personalizados.",
 };

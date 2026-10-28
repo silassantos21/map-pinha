@@ -143,6 +143,7 @@
 
 - [ ] Implementar sistema de compartilhamento: gerar slug único para POI público, page de POI pública com SSR (SEO)
 - [ ] Criar página de perfil do usuário: seus POIs, estatísticas (total de pontos, km mapeados), avatar
+- [ ] Repaginar identidade visual com base na logo oficial "MaPinha": extrair paleta de cores da logo e aplicar de forma unificada nos temas de mapa, UI e componentes existentes
 - [ ] Adicionar animações Framer Motion: transições de página, entrada de POI cards, loading states gamificados
 - [ ] Implementar PWA: manifest.json, service worker para cache offline do mapa, ícone de instalação
 - [ ] Criar página de onboarding: tutorial interativo de 3 passos ao primeiro login
@@ -155,6 +156,7 @@
 #### Entregáveis
 
 - Sistema de compartilhamento de POIs com URLs públicas e SEO
+- Identidade visual unificada: paleta derivada da logo oficial aplicada de forma consistente em temas, header e UI geral
 - PWA instalável funcionando em mobile com cache offline parcial
 - Aplicação deployada em produção com domínio customizado
 - README de portfólio com screenshots, demo GIF e documentação técnica completa

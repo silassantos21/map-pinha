@@ -582,6 +582,8 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 
 ### Tarefas
 - [ ] **Upgrade Next.js 14 → 16** (resolver CVEs críticas, inclusive 2 de RCE — ver "Pendências de Segurança" no topo deste arquivo), antes de qualquer deploy público
+- [x] ~~Receber a logo oficial do app ("MaPinha") e aplicar nos pontos básicos de branding~~ — feito antecipadamente em 28/10/2026, ver Notas abaixo
+- [ ] Repaginar identidade visual com base na logo oficial: extrair paleta de cores da logo e aplicar de forma unificada nos temas de mapa, UI e componentes existentes (vai além do que já foi feito — ver Notas)
 - [ ] Implementar sistema de compartilhamento: gerar slug único para POI público, page de POI pública com SSR (SEO)
 - [ ] Criar página de perfil do usuário: seus POIs, estatísticas (total de pontos, km mapeados), avatar
 - [ ] Adicionar animações Framer Motion: transições de página, entrada de POI cards, loading states gamificados
@@ -595,16 +597,22 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 
 ### Entregáveis
 - Sistema de compartilhamento de POIs com URLs públicas e SEO
+- Identidade visual unificada: paleta derivada da logo oficial aplicada de forma consistente em temas, header e UI geral
 - PWA instalável funcionando em mobile com cache offline parcial
 - Aplicação deployada em produção com domínio customizado
 - README de portfólio com screenshots, demo GIF e documentação técnica completa
 - Monitoramento Sentry ativo em produção
 
 ### Decisões e Pendências
-_(a levantar quando chegarmos nesta sprint)_
+- ✅ **App renomeado de "MapPin" para "MaPinha"** (seu pedido em 28/10/2026, trocadilho entre "um mapinha" e o fruto "pinha") — já atualizado onde o nome aparecia pro usuário: `<title>` (`layout.tsx`), cabeçalho do mapa (`hud-header.tsx`) e User-Agent de identificação nas chamadas à Nominatim (`nominatim.ts`, exigido pela política de uso deles, não é visível pro usuário).
+- ✅ **Repaginação de identidade visual (paleta baseada na logo) juntada ao planejamento da Sprint 6** (seu pedido em 28/10/2026) — adicionada como tarefa própria acima e espelhada em `docs/04_TIMELINE.md` (Fase 6). Ainda não iniciada: por ora só a logo foi aplicada nos componentes existentes (ver Notas), sem alterar a paleta de cores/tema vigente.
 
 ### Dificuldades
-_(nenhuma registrada ainda)_
+- **Favicon enviado por você estava corrompido/não-padrão:** `src/app/favicon.ico` tinha só uma resolução, 215×256px (não-quadrado) — ícones de aba ficam espremidos/cortados assim, e falta os tamanhos pequenos (16/32px) que navegadores e Windows esperam num `.ico`. Detectado inspecionando o header binário do arquivo (`PIL`/`file`). Corrigido gerando um novo `.ico` a partir do `MaPinha.png` (quadrado, com transparência, 6 resoluções: 16/32/48/64/128/256px).
 
 ### Notas
-_(nenhuma ainda)_
+- **Arquivos da logo:** `frontend/public/MaPinha.png` (458×545, com transparência — usado na UI) e `frontend/public/MaPinha.jpg` (647×771, fundo sólido — guardado como fonte de maior resolução, ainda sem uso).
+- **Favicon e ícone de atalho (iOS):** `frontend/src/app/favicon.ico` (regenerado, ver Dificuldades) e `frontend/src/app/apple-icon.png` (180×180, fundo branco — iOS preenche transparência com preto nesse ícone, por isso não ficou transparente). Ambos seguem a convenção de arquivo do Next.js (`app/favicon.ico`, `app/apple-icon.png`), detectados automaticamente sem precisar declarar em `metadata`.
+- **Logo aplicada em 2 pontos da UI** (próxima Image do Next.js, `next/image`, local): ao lado do nome "MaPinha" no cabeçalho do mapa (`hud-header.tsx`) e no lugar do spinner genérico na tela "Localizando você..." (`location-loading-overlay.tsx` — já tinha um comentário no código reservando esse espaço desde a Sprint 2/3).
+- Não existe página de login própria no projeto (o botão "Entrar" vai direto pro OAuth do Google via NextAuth, sem página intermediária customizável), então não há mais um lugar óbvio pra aplicar a logo além dos dois acima.
+- `type-check`/`lint` do frontend limpos após as mudanças.
