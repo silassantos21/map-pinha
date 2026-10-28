@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.ai import router as ai_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.categories import router as categories_router
 from app.api.v1.favorites import router as favorites_router
@@ -27,3 +28,4 @@ app.include_router(pois_router, prefix="/api/v1")
 app.include_router(media_router, prefix="/api/v1")
 app.include_router(favorites_router, prefix="/api/v1")
 app.include_router(routes_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")

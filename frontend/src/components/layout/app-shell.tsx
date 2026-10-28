@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { CategoryChips } from "@/components/layout/category-chips";
+import { ExplorePanel } from "@/components/layout/explore-panel";
 import { FavoritesPanel } from "@/components/layout/favorites-panel";
 import { HudHeader } from "@/components/layout/hud-header";
 import { MyPoisPanel } from "@/components/layout/my-pois-panel";
@@ -31,6 +32,7 @@ export async function AppShell() {
         <PoiCreateButton />
         <FavoritesPanel isAuthenticated={userId !== null} />
         <MyPoisPanel isAuthenticated={userId !== null} />
+        <ExplorePanel isAuthenticated={userId !== null} />
         <RouteHistoryPanel isAuthenticated={userId !== null} />
         <PoiPanel userId={userId} />
       </div>

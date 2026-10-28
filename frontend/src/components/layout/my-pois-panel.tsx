@@ -1,6 +1,6 @@
 "use client";
 
-import { UserRound } from "lucide-react";
+import { Sparkles, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +66,17 @@ export function MyPoisPanel({ isAuthenticated }: MyPoisPanelProps) {
               onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
               className="rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
             >
-              <p className="text-sm font-medium text-foreground">{poi.name}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-foreground">{poi.name}</p>
+                {poi.ai_category_slug && (
+                  <span
+                    className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                    title="A IA sugeriu uma categoria diferente pra esse POI — abra o pino no mapa pra ver"
+                  >
+                    <Sparkles className="size-2.5" /> sugestão
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
               </p>

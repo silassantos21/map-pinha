@@ -3,6 +3,7 @@ import type {
   LatLng,
   MapBounds,
   Poi,
+  Recommendation,
   RouteHistoryEntry,
   RouteProfile,
   RouteResult,
@@ -109,4 +110,63 @@ export async function saveRouteHistory({
       duration_s: durationS,
     }),
   });
+}
+
+interface GenerateBioParams {
+  name: string;
+  categoryName: string;
+  address?: string | null;
+  userNotes?: string | null;
+}
+
+// POIBioWriterAgent (Sprint 5) — gera uma descrição curta pro botão "Gerar
+// descrição com IA" no formulário.
+export async function generatePoiBio({
+  name,
+  categoryName,
+  address,
+  userNotes,
+}: GenerateBioParams): Promise<string> {
+  const res = await fetch("/api/pois/generate-bio", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      category_name: categoryName,
+      address: address || null,
+      user_notes: userNotes || null,
+    }),
+  });
+  if (res.status === 429) throw new Error("Limite diário de sugestões de IA atingido. Tente novamente mais tarde.");
+  if (!res.ok) throw new Error("Não foi possível gerar a descrição agora");
+  const data: { bio: string } = await res.json();
+  return data.bio;
+}
+
+// NearbyRecommenderAgent (Sprint 5) — painel "Explorar".
+export async function fetchRecommendations(origin: LatLng): Promise<Recommendation[]> {
+  const params = new URLSearchParams({ lat: String(origin.lat), lng: String(origin.lng) });
+  const res = await fetch(`/api/ai/recommendations?${params.toString()}`);
+  if (!res.ok) throw new Error("Não foi possível carregar as recomendações");
+  return res.json();
+}
+
+export async function submitAiFeedback(params: {
+  poiId: string;
+  agent: "categorizer" | "recommender";
+  useful: boolean;
+}): Promise<void> {
+  await fetch("/api/ai/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ poi_id: params.poiId, agent: params.agent, useful: params.useful }),
+  });
+}
+
+export async function acceptAiSuggestion(poiId: string): Promise<void> {
+  await fetch(`/api/pois/${poiId}/ai-suggestion/accept`, { method: "POST" });
+}
+
+export async function dismissAiSuggestion(poiId: string): Promise<void> {
+  await fetch(`/api/pois/${poiId}/ai-suggestion/dismiss`, { method: "POST" });
 }

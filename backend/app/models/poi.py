@@ -36,6 +36,14 @@ class POI(Base):
     # Ícone escolhido livremente pelo usuário (categoria "outros") — quando
     # presente, sobrepõe o ícone fixo da categoria só nesse POI.
     icon_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Sugestão do POICategorizerAgent (Sprint 5), preenchida em segundo plano
+    # após criar o POI. Não-nulo = sugestão pronta pro dono aceitar/dispensar;
+    # aceitar copia pra category_id/icon_name reais e limpa estes campos.
+    ai_category_slug: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ai_icon_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    ai_color_hex: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    ai_confidence: Mapped[float | None] = mapped_column(nullable=True)
+    ai_reasoning: Mapped[str | None] = mapped_column(String(300), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

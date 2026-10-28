@@ -36,6 +36,13 @@ export interface Poi {
   // Ícone escolhido livremente pelo dono (só faz sentido na categoria
   // "outros") — quando presente, sobrepõe o ícone fixo da categoria.
   icon_name: string | null;
+  // Sugestão pendente do POICategorizerAgent (Sprint 5) — não-nula só
+  // enquanto o dono não aceitou/dispensou.
+  ai_category_slug: string | null;
+  ai_icon_name: string | null;
+  ai_color_hex: string | null;
+  ai_confidence: number | null;
+  ai_reasoning: string | null;
   created_at: string;
   updated_at: string;
   media: PoiMedia[];
@@ -71,4 +78,14 @@ export interface RouteHistoryEntry {
   distance_m: number;
   duration_s: number;
   created_at: string;
+}
+
+export interface Recommendation {
+  poi_id: string;
+  poi_name: string;
+  poi_lat: number;
+  poi_lng: number;
+  category_name: string;
+  reason: string;
+  priority_score: number;
 }

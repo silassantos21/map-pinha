@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Loader2, LocateFixed, Search, Trash2 } from "lucide-react";
+import { Loader2, LocateFixed, Search, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -20,6 +20,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import { useCategories } from "@/hooks/use-categories";
 import { usePoi } from "@/hooks/use-poi";
+import { generatePoiBio } from "@/lib/api-client";
 import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
 import { poiFormSchema, type PoiFormValues } from "@/lib/poi-schema";
 import { attachMediaToPoi, uploadMediaFile } from "@/lib/upload-media";
@@ -72,12 +73,15 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     handleSubmit,
     reset,
     setValue,
+    getValues,
     control,
     formState: { errors },
   } = useForm<PoiFormValues>({
     resolver: zodResolver(poiFormSchema),
     defaultValues: EMPTY_FORM_VALUES,
   });
+
+  const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
   // Seletor de ícone livre só faz sentido na categoria "outros" — as demais
   // já têm ícone fixo próprio.
@@ -213,6 +217,30 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     }
     setPositionError(null);
     setDraftPoiPosition({ lat, lng });
+  };
+
+  // POIBioWriterAgent (Sprint 5) — gera uma descrição curta a partir do nome,
+  // categoria e endereço já preenchidos no formulário.
+  const generateBio = async () => {
+    const name = getValues("name");
+    const categoryName = categories?.find((c) => c.id === selectedCategoryId)?.name;
+    if (!name || !categoryName) {
+      toast.add({ title: "Preencha nome e categoria antes de gerar a descrição", type: "error" });
+      return;
+    }
+    setIsGeneratingBio(true);
+    try {
+      const bio = await generatePoiBio({ name, categoryName, address: getValues("address") });
+      setValue("description", bio, { shouldDirty: true });
+    } catch (error) {
+      toast.add({
+        title: "Não foi possível gerar a descrição",
+        description: error instanceof Error ? error.message : undefined,
+        type: "error",
+      });
+    } finally {
+      setIsGeneratingBio(false);
+    }
   };
 
   const onSubmit = async (values: PoiFormValues) => {
@@ -472,9 +500,24 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
           )}
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="poi-description" className="text-xs font-medium text-foreground">
-              Descrição
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="poi-description" className="text-xs font-medium text-foreground">
+                Descrição
+              </label>
+              <button
+                type="button"
+                onClick={generateBio}
+                disabled={isGeneratingBio}
+                className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 disabled:opacity-50"
+              >
+                {isGeneratingBio ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3" />
+                )}
+                Gerar com IA
+              </button>
+            </div>
             <textarea
               id="poi-description"
               rows={3}

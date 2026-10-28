@@ -21,5 +21,8 @@ class Settings(BaseSettings):
     # navegador. Ver SPRINTS.md Sprint 1/3.
     internal_api_secret: str = ""
 
+    # Agentes de IA (Sprint 5) — categorizador, escritor de bio, recomendador.
+    anthropic_api_key: str = ""
+
 
 settings = Settings()

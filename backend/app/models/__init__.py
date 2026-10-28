@@ -1,4 +1,5 @@
 from app.db.base import Base
+from app.models.ai_feedback import AiFeedback
 from app.models.category import Category
 from app.models.favorite import Favorite
 from app.models.poi import POI
@@ -17,4 +18,5 @@ __all__ = [
     "Route",
     "Favorite",
     "PoiReaction",
+    "AiFeedback",
 ]

@@ -21,6 +21,8 @@ import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 
 import { getPoiIcon } from "@/components/map/poi-marker-icon";
+import { acceptAiSuggestion, dismissAiSuggestion } from "@/lib/api-client";
+import { resolveIconName } from "@/lib/poi-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +41,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
-import type { Poi, PoiMedia, PoiReaction } from "@/types/poi";
+import type { Category, Poi, PoiMedia, PoiReaction } from "@/types/poi";
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 const DEFAULT_BORDER_COLOR = "var(--border)";
@@ -89,6 +91,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   const invalidatePoi = async () => {
     await queryClient.invalidateQueries({ queryKey: ["pois"] });
     await queryClient.invalidateQueries({ queryKey: ["poi", poi.id] });
+    await queryClient.invalidateQueries({ queryKey: ["my-pois"] });
   };
 
   const handleDelete = async () => {
@@ -187,6 +190,9 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
 
   const body = (
     <>
+      {isOwner && poi.ai_category_slug && (
+        <AiSuggestionBanner poi={poi} categories={categories} onResolved={invalidatePoi} />
+      )}
       {(poi.description || poi.address) && (
         <div>
           {poi.description && (
@@ -345,6 +351,67 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
         </div>
       </div>
       {footer}
+    </div>
+  );
+}
+
+function AiSuggestionBanner({
+  poi,
+  categories,
+  onResolved,
+}: {
+  poi: Poi;
+  categories?: Category[];
+  onResolved: () => void | Promise<void>;
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const suggestedCategory = categories?.find((c) => c.slug === poi.ai_category_slug);
+  const SuggestedIcon = resolveIconName(poi.ai_icon_name ?? suggestedCategory?.icon_name ?? "sparkles");
+
+  const respond = async (event: React.MouseEvent, accept: boolean) => {
+    event.stopPropagation();
+    setIsSubmitting(true);
+    try {
+      if (accept) await acceptAiSuggestion(poi.id);
+      else await dismissAiSuggestion(poi.id);
+      await onResolved();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 p-2">
+      <SuggestedIcon
+        className="mt-0.5 size-4 shrink-0"
+        style={{ color: poi.ai_color_hex ?? "var(--primary)" }}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-foreground">
+          IA sugere a categoria <strong>{suggestedCategory?.name ?? poi.ai_category_slug}</strong>
+        </p>
+        {poi.ai_reasoning && (
+          <p className="mt-0.5 text-[10px] text-muted-foreground">{poi.ai_reasoning}</p>
+        )}
+        <div className="mt-1.5 flex gap-1.5">
+          <button
+            type="button"
+            onClick={(event) => respond(event, true)}
+            disabled={isSubmitting}
+            className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Usar
+          </button>
+          <button
+            type="button"
+            onClick={(event) => respond(event, false)}
+            disabled={isSubmitting}
+            className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground disabled:opacity-50"
+          >
+            Dispensar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

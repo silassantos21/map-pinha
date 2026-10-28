@@ -515,32 +515,46 @@ Você reportou (com 3 prints) que o Google Maps, o pino automático do nosso app
 
 ## Sprint 5 — Agentes de IA e Features Inteligentes
 
-**Status:** 🔜 Não iniciado · **Duração estimada:** 10 dias
+**Status:** ✅ Concluído (sem Celery/Railway — ver Decisões) · **Duração estimada:** 10 dias
 
 ### Tarefas
-- [ ] Setup Celery worker no Railway com broker Redis para tarefas assíncronas
-- [ ] Implementar POICategorizerAgent: integração Claude API, lógica de mapeamento de categoria para ícone do sistema
-- [ ] Implementar POIBioWriterAgent: endpoint /pois/generate-bio, integração com formulário de criação via botão
-- [ ] Implementar NearbyRecommenderAgent: endpoint /pois/recommendations com contexto de localização e histórico
-- [ ] Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões
-- [ ] Implementar feedback loop: usuário avalia sugestão (útil/não útil) para melhorar recomendações futuras
-- [ ] Adicionar indicador visual quando IA está processando (skeleton loader gamificado)
-- [ ] Implementar rate limiting nas chamadas à Claude API para controle de custos
+- [x] ~~Setup Celery worker no Railway com broker Redis~~ — substituído por `BackgroundTasks` do FastAPI (ver Decisões)
+- [x] Implementar POICategorizerAgent: integração Claude API, lógica de mapeamento de categoria para ícone do sistema
+- [x] Implementar POIBioWriterAgent: endpoint /pois/generate-bio, integração com formulário de criação via botão
+- [x] Implementar NearbyRecommenderAgent: endpoint /pois/recommendations com contexto de localização e histórico
+- [x] Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões
+- [x] Implementar feedback loop: usuário avalia sugestão (útil/não útil) — registrado, ver ressalva em Decisões
+- [x] Adicionar indicador visual quando IA está processando (skeleton loader gamificado)
+- [x] Implementar rate limiting nas chamadas à Claude API para controle de custos
 
 ### Entregáveis
-- 3 agentes de IA funcionando: categorizador, bio writer e recomendador
-- Celery worker deployado no Railway processando tarefas assíncronas
-- UI de recomendações 'Explorar' com cards de sugestões personalizadas
-- Rate limiting e controle de custos da API Claude implementados
+- [x] 3 agentes de IA funcionando: categorizador, bio writer e recomendador
+- [x] ~~Celery worker deployado no Railway~~ — não existe deploy ainda; substituído por `BackgroundTasks` local (ver Decisões)
+- [x] UI de recomendações 'Explorar' com cards de sugestões personalizadas
+- [x] Rate limiting e controle de custos da API Claude implementados
 
 ### Decisões e Pendências
-_(a levantar quando chegarmos nesta sprint)_
+- ✅ **Sem Celery/WebSocket — `BackgroundTasks` do FastAPI + polling do React Query** (sua escolha em 27/10/2026, pergunta feita antes de começar): o app ainda não tem deploy nenhum configurado (Railway citado no planejamento, nunca configurado nesta conversa), então subir um worker Celery + broker novo agora seria infraestrutura de produção sem produção pra rodar. `BackgroundTasks` entrega o mesmo resultado prático (IA roda depois da resposta, sem travar a criação do POI) com zero peças novas no `docker-compose.yml`. Revisitar Celery faz mais sentido quando chegarmos no deploy real (Sprint 6).
+- ✅ **Modelo: Claude Sonnet 5.5 pros 3 agentes** (sua escolha em 27/10/2026): o planejamento original (`docs/05_COST_ANALYSIS.md`) previa ~$5/mês com um modelo antigo (Sonnet 4.6, $3/$15 por 1M tokens). Sonnet 5.5 atual é mais barato ($2/$10) e mais capaz — melhor que o padrão recomendado (Opus 5.5, $4/$20) pras 3 tarefas, que são classificação/geração de texto simples, não raciocínio complexo.
+- ✅ **POICategorizerAgent dispara ao salvar o POI, mas a sugestão só aparece quando o dono reabre o POI** — não construí um indicador dedicado de "categorizando em segundo plano" nem um toast automático na criação: o processamento levou 2-4s nos testes, e a sugestão (quando pronta) já aparece como uma faixa no popup do POI (ver Notas) e como uma etiqueta "✨ sugestão" no painel "Meus POIs" — simples o bastante sem precisar de polling client-side logo após criar.
+- ✅ **"Explorar" não exclui os próprios POIs do usuário do raio de recomendação** — testei excluindo e, como só existe um usuário real no banco até agora (ambiente de dev solo), isso deixava o painel sempre vazio. Mantive só o filtro de "público". Quando houver mais usuários de verdade, vale reavaliar se recomendar o próprio POI do usuário ainda faz sentido.
+- ⚠️ **Feedback loop (útil/não útil) registra, mas ainda não ajusta recomendações futuras** — cada avaliação vira uma linha na tabela `ai_feedback` (dono, POI, agente, útil/não), mas nenhum agente lê essa tabela ainda pra influenciar a próxima sugestão. Fazer isso de verdade (ex: pesar categorias/POIs que o usuário já marcou como "não útil") é um projeto de aprendizado incremental que vale uma sprint própria — por ora, é dado coletado e pronto pra usar depois, não um loop fechado.
+- ✅ **Endpoint de recomendações é `/ai/recommendations`, não `/pois/recommendations` como no planejamento original** — descoberto só na hora de testar (ver Dificuldades): colidia com a rota `GET /pois/{poi_id}` já existente.
 
 ### Dificuldades
-_(nenhuma registrada ainda)_
+- **Bug de desatenção, pego no teste via `curl`:** `category_slugs = [c.slug for c, in db.execute(select(Category.slug)).all()]` — o unpacking `for c, in rows` já desempacota a tupla de uma coluna, então `c` já era a string do slug; o `.slug` depois quebrava com `AttributeError: 'str' object has no attribute 'slug'`. Corrigido pra `list(db.scalars(select(Category.slug)).all())`.
+- **Colisão de rotas no FastAPI, também pega no teste via `curl`:** registrei `GET /pois/recommendations` numa sprint depois de `GET /pois/{poi_id}` já existir (sprint anterior) — como o FastAPI casa rotas na ordem em que são registradas no app inteiro (não por arquivo), `/pois/recommendations` caía no padrão `/pois/{poi_id}` primeiro, com `poi_id="recommendations"` (erro 422 de UUID inválido). Resolvido movendo o endpoint pra `/ai/recommendations`, um namespace sem conflito — mais seguro a longo prazo que depender de ordem de registro.
 
 ### Notas
-_(nenhuma ainda)_
+- **Backend — agentes (`backend/app/services/ai_agents.py`):** usa o SDK oficial da Anthropic (`anthropic==2.3.0`, instalado via `requirements.txt`) com `client.messages.parse(output_format=...)` (saída estruturada validada por Pydantic) pro categorizador e recomendador, e `client.messages.create` simples pro bio writer (saída é só texto). Todas as 3 funções engolem qualquer exceção e retornam `None`/lista vazia — a IA é sempre um bônus, nunca pode quebrar a criação de um POI ou o carregamento de um painel.
+- **Rate limiting (`backend/app/core/rate_limit.py` + `increment_with_ttl` em `cache.py`):** contador no Redis por usuário+agente, janela de 24h, limite de 50/dia (categorizador, automático), 30/dia (bio writer) e 20/dia (recomendador). Resiliente como o cache de rotas: se o Redis cair, não bloqueia ninguém.
+- **POICategorizerAgent (`_run_categorizer_background` em `backend/app/api/v1/pois.py`):** agendado via `BackgroundTasks.add_task` no `POST /pois`, roda com sua própria sessão de banco (a da requisição original já fechou). Grava a sugestão em 5 colunas novas e nullable de `pois` (`ai_category_slug/icon_name/color_hex/confidence/reasoning`, migration `9b3f2a6d7c41`) — não-nulo = sugestão pendente. O dono aceita (`POST /pois/{id}/ai-suggestion/accept`, copia pra `category_id`/`icon_name` reais) ou dispensa (`.../dismiss`, só limpa); os dois registram uma linha em `ai_feedback` e são idempotentes.
+- **POIBioWriterAgent:** síncrono (`POST /pois/generate-bio`), botão "Gerar com IA" ao lado do label "Descrição" no formulário (`poi-form-sheet.tsx`) — usa nome/categoria/endereço já preenchidos, preenche a descrição no próprio campo (usuário pode editar depois).
+- **NearbyRecommenderAgent (`GET /ai/recommendations`):** candidatos via `ST_DWithin` (PostGIS, raio de 2km, só POIs públicos), até 40 passados pra IA, que escolhe até 3 com motivo + prioridade. Cacheado no Redis por 10min (posição arredondada a ~100m) — painel "Explorar" (`explore-panel.tsx`, ícone de bússola no HUD) só dispara a query quando aberto.
+- **Feedback útil/não útil:** tabela `ai_feedback` (dono, POI, agente, útil/não, data) — usada pelos botões 👍/👎 nos cards do "Explorar" e implicitamente por aceitar/dispensar a sugestão do categorizador.
+- **Indicador visual:** spinner no botão "Gerar com IA" (síncrono); skeleton (`animate-pulse`) nos cards do "Explorar" enquanto carrega; etiqueta "✨ sugestão" no painel "Meus POIs" pra sinalizar sugestão pendente sem precisar abrir cada POI.
+
+**Validado:** bio writer, categorizador (via criação real de POI com categoria propositalmente errada — a IA corrigiu pra "alimentação" com ícone "pizza"), aceitar sugestão (categoria mudou de verdade no banco), recomendações (cache confirmado: 5.3s na primeira chamada, 77ms na segunda) e feedback testados via `curl` direto no backend, com secret real e depois limpos do banco; `type-check`/`lint` do frontend limpos; dev server recompilou tudo sem erro. **Validação visual confirmada por você em 28/10/2026** — faixa de sugestão da IA no popup do POI, etiqueta "✨ sugestão" em "Meus POIs", botão "Gerar com IA" no formulário e painel "Explorar" (com 👍/👎) testados no navegador e aprovados ("ta funcionando bem").
 
 ---
 

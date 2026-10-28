@@ -1,6 +1,7 @@
+import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
@@ -9,17 +10,52 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.v1.auth import verify_internal_secret
 from app.core.media_processing import generate_image_thumbnail
+from app.core.rate_limit import enforce_ai_rate_limit
 from app.core.storage import build_public_url, delete_object_by_public_url
-from app.db.session import get_db
+from app.db.session import SessionLocal, get_db
 from app.models.category import Category
 from app.models.poi import POI
 from app.models.poi_media import MediaType, POIMedia
 from app.models.poi_reaction import PoiReaction
 from app.schemas.media import POIMediaCreate, POIMediaRead
 from app.schemas.poi import POICreate, POIRead, POIUpdate, ReactionToggle
+from app.services import ai_agents
 from app.utils.slug import slugify_unique
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+def _run_categorizer_background(poi_id: uuid.UUID) -> None:
+    """Roda o POICategorizerAgent após o POI já ter sido criado e a resposta
+    enviada (BackgroundTasks) — usa sua própria sessão de banco, já que a da
+    requisição original é fechada antes dessa função rodar."""
+    db = SessionLocal()
+    try:
+        poi = db.get(POI, poi_id)
+        if poi is None:
+            return
+        try:
+            enforce_ai_rate_limit(poi.user_id, "categorize", limit=50)
+        except HTTPException:
+            return  # limite diário atingido — não é erro, só não sugere agora
+
+        category_slugs = list(db.scalars(select(Category.slug)).all())
+        result = ai_agents.categorize_poi(poi.name, poi.description, poi.address, category_slugs)
+        if result is None or result.category_slug not in category_slugs:
+            return
+
+        poi.ai_category_slug = result.category_slug
+        poi.ai_icon_name = result.icon_name
+        poi.ai_color_hex = result.color_hex
+        poi.ai_confidence = result.confidence
+        poi.ai_reasoning = result.reasoning
+        db.commit()
+    except Exception:
+        logger.exception("Falha ao rodar o POICategorizerAgent em segundo plano")
+    finally:
+        db.close()
 
 
 def _with_relations(stmt):
@@ -43,6 +79,11 @@ def _serialize(poi: POI) -> dict:
         "lng": point.x,
         "is_public": poi.is_public,
         "icon_name": poi.icon_name,
+        "ai_category_slug": poi.ai_category_slug,
+        "ai_icon_name": poi.ai_icon_name,
+        "ai_color_hex": poi.ai_color_hex,
+        "ai_confidence": poi.ai_confidence,
+        "ai_reasoning": poi.ai_reasoning,
         "created_at": poi.created_at,
         "updated_at": poi.updated_at,
         "media": poi.media,
@@ -134,7 +175,7 @@ def get_poi(poi_id: uuid.UUID, user_id: uuid.UUID | None = None, db: Session = D
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(verify_internal_secret)],
 )
-def create_poi(payload: POICreate, db: Session = Depends(get_db)):
+def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.get(Category, payload.category_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category_id")
 
@@ -152,6 +193,7 @@ def create_poi(payload: POICreate, db: Session = Depends(get_db)):
     db.add(poi)
     db.commit()
     db.refresh(poi)
+    background_tasks.add_task(_run_categorizer_background, poi.id)
     return _to_read(poi)
 
 

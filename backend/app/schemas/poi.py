@@ -63,6 +63,13 @@ class POIRead(BaseModel):
     lng: float
     is_public: bool
     icon_name: str | None
+    # Sugestão pendente do POICategorizerAgent (Sprint 5) — não-nula só
+    # enquanto o dono não aceitou/dispensou. Ver SPRINTS.md.
+    ai_category_slug: str | None = None
+    ai_icon_name: str | None = None
+    ai_color_hex: str | None = None
+    ai_confidence: float | None = None
+    ai_reasoning: str | None = None
     created_at: datetime
     updated_at: datetime
     media: list[POIMediaRead] = []

@@ -27,3 +27,18 @@ def cache_set(key: str, value: str, ttl_seconds: int) -> None:
         _get_client().setex(key, ttl_seconds, value)
     except redis.RedisError:
         pass
+
+
+def increment_with_ttl(key: str, ttl_seconds: int) -> int | None:
+    """Incrementa um contador, iniciando o TTL só na primeira vez (janela
+    deslizante simples) — usado pelo rate limiting dos agentes de IA.
+    Retorna `None` se o Redis estiver fora do ar, pra chamador decidir o que
+    fazer (aqui: nunca bloquear o usuário por causa do cache)."""
+    try:
+        client = _get_client()
+        count = client.incr(key)
+        if count == 1:
+            client.expire(key, ttl_seconds)
+        return count
+    except redis.RedisError:
+        return None
