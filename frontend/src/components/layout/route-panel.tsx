@@ -30,7 +30,10 @@ export function RoutePanel({ isAuthenticated }: RoutePanelProps) {
   const stopNavigating = useMapStore((s) => s.stopNavigating);
 
   const [showAppleMaps, setShowAppleMaps] = useState(false);
-  useEffect(() => setShowAppleMaps(isApplePlatform()), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- precisa ficar no efeito (só roda no cliente): checar a plataforma durante o render quebraria o SSR
+    setShowAppleMaps(isApplePlatform());
+  }, []);
 
   const {
     data: route,

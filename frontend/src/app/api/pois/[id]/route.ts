@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { ApiError, backendFetch, getSessionUserId, requireSessionUserId } from "@/lib/api-server";
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, props: RouteParams) {
+  const params = await props.params;
   try {
     const userId = await getSessionUserId();
     const query = userId ? `?user_id=${userId}` : "";
@@ -22,7 +23,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(request: Request, props: RouteParams) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
     const body = await request.json();
@@ -41,7 +43,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(_request: Request, props: RouteParams) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
 

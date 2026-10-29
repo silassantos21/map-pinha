@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { ApiError, backendFetch, requireSessionUserId } from "@/lib/api-server";
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+export async function POST(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
 
@@ -18,7 +19,8 @@ export async function POST(_request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
 

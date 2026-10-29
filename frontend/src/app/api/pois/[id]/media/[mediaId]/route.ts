@@ -4,8 +4,9 @@ import { ApiError, backendFetch, requireSessionUserId } from "@/lib/api-server";
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string; mediaId: string } },
+  props: { params: Promise<{ id: string; mediaId: string }> }
 ) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
 

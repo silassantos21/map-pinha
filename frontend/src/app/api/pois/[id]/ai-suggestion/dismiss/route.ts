@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { ApiError, backendFetch, requireSessionUserId } from "@/lib/api-server";
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export async function POST(_request: Request, { params }: RouteParams) {
+export async function POST(_request: Request, props: RouteParams) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
 

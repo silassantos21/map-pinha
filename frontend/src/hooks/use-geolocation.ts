@@ -15,6 +15,7 @@ export function useGeolocation() {
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- precisa ficar no efeito (só roda no cliente): checar `navigator` durante o render quebraria o SSR
       setState({ position: null, error: "Geolocalização não suportada" });
       return;
     }

@@ -90,6 +90,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     categories?.find((c) => c.id === selectedCategoryId)?.slug === "outros";
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- limpa o ícone livre escolhido quando sai da categoria "outros", intencional
     if (!isOutrosCategory) setIconName(null);
   }, [isOutrosCategory]);
 
@@ -130,6 +131,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         categoryId: editingPoi.category_id,
         isPublic: editingPoi.is_public,
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado local com o POI carregado ao entrar em modo de edição
       setIconName(editingPoi.icon_name);
       setExistingMedia(editingPoi.media);
     }

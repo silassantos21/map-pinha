@@ -143,6 +143,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   const header = (
     <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1">
       <div className="flex min-w-0 items-center gap-1.5">
+        {/* eslint-disable-next-line react-hooks/static-components -- CategoryIcon vem de um registro fixo (ICON_REGISTRY), referência estável */}
         <CategoryIcon className="size-4 shrink-0" style={{ color: categoryColor }} aria-hidden />
         <p className="truncate font-display text-sm text-foreground">{poi.name}</p>
         {isAuthenticated && (
@@ -382,6 +383,7 @@ function AiSuggestionBanner({
 
   return (
     <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 p-2">
+      {/* eslint-disable-next-line react-hooks/static-components -- SuggestedIcon vem de um registro fixo (ICON_REGISTRY), referência estável */}
       <SuggestedIcon
         className="mt-0.5 size-4 shrink-0"
         style={{ color: poi.ai_color_hex ?? "var(--primary)" }}

@@ -79,6 +79,7 @@ export function MapView({ userId }: MapViewProps) {
   // mais reaparece, mesmo que uma atualização de posição falhe mais tarde.
   const [hasResolvedLocation, setHasResolvedLocation] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- trava (nunca volta a false): não é um valor derivável do render atual
     if (position || locationError) setHasResolvedLocation(true);
   }, [position, locationError]);
 

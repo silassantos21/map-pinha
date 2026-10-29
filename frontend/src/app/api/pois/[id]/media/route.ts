@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { ApiError, backendFetch, requireSessionUserId } from "@/lib/api-server";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const userId = await requireSessionUserId();
     const body = await request.json();
