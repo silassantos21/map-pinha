@@ -3,7 +3,6 @@ import type {
   LatLng,
   MapBounds,
   Poi,
-  Recommendation,
   RouteHistoryEntry,
   RouteProfile,
   RouteResult,
@@ -143,25 +142,6 @@ export async function generatePoiBio({
   return data.bio;
 }
 
-// NearbyRecommenderAgent (Sprint 5) — painel "Explorar".
-export async function fetchRecommendations(origin: LatLng): Promise<Recommendation[]> {
-  const params = new URLSearchParams({ lat: String(origin.lat), lng: String(origin.lng) });
-  const res = await fetch(`/api/ai/recommendations?${params.toString()}`);
-  if (!res.ok) throw new Error("Não foi possível carregar as recomendações");
-  return res.json();
-}
-
-export async function submitAiFeedback(params: {
-  poiId: string;
-  agent: "categorizer" | "recommender";
-  useful: boolean;
-}): Promise<void> {
-  await fetch("/api/ai/feedback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ poi_id: params.poiId, agent: params.agent, useful: params.useful }),
-  });
-}
 
 export async function acceptAiSuggestion(poiId: string): Promise<void> {
   await fetch(`/api/pois/${poiId}/ai-suggestion/accept`, { method: "POST" });

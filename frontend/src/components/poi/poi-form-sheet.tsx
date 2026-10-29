@@ -599,7 +599,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
           {submitError && <p className="text-xs text-destructive">{submitError}</p>}
 
           <SheetFooter>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" variant="accent" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : isEditMode ? "Salvar alterações" : "Salvar POI"}
             </Button>
           </SheetFooter>

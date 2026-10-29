@@ -23,8 +23,10 @@ import { useMapStore } from "@/stores/map-store";
 
 const DEFAULT_CENTER: [number, number] = [-23.5505, -46.6333]; // São Paulo
 
+// Azul do círculo central do pin da logo — faz o marcador "você está aqui"
+// ecoar literalmente o próprio ícone do app, em vez da cor de marca genérica.
 const USER_MARKER_ICON = L.divIcon({
-  html: '<div style="width:18px;height:18px;border-radius:9999px;background:var(--primary);border:3px solid white;box-shadow:0 0 0 4px rgba(139,92,246,0.3);"></div>',
+  html: '<div style="width:18px;height:18px;border-radius:9999px;background:var(--brand-sky);border:3px solid white;box-shadow:0 0 0 4px rgba(42,145,211,0.3);"></div>',
   className: "",
   iconSize: [18, 18],
   iconAnchor: [9, 9],

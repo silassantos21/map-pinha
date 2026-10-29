@@ -65,7 +65,13 @@ def generate_poi_bio(
     try:
         response = get_ai_client().messages.create(
             model=AI_MODEL,
-            max_tokens=300,
+            # 300 cortava a resposta na metade: o Sonnet 5.5 usa "extended
+            # thinking" por padrão e esse raciocínio consome tokens do mesmo
+            # orçamento de max_tokens — com 300, o pensamento sozinho já
+            # esgotava o limite e sobrava pouco (ou nada) pro texto final.
+            # 1024 dá espaço de sobra pro raciocínio + as 2-3 frases pedidas
+            # (mesmo valor já usado em categorize_poi/recommend_nearby).
+            max_tokens=1024,
             system=(
                 "Você é um copywriter especialista em apps de mapeamento gamificados, com "
                 "linguagem jovem, extrovertida e divertida — como se estivesse descrevendo um "

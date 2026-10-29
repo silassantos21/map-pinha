@@ -123,8 +123,8 @@
 - [ ] Implementar POICategorizerAgent: integração Claude API, lógica de mapeamento de categoria para ícone do sistema
 - [ ] Implementar POIBioWriterAgent: endpoint /pois/generate-bio, integração com formulário de criação via botão
 - [ ] Implementar NearbyRecommenderAgent: endpoint /pois/recommendations com contexto de localização e histórico
-- [ ] Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões
-- [ ] Implementar feedback loop: usuário avalia sugestão (útil/não útil) para melhorar recomendações futuras
+- [ ] ~~Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões~~ — implementado na Sprint 5, **removido na Sprint 6 em 29/10/2026** a pedido do dono do projeto (não gostou da mecânica/funcionalidade); endpoint do agente (`NearbyRecommenderAgent`) segue no backend, só sem UI que o acione — ver `SPRINTS.md`
+- [ ] ~~Implementar feedback loop: usuário avalia sugestão (útil/não útil) para melhorar recomendações futuras~~ — removido junto com a UI acima (Sprint 6)
 - [ ] Adicionar indicador visual quando IA está processando (skeleton loader gamificado)
 - [ ] Implementar rate limiting nas chamadas à Claude API para controle de custos
 
@@ -132,7 +132,7 @@
 
 - 3 agentes de IA funcionando: categorizador, bio writer e recomendador
 - Celery worker deployado no Railway processando tarefas assíncronas
-- UI de recomendações 'Explorar' com cards de sugestões personalizadas
+- ~~UI de recomendações 'Explorar' com cards de sugestões personalizadas~~ — removida na Sprint 6 (ver acima)
 - Rate limiting e controle de custos da API Claude implementados
 
 ---
@@ -143,7 +143,7 @@
 
 - [ ] Implementar sistema de compartilhamento: gerar slug único para POI público, page de POI pública com SSR (SEO)
 - [ ] Criar página de perfil do usuário: seus POIs, estatísticas (total de pontos, km mapeados), avatar
-- [ ] Repaginar identidade visual com base na logo oficial "MaPinha": extrair paleta de cores da logo e aplicar de forma unificada nos temas de mapa, UI e componentes existentes
+- [x] Repaginar identidade visual com base na logo oficial "MaPinha": extrair paleta de cores da logo e aplicar de forma unificada nos temas de mapa, UI e componentes existentes
 - [ ] Adicionar animações Framer Motion: transições de página, entrada de POI cards, loading states gamificados
 - [ ] Implementar PWA: manifest.json, service worker para cache offline do mapa, ícone de instalação
 - [ ] Criar página de onboarding: tutorial interativo de 3 passos ao primeiro login

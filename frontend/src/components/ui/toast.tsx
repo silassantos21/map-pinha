@@ -22,7 +22,12 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
     <ToastPrimitive.Viewport
       data-slot="toast-viewport"
       className={cn(
-        "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
+        // z-[70]: precisa ficar acima de qualquer Sheet/Dialog/AlertDialog (todos
+        // em z-50) — toast é notificação global e não pode sumir atrás de um
+        // modal aberto (ex: erro de validação enquanto o formulário de POI
+        // está aberto). Um valor fixo evita depender da ordem de montagem dos
+        // portais no DOM, que é o que causava o toast aparecer atrás do sheet.
+        "pointer-events-none fixed inset-x-4 bottom-4 z-[70] mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
         className
       )}
       {...props}

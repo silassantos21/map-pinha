@@ -139,7 +139,7 @@ export function RoutePanel({ isAuthenticated }: RoutePanelProps) {
           <Button
             type="button"
             size="sm"
-            variant={isNavigating ? "destructive" : "default"}
+            variant={isNavigating ? "destructive" : "accent"}
             onClick={isNavigating ? stopNavigating : startNavigating}
             disabled={!route}
           >

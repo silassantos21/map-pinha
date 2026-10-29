@@ -79,13 +79,3 @@ export interface RouteHistoryEntry {
   duration_s: number;
   created_at: string;
 }
-
-export interface Recommendation {
-  poi_id: string;
-  poi_name: string;
-  poi_lat: number;
-  poi_lng: number;
-  category_name: string;
-  reason: string;
-  priority_score: number;
-}

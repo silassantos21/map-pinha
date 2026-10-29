@@ -1,4 +1,4 @@
-export type MapThemeId = "cartoon" | "rpg" | "vintage" | "urbano" | "satelite";
+export type MapThemeId = "cartoon" | "rpg" | "urbano" | "satelite";
 
 export interface MapTheme {
   id: MapThemeId;
@@ -45,14 +45,6 @@ export const MAP_THEMES: Record<MapThemeId, MapTheme> = {
     tileUrl: `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png${stadiaKeyParam}`,
     attribution: stadiaAttribution,
     maxZoom: 20,
-  },
-  vintage: {
-    id: "vintage",
-    label: "Vintage",
-    accentClassName: "bg-map-vintage",
-    tileUrl: `https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg${stadiaKeyParam}`,
-    attribution: `&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noreferrer">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noreferrer">Stamen Design</a> ${osmAttribution}`,
-    maxZoom: 16,
   },
   satelite: {
     id: "satelite",

@@ -31,7 +31,7 @@ export function ThemeSwitcher() {
               {isActive && (
                 <motion.div
                   layoutId="active-map-theme"
-                  className="absolute inset-0 rounded-full border-2 border-foreground"
+                  className="absolute inset-0 rounded-full border-2 border-primary"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}

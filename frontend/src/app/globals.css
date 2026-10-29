@@ -13,33 +13,40 @@
 :root {
   --radius: 0.625rem;
 
-  /* Dark HUD gamer — paleta única por enquanto (ver SPRINTS.md Sprint 1) */
-  --background: #0b0e14;
+  /* Dark HUD gamer — paleta oficial extraída da logo "MaPinha" (ver SPRINTS.md
+     Sprint 6). Verde e laranja vêm direto da logo (fruto + pin); o "ink" navy
+     é o contorno do pin e dobra como texto sobre qualquer superfície colorida
+     (--primary-foreground/--accent-foreground), replicando o próprio contraste
+     que a logo já usa. --brand-sky é o azul do círculo central do pin. */
+  --brand-ink: #10263b;
+  --brand-sky: #2a91d3;
+
+  --background: #0e1824;
   --foreground: #e7e9ee;
-  --card: #141821;
+  --card: #16222f;
   --card-foreground: #e7e9ee;
-  --popover: #141821;
+  --popover: #16222f;
   --popover-foreground: #e7e9ee;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #1c2130;
+  --primary: #75ae4b;
+  --primary-foreground: var(--brand-ink);
+  --secondary: #1a2735;
   --secondary-foreground: #e7e9ee;
-  --muted: #1c2130;
+  --muted: #1a2735;
   --muted-foreground: #8b93a7;
-  --accent: #1c2130;
-  --accent-foreground: #e7e9ee;
+  --accent: #f2821e;
+  --accent-foreground: var(--brand-ink);
   --destructive: #ef4444;
   --border: rgb(255 255 255 / 10%);
   --input: rgb(255 255 255 / 15%);
-  --ring: #8b5cf6;
-  --sidebar: #0f1219;
+  --ring: #75ae4b;
+  --sidebar: #0b141d;
   --sidebar-foreground: #e7e9ee;
-  --sidebar-primary: #8b5cf6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1c2130;
+  --sidebar-primary: #75ae4b;
+  --sidebar-primary-foreground: var(--brand-ink);
+  --sidebar-accent: #1a2735;
   --sidebar-accent-foreground: #e7e9ee;
   --sidebar-border: rgb(255 255 255 / 10%);
-  --sidebar-ring: #8b5cf6;
+  --sidebar-ring: #75ae4b;
 
   /* Categorias de POI (MVP: 6 de 9 do POICategorizerAgent, ver docs/03_AI_AGENTS.md) */
   --category-alimentacao: #ff7a50;
@@ -51,10 +58,11 @@
   --category-status: #fb5b8d;
   --category-outros: #9ca3af;
 
-  /* Temas visuais do mapa (5, ver docs/04_TIMELINE.md Sprint 2) */
+  /* Temas visuais do mapa (4 — Vintage/Stamen Watercolor removido em
+     29/10/2026, legibilidade ruim do pin/rota por cima do aquarela — ver
+     SPRINTS.md Sprint 6) */
   --map-theme-cartoon: #ff9f4a;
   --map-theme-rpg: #8b5cf6;
-  --map-theme-vintage: #c9a66b;
   --map-theme-urbano: #64748b;
   --map-theme-satelite: #22d3ee;
 
@@ -90,6 +98,9 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-sky: var(--brand-sky);
+
   --color-category-alimentacao: var(--category-alimentacao);
   --color-category-comercio: var(--category-comercio);
   --color-category-saude: var(--category-saude);
@@ -101,7 +112,6 @@
 
   --color-map-cartoon: var(--map-theme-cartoon);
   --color-map-rpg: var(--map-theme-rpg);
-  --color-map-vintage: var(--map-theme-vintage);
   --color-map-urbano: var(--map-theme-urbano);
   --color-map-satelite: var(--map-theme-satelite);
 
