@@ -24,5 +24,8 @@ class Settings(BaseSettings):
     # Agentes de IA (Sprint 5) — categorizador, escritor de bio, recomendador.
     anthropic_api_key: str = ""
 
+    # Sentry (rastreamento de erros) — sentry.io > projeto backend > Settings > Client Keys (DSN)
+    sentry_dsn: str = ""
+
 
 settings = Settings()

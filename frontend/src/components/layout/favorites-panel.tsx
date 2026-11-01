@@ -3,6 +3,7 @@
 import { Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MotionListItem } from "@/components/ui/motion-list-item";
 import {
   Sheet,
   SheetContent,
@@ -59,18 +60,19 @@ export function FavoritesPanel({ isAuthenticated }: FavoritesPanelProps) {
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4">
-          {favorites.map((poi) => (
-            <button
-              key={poi.id}
-              type="button"
-              onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
-              className="rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
-            >
-              <p className="text-sm font-medium text-foreground">{poi.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
-              </p>
-            </button>
+          {favorites.map((poi, index) => (
+            <MotionListItem key={poi.id} index={index}>
+              <button
+                type="button"
+                onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
+              >
+                <p className="text-sm font-medium text-foreground">{poi.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
+                </p>
+              </button>
+            </MotionListItem>
           ))}
         </div>
       </SheetContent>

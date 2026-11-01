@@ -49,6 +49,28 @@ export interface Poi {
   reactions: PoiReaction[];
 }
 
+/** Versão pública de um POI (página de compartilhamento `/p/[slug]`,
+ * Sprint 6) — espelha `POIPublicRead` do backend: sem `user_id` cru nem
+ * campos de sugestão de IA, com nome/ícone/cor da categoria e nome/avatar
+ * do dono já resolvidos. */
+export interface PoiPublic {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  address: string | null;
+  lat: number;
+  lng: number;
+  icon_name: string | null;
+  category_name: string;
+  category_icon_name: string;
+  category_color_hex: string;
+  owner_name: string | null;
+  owner_avatar_url: string | null;
+  created_at: string;
+  media: PoiMedia[];
+}
+
 export interface MapBounds {
   minLat: number;
   minLng: number;
@@ -78,4 +100,12 @@ export interface RouteHistoryEntry {
   distance_m: number;
   duration_s: number;
   created_at: string;
+}
+
+/** Estatísticas da página de perfil (Sprint 6) — "pontos" = pontos de
+ * interesse cadastrados (não é um sistema de XP/pontuação); "km mapeados" =
+ * soma das distâncias de todas as rotas que o usuário já calculou no app. */
+export interface UserStats {
+  total_pois: number;
+  total_km: number;
 }

@@ -423,7 +423,13 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
                   placeholder="Longitude"
                   className="min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                 />
-                <Button type="button" size="sm" variant="outline" onClick={applyLatLng}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={applyLatLng}
+                  aria-label="Aplicar coordenadas"
+                >
                   <LocateFixed className="size-3.5" />
                 </Button>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { Howl } from "howler";
 import {
   CalendarDays,
@@ -12,6 +13,7 @@ import {
   Pause,
   Pencil,
   Play,
+  Share2,
   SmilePlus,
   Star,
   Trash2,
@@ -140,6 +142,27 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     }
   };
 
+  const shareLink = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const url = `${window.location.origin}/p/${poi.slug}`;
+    // Web Share API primeiro (mobile: abre o menu nativo de compartilhar);
+    // sem suporte (a maioria dos desktops), cai pra copiar o link.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: poi.name, url });
+      } catch {
+        // AbortError quando o usuário cancela o menu — não é erro de verdade
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.add({ title: "Link copiado", description: url, type: "success" });
+    } catch {
+      toast.add({ title: "Não foi possível copiar o link", type: "error" });
+    }
+  };
+
   const header = (
     <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1">
       <div className="flex min-w-0 items-center gap-1.5">
@@ -168,24 +191,44 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
         )}
       </div>
 
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                map.closePopup();
-              }}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-              aria-label="Fechar"
-            />
-          }
-        >
-          <X className="size-4" />
-        </TooltipTrigger>
-        <TooltipContent>Fechar</TooltipContent>
-      </Tooltip>
+      <div className="flex shrink-0 items-center gap-1">
+        {poi.is_public && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  onClick={shareLink}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Compartilhar"
+                />
+              }
+            >
+              <Share2 className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>Compartilhar</TooltipContent>
+          </Tooltip>
+        )}
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  map.closePopup();
+                }}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Fechar"
+              />
+            }
+          >
+            <X className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>Fechar</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 
@@ -247,6 +290,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
                   map.closePopup();
                   startRouteTo({ id: poi.id, name: poi.name, lat: poi.lat, lng: poi.lng });
                 }}
+                aria-label="Como chegar"
                 className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-foreground"
               />
             }
@@ -323,14 +367,17 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   // Sem mídia visual: cartão simples, vertical e compacto.
   if (visuals.length === 0) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.18 }}
         className="flex w-64 flex-col gap-3 rounded-xl border-2 bg-popover p-4 shadow-xl"
         style={{ borderColor: categoryColor }}
       >
         {header}
         {body}
         {footer}
-      </div>
+      </motion.div>
     );
   }
 
@@ -338,7 +385,10 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
   // ficar alto demais. O cabeçalho e o rodapé viram faixas cobrindo a largura
   // toda do card (inclusive acima/abaixo da imagem), não só ao lado dela.
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.18 }}
       className="flex max-h-96 w-104 max-w-[calc(100vw-2rem)] flex-col gap-3 rounded-xl border-2 bg-popover p-4 shadow-xl"
       style={{ borderColor: categoryColor }}
     >
@@ -352,7 +402,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
         </div>
       </div>
       {footer}
-    </div>
+    </motion.div>
   );
 }
 

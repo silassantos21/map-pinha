@@ -1,6 +1,7 @@
 "use client";
 
 import L from "leaflet";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
@@ -68,6 +69,25 @@ export function MapView({ userId }: MapViewProps) {
   const theme = MAP_THEMES[activeTheme];
   const { position, error: locationError } = useGeolocation();
   const setUserPosition = useMapStore((s) => s.setUserPosition);
+  const flyToPoi = useMapStore((s) => s.flyToPoi);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Deep-link de compartilhamento (Sprint 6): a página pública `/p/[slug]`
+  // manda o visitante de volta pra cá com `?poi=slug` quando ele clica em
+  // "ver no mapa completo" — resolve o slug num id/lat/lng e voa até lá, só
+  // na primeira renderização (não deve repetir se o usuário navegar depois).
+  useEffect(() => {
+    const slug = searchParams.get("poi");
+    if (!slug) return;
+    fetch(`/api/pois/by-slug/${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((poi) => {
+        if (poi) flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng });
+      })
+      .finally(() => router.replace("/", { scroll: false }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só na carga inicial da página, não a cada mudança de searchParams/router
+  }, []);
 
   // Espelha a posição no store — o painel de rota (RoutePanel) vive fora da
   // árvore do mapa e não tem como chamar `useGeolocation()` de novo sem abrir

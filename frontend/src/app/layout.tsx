@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Silkscreen } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ServiceWorkerRegister } from "@/components/layout/sw-register";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -22,6 +23,15 @@ export const metadata: Metadata = {
   title: "MaPinha",
   description:
     "Mapa interativo gamificado com pontos de interesse personalizados.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MaPinha",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0e1824",
 };
 
 export default function RootLayout({
@@ -40,6 +50,7 @@ export default function RootLayout({
             <Toaster>{children}</Toaster>
           </TooltipProvider>
         </QueryProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

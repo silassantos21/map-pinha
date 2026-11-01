@@ -6,6 +6,7 @@ import type {
   RouteHistoryEntry,
   RouteProfile,
   RouteResult,
+  UserStats,
 } from "@/types/poi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -76,6 +77,12 @@ export async function fetchFavorites(): Promise<Poi[]> {
 export async function fetchMyPois(): Promise<Poi[]> {
   const res = await fetch("/api/pois/mine");
   if (!res.ok) throw new Error("Falha ao carregar seus POIs");
+  return res.json();
+}
+
+export async function fetchUserStats(): Promise<UserStats> {
+  const res = await fetch("/api/users/me/stats");
+  if (!res.ok) throw new Error("Falha ao carregar estatísticas");
   return res.json();
 }
 

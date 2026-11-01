@@ -76,3 +76,28 @@ class POIRead(BaseModel):
     reactions: list[ReactionRead] = []
 
     model_config = {"from_attributes": True}
+
+
+class POIPublicRead(BaseModel):
+    """Versão da leitura de POI pra página pública (`/p/{slug}`, Sprint 6) —
+    mesma base do POIRead, mas sem `user_id` cru (troca por nome/avatar do
+    dono, já resolvidos via join) e com nome/ícone/cor da categoria embutidos,
+    pra a página não precisar de uma segunda chamada só pra exibir isso."""
+
+    id: uuid.UUID
+    name: str
+    slug: str
+    description: str | None
+    address: str | None
+    lat: float
+    lng: float
+    icon_name: str | None
+    category_name: str
+    category_icon_name: str
+    category_color_hex: str
+    owner_name: str | None
+    owner_avatar_url: str | None
+    created_at: datetime
+    media: list[POIMediaRead] = []
+
+    model_config = {"from_attributes": True}

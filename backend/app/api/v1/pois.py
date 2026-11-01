@@ -17,8 +17,9 @@ from app.models.category import Category
 from app.models.poi import POI
 from app.models.poi_media import MediaType, POIMedia
 from app.models.poi_reaction import PoiReaction
+from app.models.user import User
 from app.schemas.media import POIMediaCreate, POIMediaRead
-from app.schemas.poi import POICreate, POIRead, POIUpdate, ReactionToggle
+from app.schemas.poi import POICreate, POIPublicRead, POIRead, POIUpdate, ReactionToggle
 from app.services import ai_agents
 from app.utils.slug import slugify_unique
 
@@ -154,6 +155,50 @@ def list_pois(
 
     pois = db.scalars(stmt).unique().all()
     return [_to_read(poi) for poi in pois]
+
+
+@router.get(
+    "/pois/by-slug/{slug}",
+    response_model=POIPublicRead,
+    dependencies=[Depends(verify_internal_secret)],
+)
+def get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
+    """Busca por slug pra página pública de compartilhamento (`/p/{slug}` no
+    frontend, Sprint 6) — só devolve POIs com `is_public=True`; privados dão
+    404 igual a inexistentes, pra não vazar que o slug existe. Declarado
+    ANTES de `/pois/{poi_id}` no router: como "by-slug" não é um UUID válido,
+    se viesse depois o FastAPI casaria a rota pelo formato do path primeiro
+    e devolveria 422 (falha ao converter "by-slug" pra UUID) em vez de cair
+    nesta rota."""
+    row = db.execute(
+        select(POI, Category, User)
+        .join(Category, POI.category_id == Category.id)
+        .join(User, POI.user_id == User.id)
+        .options(selectinload(POI.media))
+        .where(POI.slug == slug, POI.is_public.is_(True))
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
+
+    poi, category, owner = row
+    point = to_shape(poi.location)
+    return POIPublicRead.model_validate({
+        "id": poi.id,
+        "name": poi.name,
+        "slug": poi.slug,
+        "description": poi.description,
+        "address": poi.address,
+        "lat": point.y,
+        "lng": point.x,
+        "icon_name": poi.icon_name,
+        "category_name": category.name,
+        "category_icon_name": category.icon_name,
+        "category_color_hex": category.color_hex,
+        "owner_name": owner.name,
+        "owner_avatar_url": owner.avatar_url,
+        "created_at": poi.created_at,
+        "media": poi.media,
+    })
 
 
 @router.get(

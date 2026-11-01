@@ -10,6 +10,18 @@ export function googleMapsUrl(origin: LatLng, destination: LatLng, profile: Rout
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
+/** Link "ver local" sem origem — pra contextos onde não temos (nem faz
+ * sentido pedir) a localização de quem está olhando, como a página pública
+ * de compartilhamento de um POI (Sprint 6). Deixa o próprio Google Maps
+ * decidir a origem (posição atual de quem abrir o link). */
+export function googleMapsSearchUrl(destination: LatLng): string {
+  const params = new URLSearchParams({
+    api: "1",
+    query: `${destination.lat},${destination.lng}`,
+  });
+  return `https://www.google.com/maps/search/?${params.toString()}`;
+}
+
 export function appleMapsUrl(origin: LatLng, destination: LatLng, profile: RouteProfile): string {
   const params = new URLSearchParams({
     saddr: `${origin.lat},${origin.lng}`,

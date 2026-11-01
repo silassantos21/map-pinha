@@ -3,6 +3,7 @@
 import { History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MotionListItem } from "@/components/ui/motion-list-item";
 import {
   Sheet,
   SheetContent,
@@ -55,26 +56,27 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4">
-          {history.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() =>
-                startRouteTo({
-                  id: entry.poi_id,
-                  name: entry.poi_name,
-                  lat: entry.poi_lat,
-                  lng: entry.poi_lng,
-                })
-              }
-              className="rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
-            >
-              <p className="text-sm font-medium text-foreground">{entry.poi_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {(entry.distance_m / 1000).toFixed(1)} km ·{" "}
-                {Math.max(1, Math.round(entry.duration_s / 60))} min
-              </p>
-            </button>
+          {history.map((entry, index) => (
+            <MotionListItem key={entry.id} index={index}>
+              <button
+                type="button"
+                onClick={() =>
+                  startRouteTo({
+                    id: entry.poi_id,
+                    name: entry.poi_name,
+                    lat: entry.poi_lat,
+                    lng: entry.poi_lng,
+                  })
+                }
+                className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
+              >
+                <p className="text-sm font-medium text-foreground">{entry.poi_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(entry.distance_m / 1000).toFixed(1)} km ·{" "}
+                  {Math.max(1, Math.round(entry.duration_s / 60))} min
+                </p>
+              </button>
+            </MotionListItem>
           ))}
         </div>
       </SheetContent>

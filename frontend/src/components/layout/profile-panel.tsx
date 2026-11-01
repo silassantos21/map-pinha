@@ -1,0 +1,141 @@
+"use client";
+
+import { Sparkles, UserRound } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { MotionListItem } from "@/components/ui/motion-list-item";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCategories } from "@/hooks/use-categories";
+import { useMyPois } from "@/hooks/use-my-pois";
+import { useUserStats } from "@/hooks/use-user-stats";
+import { useMapStore } from "@/stores/map-store";
+
+interface ProfilePanelProps {
+  isAuthenticated: boolean;
+  userName?: string | null;
+  userAvatarUrl?: string | null;
+}
+
+/** Painel "Perfil" (Sprint 6) — avatar + nome + estatísticas no topo, lista
+ * de "Meus POIs" embaixo (era um painel à parte, `my-pois-panel.tsx`; juntei
+ * os dois porque o pedido original — "seus POIs, estatísticas, avatar" — é
+ * essencialmente este painel com uma cabeça nova, e ter dois botões
+ * parecidos no HUD pra "ver meus POIs" ia confundir mais que ajudar). Segue
+ * o mesmo padrão de overlay responsivo (`Sheet`) dos demais painéis, não
+ * uma rota/página separada — decisão de arquitetura registrada desde o
+ * Sprint 1 (ver SPRINTS.md).
+ */
+export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: ProfilePanelProps) {
+  const { data: myPois = [] } = useMyPois(isAuthenticated);
+  const { data: categories } = useCategories();
+  const { data: stats } = useUserStats(isAuthenticated);
+  const flyToPoi = useMapStore((s) => s.flyToPoi);
+
+  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <Sheet>
+      <Tooltip>
+        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
+          <SheetTrigger
+            render={
+              <Button
+                size="icon-lg"
+                variant="secondary"
+                className="pointer-events-auto rounded-full shadow-lg"
+              />
+            }
+          >
+            <UserRound />
+            <span className="sr-only">Abrir perfil</span>
+          </SheetTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="left">Perfil</TooltipContent>
+      </Tooltip>
+
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle className="font-display">Perfil</SheetTitle>
+          <SheetDescription className="sr-only">
+            Seu avatar, estatísticas e POIs cadastrados.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex flex-col gap-4 px-4">
+          <div className="flex items-center gap-3">
+            {userAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google (host externo, sem domínio fixo configurado em next.config.mjs)
+              <img
+                src={userAvatarUrl}
+                alt=""
+                className="size-12 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <UserRound className="size-5 text-muted-foreground" />
+              </span>
+            )}
+            <p className="truncate font-display text-base text-foreground">{userName ?? "Você"}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-border bg-card p-3 text-center">
+              <p className="font-display text-xl text-primary">{stats?.total_pois ?? "–"}</p>
+              <p className="text-[11px] text-muted-foreground">pontos cadastrados</p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-3 text-center">
+              <p className="font-display text-xl text-primary">
+                {stats ? stats.total_km.toLocaleString("pt-BR") : "–"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">km mapeados</p>
+            </div>
+          </div>
+
+          <p className="text-xs font-medium text-muted-foreground">
+            {myPois.length > 0
+              ? `${myPois.length} POI(s) cadastrado(s) por você — toque pra voar até eles.`
+              : 'Você ainda não cadastrou nenhum POI. Toque no "+" pra criar o primeiro.'}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 overflow-y-auto px-4">
+          {myPois.map((poi, index) => (
+            <MotionListItem key={poi.id} index={index}>
+              <button
+                type="button"
+                onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground">{poi.name}</p>
+                  {poi.ai_category_slug && (
+                    <span
+                      className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                      title="A IA sugeriu uma categoria diferente pra esse POI — abra o pino no mapa pra ver"
+                    >
+                      <Sparkles className="size-2.5" /> sugestão
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
+                </p>
+              </button>
+            </MotionListItem>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

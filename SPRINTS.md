@@ -58,7 +58,7 @@ Cada sprint tem três seções próprias, atualizadas conforme avançamos:
 | Conta Cloudflare + bucket R2 | ✅ Você tem | Agora (upload de mídia, ainda nesta sprint) |
 | Anthropic API Key | ✅ Você tem | Sprint 5 (pode preencher com antecedência) |
 | Domínio customizado | ⏳ Não levantado | Sprint 6 (opcional) |
-| Conta Sentry | ⏳ Não levantado | Sprint 6 (opcional) |
+| Conta Sentry | ✅ Você tem | Sprint 6 — feito em 30/10/2026 |
 | Giphy API Key | ⏳ Não levantado | Opcional — MVP usa URL externa de GIF, sem key |
 | Stadia Maps / MapTiler API Key | ⏳ Não levantado | Opcional — tema padrão usa CartoDB, sem key |
 
@@ -578,22 +578,22 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 
 ## Sprint 6 — Compartilhamento, Polimento Visual e Deploy Final
 
-**Status:** 🔄 Em andamento (4/14) · **Duração estimada:** 10 dias
+**Status:** 🔄 Em andamento (12/14) · **Duração estimada:** 10 dias
 
 ### Tarefas
 - [x] **Upgrade Next.js 14 → 16** (resolver CVEs críticas, inclusive 2 de RCE — ver "Pendências de Segurança" no topo deste arquivo), antes de qualquer deploy público — feito em 28/10/2026, ver Notas abaixo
 - [x] ~~Receber a logo oficial do app ("MaPinha") e aplicar nos pontos básicos de branding~~ — feito antecipadamente em 28/10/2026, ver Notas abaixo
 - [x] Repaginar identidade visual com base na logo oficial: extrair paleta de cores da logo e aplicar de forma unificada nos temas de mapa, UI e componentes existentes — feito em 29/10/2026, ver Notas
 - [x] **Rodada de validação visual sua (29/10/2026):** removido painel "Explorar" (mecânica não aprovada) e tema de mapa "Vintage" (legibilidade ruim), corrigidos 2 bugs reais encontrados no teste (toast atrás do dialog, descrição da IA cortada pela metade) — ver Dificuldades e Notas
-- [ ] Implementar sistema de compartilhamento: gerar slug único para POI público, page de POI pública com SSR (SEO)
-- [ ] Criar página de perfil do usuário: seus POIs, estatísticas (total de pontos, km mapeados), avatar
-- [ ] Adicionar animações Framer Motion: transições de página, entrada de POI cards, loading states gamificados
-- [ ] Implementar PWA: manifest.json, service worker para cache offline do mapa, ícone de instalação
-- [ ] Criar página de onboarding: tutorial interativo de 3 passos ao primeiro login
-- [ ] Configurar Sentry: error tracking frontend e backend, alertas de erros críticos
-- [ ] Realizar testes E2E dos fluxos principais: criar POI com mídia, calcular rota, compartilhar link
-- [ ] Otimizações de performance: lazy loading de POIs fora do viewport, compressão de imagens, bundle analysis
-- [ ] Criar README detalhado com screenshots, GIFs e instruções de deploy (essencial para portfólio)
+- [x] Implementar sistema de compartilhamento: gerar slug único para POI público, page de POI pública com SSR (SEO) — feito em 30/10/2026, ver Notas
+- [x] Criar página de perfil do usuário: seus POIs, estatísticas (total de pontos, km mapeados), avatar — feito em 30/10/2026, ver Notas
+- [x] Adicionar animações Framer Motion: transições de página, entrada de POI cards, loading states gamificados — feito em 30/10/2026, ver Notas
+- [x] Implementar PWA: manifest.json, service worker para cache offline do mapa, ícone de instalação — feito em 30/10/2026, ver Notas
+- [x] Criar página de onboarding: tutorial interativo de 3 passos ao primeiro login — feito em 30/10/2026, ver Notas
+- [x] Configurar Sentry: error tracking frontend e backend, alertas de erros críticos — feito em 30/10/2026, ver Notas
+- [x] Realizar testes E2E dos fluxos principais: criar POI com mídia, calcular rota, compartilhar link — feito em 30/10/2026, ver Notas
+- [x] Otimizações de performance: lazy loading de POIs fora do viewport, compressão de imagens, bundle analysis — feito em 30/10/2026, ver Notas
+- [~] Criar README detalhado com screenshots, GIFs e instruções de deploy (essencial para portfólio) — texto completo (features, stack, arquitetura, setup local, testes, deploy) feito em 30/10/2026; **screenshots/GIFs pendentes** (preciso que você gere/forneça, não tenho navegador pra capturar), ver Notas
 - [ ] Deploy final revisado em produção com domínio customizado
 
 ### Entregáveis
@@ -679,4 +679,124 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 - **Teste não-destrutivo antes de aplicar:** esticar a arte 20% na vertical (só um teste em memória, nada salvo) e comparar lado a lado em 64px deixou claro que ajudava bastante — te mostrei a comparação e você aprovou aplicar nos arquivos.
 - **Aplicado em definitivo:** `MaPinha.png` (500×500 → **600×600**) e `MaPinha.jpg` (800×800 → **960×960**) — conteúdo esticado 20% na altura, canvas re-quadrado em torno do novo tamanho. `favicon.ico` e `apple-icon.png` regenerados a partir da arte já esticada. Cabeçalho e tela de loading não precisam de mudança de código (leem `/MaPinha.png` direto).
 - `next build` limpo depois da correção.
+
+---
+
+**Sistema de compartilhamento de POIs (30/10/2026)** — você pediu pra implementar tudo da Sprint 6 que não envolvesse deploy e desse pra testar local; este foi o primeiro item.
+
+- **Descoberta importante antes de implementar:** o campo `slug` já existia no modelo `POI` desde o início do projeto (único, indexado, gerado automaticamente em `slugify_unique()` na criação) — não precisei adicionar nada no schema do banco nem migration nova. O trabalho real era só expor isso publicamente.
+- **Backend:** novo endpoint `GET /pois/by-slug/{slug}` (schema `POIPublicRead`) — join com `Category` e `User` pra devolver nome/ícone/cor da categoria e nome/avatar do dono já resolvidos (a página pública não precisa de uma segunda chamada). Só devolve POIs com `is_public=True`; privado ou slug inexistente dão 404 igual — não vaza que o slug existe. Declarado **antes** de `/pois/{poi_id}` no router: "by-slug" não é um UUID válido, então se viesse depois o FastAPI casaria a rota por formato de path primeiro e devolveria 422 em vez de cair na rota certa.
+- **Frontend:** página pública `/p/[slug]` (Server Component, SSR de verdade, sem `"use client"`) com `generateMetadata` gerando Open Graph e Twitter Card (título, descrição, imagem de capa) — o link renderiza bonito quando colado no WhatsApp/Twitter/etc. `cache: "no-store"` na busca: o dono pode tornar o POI privado a qualquer momento, não queremos servir uma versão cacheada que já devia ter sumido.
+- **Botão "Compartilhar"** no popup do POI (`poi-card-popup.tsx`, só visível em POIs públicos) — usa a Web Share API no mobile (abre o menu nativo de compartilhar) e cai pra copiar o link na área de transferência no desktop.
+- **Deep-link de volta pro mapa completo:** a página pública tem um botão "Ver no mapa completo" que manda pra `/?poi={slug}`; o mapa principal lê esse parâmetro na carga inicial, resolve o slug (nova rota BFF pública `GET /api/pois/by-slug/[slug]`, sem exigir login) e voa até o POI — mesmo padrão de "voar até" já usado por busca/favoritos/"meus POIs" (`flyToPoi` do `map-store.ts`). Depois de voar, limpa o `?poi=` da URL.
+- **"Abrir no Google Maps"** usa um link novo (`googleMapsSearchUrl`, sem origem) — diferente do link de rota existente (que exige origem+destino), aqui não faz sentido pedir a localização de quem só está vendo o link compartilhado; o próprio Google Maps resolve a origem.
+- **Testado de ponta a ponta** contra o backend e o dev server reais (não só `build`): POI público → 200 com metadata OG correta; POI privado → 404; slug inexistente → 404; rota BFF do deep-link → 200. `type-check`, `lint` e `next build` limpos.
+- Deixei o `npm run dev` do frontend rodando em background pra você já poder testar ao vivo.
+
+---
+
+**Página de perfil do usuário (30/10/2026):**
+
+- **Interpretação das métricas** (a tarefa original só dizia "total de pontos, km mapeados", sem detalhar) — documentando a decisão pra você poder corrigir se não for o que imaginou: "pontos" = total de **pontos de interesse** cadastrados pelo usuário (contagem simples de POIs, não é um sistema de XP/pontuação — não existe isso no projeto); "km mapeados" = soma das distâncias de todas as rotas que o usuário já calculou no app (tabela `routes`, cache de rotas da Sprint 4 — cada "Calcular rota" vira uma linha ali). Ambas vêm de dados que já existiam, nenhuma tabela nova.
+- **Backend:** novo router `app/api/v1/users.py`, endpoint `GET /users/{user_id}/stats` — `COUNT` em `pois` + `SUM(distance_m)` em `routes`, os dois filtrados por `user_id`. Registrado em `main.py`.
+- **Decisão de arquitetura: juntei "perfil" com o painel "Meus POIs" existente**, em vez de criar os dois separados. O pedido original ("seus POIs, estatísticas, avatar") já é, na prática, uma versão enriquecida do que o `MyPoisPanel` fazia — ter dois botões parecidos no HUD ("Meus POIs" e "Perfil", ambos com ícone de usuário) ia confundir mais que ajudar. Renomeei `my-pois-panel.tsx` → `profile-panel.tsx` (componente `ProfilePanel`): avatar + nome + os 2 cards de estatística no topo, lista de POIs (igual já era) embaixo. Segue a mesma arquitetura de painel-overlay (`Sheet`) dos outros (Favoritos, Histórico de Rotas) em vez de virar uma rota/página separada — decisão de layout já registrada desde o Sprint 1.
+- Avatar/nome vêm direto da sessão do NextAuth (`session.user.image`/`.name`, já populados pelo login Google) — passados como prop do `app-shell.tsx` (Server Component) pro painel, sem chamada extra.
+- Testado contra o backend real: `GET /users/{id}/stats` devolvendo contagem e soma corretas pra um usuário com POIs e rotas cadastradas.
+- `type-check`, `lint` e `next build` limpos.
+
+---
+
+**Animações Framer Motion (30/10/2026):**
+
+- **Entrada de POI cards** — dois lugares: (1) o card do POI no popup do mapa (`poi-card-popup.tsx`) ganhou um fade + scale sutil ao abrir; (2) criei um componente reutilizável `MotionListItem` (fade + leve deslize de baixo pra cima, atraso escalonado por índice) aplicado nas 3 listas de POI do app — Favoritos, Minhas rotas e o novo painel de Perfil — em vez de duplicar a mesma configuração de animação 3 vezes.
+- **Transição de página** — a única página "de verdade" do app (não-overlay) é a pública `/p/[slug]`, criada mais cedo nesta sprint; ganhou um fade + deslize de entrada via um wrapper client (`FadeInPage`, necessário porque a página em si é Server Component e Framer Motion só roda no cliente). O resto do app é SPA com painéis `Sheet`, que já tinham transição própria (herdada do `base-ui`/`tw-animate-css` desde o início do projeto) — não duplicada aqui.
+- **Loading state gamificado** — o overlay "Localizando você..." trocou o `animate-pulse` (CSS) por um "pulo" de verdade na logo (sobe e desce em loop, como um pin procurando o lugar no mapa — conexão temática direta com a própria logo ser um pin) + fade de entrada/saída via `AnimatePresence` (antes só sumia instantaneamente quando a localização resolvia).
+- `type-check`, `lint` e `next build` limpos.
+
+---
+
+**PWA (30/10/2026):**
+
+- **Sem `next-pwa` nem outra lib** — depois do susto do upgrade do Next 16 (várias libs com problema de compatibilidade, ver Dificuldades mais acima), preferi não arriscar mais uma dependência de terceiro pra algo que dá pra fazer nativo com pouco código. Manifest via convenção própria do Next (`app/manifest.ts`, vira `/manifest.webmanifest` e já é linkado sozinho no `<head>`) e service worker escrito à mão (`public/sw.js`, Cache API pura).
+- **Escopo do service worker deliberadamente restrito a tiles do mapa** (Stadia Maps/ESRI) — decisão consciente de NÃO cachear o app shell (JS/CSS do Next.js): o nome desses arquivos muda a cada build, e cachear sem uma estratégia de invalidação coordenada arriscaria o app ficar preso servindo um bundle velho depois de um deploy — risco real por um ganho pequeno enquanto nem existe deploy ainda. Tiles são diferentes e seguros: a mesma URL (z/x/y) sempre devolve a mesma imagem, cache-first puro. Cobre o que o entregável pede — "cache offline parcial do mapa": áreas do mapa já visitadas continuam renderizando sem internet ou com conexão ruim.
+- **3 ícones gerados a partir da logo** (já com a proporção corrigida — ver "Correção de proporção" acima): `icon-192.png` e `icon-512.png` (transparentes, `purpose: "any"`) e `icon-maskable-512.png` (fundo navy da marca, logo ocupando ~65% do canvas pra sobreviver ao recorte circular/squircle que alguns SOs aplicam em ícones "maskable" — sem isso a pinha ficaria cortada feio no Android).
+- `viewport.themeColor` e `metadata.appleWebApp` adicionados em `layout.tsx` (barra de status/splash combinando com o tema escuro no iOS/Android).
+- Testado contra o dev server real: `/manifest.webmanifest` (200, JSON correto), `/sw.js` (200), os 3 ícones (200), e o `<link rel="manifest">` presente no HTML da home.
+- `type-check`, `lint` e `next build` limpos.
+
+---
+
+**Onboarding (30/10/2026):**
+
+- Tutorial de 3 passos (criar POI → enriquecer com mídia/IA → traçar rota e trocar tema) num `Dialog` com transição de passo via Framer Motion, barrinhas de progresso e botões "Pular"/"Próximo"/"Começar a explorar".
+- **"Primeiro login" rastreado via `localStorage`, por `userId`** (`mapinha-onboarding-seen:{userId}`) — não existe (nem precisava existir) um campo equivalente no backend: é puramente preferência de UI, sem necessidade de sincronizar entre dispositivos. Abre 1,2s depois do app montar (dá tempo do mapa/overlay de geolocalização assentarem antes, evita 2 modais competindo pela tela de uma vez) e só aparece pra quem está autenticado.
+- `type-check`, `lint` e `next build` limpos.
+
+---
+
+**Testes E2E (30/10/2026) — Playwright, cobrindo os 3 fluxos pedidos (criar POI com mídia, calcular rota, compartilhar link):**
+
+- **Sem `next-pwa`/mocks externos — Playwright puro**, já com os binários do Chromium em cache nesta máquina (de outro projeto), sem download grande. `npm run test:e2e` roda a suíte.
+- **O maior desafio técnico: autenticar sem automatizar o OAuth do Google de verdade.** Automatizar o consentimento real do Google é lento, frágil e exigiria uma conta de teste dedicada do Google. Em vez disso, o setup (`e2e/global-setup.ts`) forja uma sessão válida do Auth.js v5: sincroniza um usuário de teste no backend (mesmo endpoint `/auth/sync` que o login real chama) e assina um JWT **usando a própria função `encode` do `next-auth/jwt`** — não é um token inventado, é byte-a-byte o que o Auth.js geraria, usando o mesmo `salt` (nome do cookie de sessão, confirmado lendo o código-fonte do `@auth/core`). Não contorna nem simplifica nada do código de produção — só imita o resultado final de um login real.
+- **Bugs reais encontrados rodando os testes (não só o código dos testes em si):**
+  - **`e2e-test@mapinha.local` era rejeitado pelo backend** (`email-validator` trata `.local` como domínio reservado/especial) — troquei pra `example.com` (RFC 2606, domínio de documentação). Achado real sobre a validação de e-mail do backend, não um bug dos testes.
+  - **O onboarding que acabei de implementar bloqueava os testes autenticados** — usuário de teste é sempre "novo" pro Auth.js, então o tutorial abria sozinho e seu overlay (`z-50`) interceptava todos os cliques. Corrigido marcando `localStorage` como "já visto" pro usuário de teste dentro do próprio setup, do mesmo jeito que aconteceria num usuário real na segunda visita.
+  - **Suíte ficava instável (falhas intermitentes) só quando rodada em paralelo** (múltiplos workers do Playwright) — todos os testes apontam pro mesmo `next dev` local, que não é feito pra aguentar carga concorrente; sob 3-5 workers simultâneos, o deep-link `?poi=slug` às vezes não resolvia a tempo do timeout de 10s. Resolvido fixando `workers: 1` — é o cenário real de quem vai rodar isso localmente mesmo, não uma limitação dos testes.
+  - **Achei 2 botões sem `aria-label`** (ícone de "Como chegar" no popup do POI, botão de aplicar lat/lng no formulário) enquanto escrevia os testes — sem nome acessível, só tooltip visual (que não conta como nome pra leitor de tela nem pro Playwright). Corrigidos — é ganho de acessibilidade de verdade, não só facilidade pra testar.
+- **2 arquivos de teste:** `share-link.spec.ts` (sem login — página pública, 404 de slug inexistente/privado, deep-link de volta pro mapa), `poi-and-route.spec.ts` (autenticado — cria POI completo com upload de imagem de verdade pro R2, calcula rota com geolocalização mockada via Playwright e confirma distância/duração aparecendo).
+- **Os testes criam dados reais no banco/R2 local** (POI de teste, mídia) — sem mock de API, é o app de verdade rodando contra o Docker Compose local. Não tem limpeza automática depois de cada run; limpei manualmente os POIs gerados durante o desenvolvimento desta sprint. Rodar a suíte repetidamente vai acumular "E2E Test POI {timestamp}" no banco — aceitável pra ambiente local, mas vale lembrar.
+- **Pré-requisito pra rodar:** backend + Postgres (Docker Compose) e o frontend (`npm run dev`, ou o Playwright sobe sozinho via `webServer` se não estiver rodando) — `.env.local` precisa ter `NEXTAUTH_SECRET`/`INTERNAL_API_SECRET` (carregados via `process.loadEnvFile`, nativo do Node 20+, sem precisar da lib `dotenv`).
+- 6 testes, suíte inteira passando de ponta a ponta (rodei 2x seguidas pra confirmar que não é flake).
+
 - **Você reportou "ainda tá do mesmo jeito" e pediu pra reverter o esticamento.** Antes de desfazer, investiguei em vez de simplesmente obedecer: achei `.next/dev/cache/images` com `.webp` já cacheados de antes da correção — o otimizador de imagem do Next (ativo, sem `images.unoptimized` no `next.config.mjs`) guarda versões processadas por src+tamanho, e o dev server rodando continuamente nunca tinha invalidado esse cache depois da troca do arquivo. Limpei o cache (`rm -rf .next/dev/cache/images`) e pedi pra você confirmar com um refresh forçado antes de reverter. **Confirmado por você: era o cache mesmo** — o esticamento de 20% está correto e mantido, nenhuma reversão foi necessária.
+
+---
+
+**Otimizações de performance (30/10/2026):**
+
+- **"Lazy loading de POIs fora do viewport" já estava feito desde a Sprint 3** — `usePois` só busca POIs dentro do bounding box visível do mapa (`BoundsWatcher`, debounce de 200ms, com tolerância pra não rebuscar em micro-ajustes de posição), não existe um "carregar tudo de uma vez". Não precisei adicionar nada aqui — só confirmei lendo o código antes de dar como pendência.
+- **"Compressão de imagens" também já estava feito desde a Sprint 3** — toda imagem enviada já gera uma thumbnail WebP (400×400, qualidade 80) no backend (`generate_image_thumbnail`), e é a thumbnail (não o arquivo original) que aparece em todo lugar visível por padrão (card do POI no popup, galeria). O arquivo original só carrega quando o usuário clica explicitamente pra ver em tamanho grande (lightbox) — comportamento correto, não é desperdício.
+- **Bundle analysis — essa parte era mesmo nova, fiz de verdade:**
+  - `@next/bundle-analyzer` (a lib "padrão" da comunidade) **não é compatível com build via Turbopack** (usado por padrão no Next 16 deste projeto) — descobri isso só ao tentar rodar, não presumi. Removida de novo (não ficou como dependência morta). Usei o analisador nativo do Next 16 (`next analyze`, feito especificamente pra Turbopack) no lugar.
+  - Como o relatório nativo é pensado pra UI interativa (sem navegador aqui), medi do jeito mais confiável que tinha: rodei a build de **produção** de verdade (`next build` + `next start`) e usei o Playwright pra medir o JS real baixado pelo navegador em 2 rotas.
+  - **Achado concreto:** a home (`/`) carrega 1467 KB de JS; a página pública de POI (`/p/[slug]`) carrega só 781 KB — **686 KB a menos (47%)**. Os dois maiores chunks da home (Leaflet+Howler+clustering, 444 KB, e Zod, 186 KB) simplesmente não aparecem na página pública, confirmando que o code-splitting já funciona como deveria: o mapa é importado via `dynamic(..., { ssr: false })` só onde é usado (`AppShell`), e a página pública (escrita já pensando nisso, sem puxar `AppShell`/formulário/Leaflet) não paga esse custo.
+  - **Conclusão: não encontrei nada óbvio pra cortar.** Os chunks restantes (React/React DOM, ícones + base-ui, framework base do Next) são custo de baseline de qualquer app Next.js com essas libs — não achei gordura real pra tirar sem remover funcionalidade. Prefiro documentar isso como "já verificado, nada a cortar agora" a inventar uma otimização artificial só pra ter o que mostrar.
+
+---
+
+**Sentry — error tracking frontend e backend (30/10/2026):**
+
+- **O fluxo automático do Sentry ("agent-plugin" via `npx @sentry/agent-plugin install ...`) não se aplica a esse setup.** Ele tenta detectar um CLI de agente de IA instalado na máquina (`claude`, `cursor`, `codex`...) pra se auto-registrar como plugin; você usa o Claude Code só pela extensão do VSCode, sem o CLI standalone no PATH do Windows — confirmado checando `Get-Command claude` (não existe) antes de insistir no fluxo automático. Resultado: criamos os 2 projetos (frontend/backend) manualmente no dashboard do Sentry e eu integrei o SDK no código à mão.
+- **Os 2 DSNs foram validados de verdade antes de ir pro código** — enviei um evento de teste real pra cada endpoint (`POST /api/<project_id>/store/` com o header `X-Sentry-Auth`) e confirmei `HTTP 200` com `event_id` retornado nos dois, não só o formato da string.
+- **Frontend — `@sentry/nextjs@11.10.0`, convenção atual (App Router + Turbopack), sem o wizard interativo** (não tem como rodar um wizard que faz perguntas no terminal por aqui; montei a integração manualmente lendo o código-fonte instalado do pacote pra confirmar os nomes de arquivo certos, não presumi):
+  - `src/instrumentation-client.ts` — `Sentry.init()` do browser (substitui o antigo `sentry.client.config.ts`, deprecado nessa versão).
+  - `src/instrumentation.ts` — `register()` chamando `Sentry.init()` pros runtimes `nodejs`/`edge`, mais `export const onRequestError = Sentry.captureRequestError` (hook nativo do Next 16 pra capturar erros de servidor sem try/catch manual em cada rota).
+  - `next.config.mjs` envolvido com `withSentryConfig` — **detalhe não óbvio:** importar de `@sentry/nextjs` direto quebrava o build (`SyntaxError: Named export 'withSentryConfig' not found`, porque o Next carrega `next.config.mjs` de um jeito que resolve o pacote como CommonJS); o pacote expõe um subpath dedicado `@sentry/nextjs/config` exatamente pra esse arquivo, e foi isso que resolveu. Sem `SENTRY_AUTH_TOKEN` configurado, o upload de source maps no build é pulado silenciosamente — não bloqueia nem quebra nada, só faria os stack traces no Sentry mostrarem código minificado em vez do original (aceitável por agora, revisitar se virar um projeto com deploy de verdade).
+  - DSN em `NEXT_PUBLIC_SENTRY_DSN` (precisa do prefixo `NEXT_PUBLIC_` pra chegar no bundle do browser; reusado o mesmo valor pro client/server/edge já que é o mesmo projeto Sentry — DSN é uma chave pública por design, não é segredo).
+- **Backend — `sentry-sdk[fastapi]==2.73.0`** (extra `[fastapi]` garante a integração certa com Starlette) adicionado ao `requirements.txt`, `sentry_sdk.init()` chamado em `main.py` antes de criar o `FastAPI()` (só roda se `SENTRY_DSN` estiver setado — sem DSN, o app sobe normal sem o Sentry, nada quebra em ambientes sem a env var). DSN em `SENTRY_DSN` no `backend/.env` (já carregado automaticamente pro container via `env_file` no `docker-compose.yml`, não precisou mexer nele).
+- **Validação de ponta a ponta, não só "o build passou":**
+  - Backend: reconstruí a imagem Docker (`docker compose up -d --build backend`), confirmei o container saudável, e **disparei uma exceção de verdade dentro do container** (`RuntimeError` capturada via `sentry_sdk.capture_exception()` + `flush()`) — retornou um `event_id` real, confirmando que a captura e o envio funcionam, não só a inicialização.
+  - Frontend: `type-check`, `lint` e `build` de produção limpos. Pra confirmar o `onRequestError` funcionando de verdade (não só presumir pela doc), criei uma rota de API temporária que lança um erro, rodei `next build` + `next start` numa porta separada (3002, pra não bater com o `npm run dev` que você usa), bati nela e confirmei `HTTP 500` com o erro logado — sem nenhum warning do SDK no log (envio silencioso, como configurado com `disableLogger: true`). Rota de teste e build temporários removidos depois, build final limpo refeito sem eles.
+- **Os eventos de teste enviados durante a validação** (verificação de DSN + a exceção de teste no container) vão aparecer na aba Issues dos 2 projetos no Sentry com nomes como "Teste de verificação de DSN..." / "Teste de verificacao Sentry..." — são ruído esperado da validação, pode descartar/resolver eles por lá quando quiser.
+- ⚠️ **"Alertas de erros críticos" não foi configurado via API** — só tinha os DSNs (chave só de ingestão de evento, não dá pra gerenciar regras de alerta) em mãos, não um token de API da organização. O Sentry cria automaticamente uma regra padrão ("notificar por e-mail a cada issue novo") em todo projeto novo, então o alerta básico provavelmente já está ativo nos 2 projetos sem precisar de nada extra — mas vale você confirmar em cada projeto, **Settings → Alerts**, já que não consegui verificar isso programaticamente.
+- **Enquanto validava, achei e corrigi uma inconsistência de branding**: o título da API no Swagger (`/docs`, `FastAPI(title=...)`) ainda dizia "MapPin API" — não foi renomeado junto com o resto da marca pra "MaPinha" (28/10/2026), porque aquela troca foi escopada só pro que aparecia pro usuário final, e o título do Swagger não entrava nisso. Como o novo README linka pra `/docs`, corrigi pra "MaPinha API" por consistência.
+
+---
+
+**README detalhado (30/10/2026):**
+
+- **Reescrito do zero** — o `README.md` anterior era o scaffold genérico gerado automaticamente no início do projeto (nome antigo "MapPin", instruções de instalação genéricas tipo `pip install -r requirements.txt` direto na raiz, sem refletir a estrutura real `frontend/`/`backend/` nem o Docker Compose).
+- **Conteúdo levantado direto do código, não copiado dos docs de planejamento** (que ficaram desatualizados em alguns pontos — ex: `docs/00_OVERVIEW.md` ainda cita Celery, mas o Sprint 5 decidiu **não usar Celery** e rodar os agentes de IA de forma síncrona no próprio FastAPI, com Redis só para cache/rate limiting, não fila — confirmado lendo `app/api/v1/ai.py` e `app/core/cache.py` antes de escrever o README, pra não propagar uma informação errada pro texto de portfólio):
+  - Features: conferidas uma a uma contra o código (4 temas de mapa em `map-themes.ts`, 6 categorias seedadas em `62a9525f3720_seed_default_categories.py`, endpoints reais de cada router).
+  - Setup local: comandos testados reais (`docker compose up -d --build`, `docker compose exec backend alembic upgrade head` — confirmei que o `Dockerfile` do backend não roda migração automática, então esse passo manual é obrigatório).
+  - Variáveis de ambiente: tabela gerada a partir dos `.env.example` atuais de cada pacote (já incluindo `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN`, adicionados nesta mesma sprint).
+- **Screenshots e GIF de demo ficaram como placeholder** (seção "Screenshots" avisando que estão pendentes) — não tenho como navegar visualmente pelo app pra capturar. Quando você tiver as imagens, é só me passar os arquivos que eu termino essa seção.
+- **Removida a referência ao `docs/06_PRICING.md`** que estava na tabela de documentação do README antigo — é precificação de orçamento pro cliente ("uso interno", como o próprio arquivo já se descreve), não faz sentido ficar linkado num README público de portfólio.
+- Aproveitei pra corrigir a inconsistência de branding do título da API no Swagger (ver nota do Sentry acima), já que o novo README linka `/docs`.
+
+---
+
+**Rodada de validação visual durante a sessão de prints (30/10/2026):**
+
+- **Bug real encontrado por você:** os botões "Pular"/"Próximo" do `OnboardingDialog` ficavam colados na borda inferior do dialog, sem respiro. Causa: o `DialogFooter` customizado desse componente sobrescrevia o padding padrão (`p-4`) do footer do design system com `p-0`, zerando o espaçamento — a margem some, mas o fundo/borda do footer (que eu já tinha removido de propósito, pra um visual mais limpo sem a barrinha cinza separadora) continuava tirado. Corrigido removendo o `p-0` indevido (`frontend/src/components/layout/onboarding-dialog.tsx`), voltando ao padding padrão de 16px nas bordas — mantém o visual limpo (sem fundo/borda) mas com margem correta.
+- `type-check`, `lint` e `next build` limpos (`next.config.mjs` voltou ao estado original depois do experimento com o bundle-analyzer).
