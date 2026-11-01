@@ -57,14 +57,14 @@ Cada sprint tem três seções próprias, atualizadas conforme avançamos:
 | Google OAuth Client ID/Secret | ✅ Você tem | Agora (NextAuth.js, ainda nesta sprint) |
 | Conta Cloudflare + bucket R2 | ✅ Você tem | Agora (upload de mídia, ainda nesta sprint) |
 | Anthropic API Key | ✅ Você tem | Sprint 5 (pode preencher com antecedência) |
-| Domínio customizado | ⏳ Não levantado | Sprint 6 (opcional) |
+| Domínio customizado | ➖ Não vai usar (01/11/2026) | Sprint 6 — segue com subdomínio gratuito (Vercel/Render) |
 | Conta Sentry | ✅ Você tem | Sprint 6 — feito em 30/10/2026 |
 | Giphy API Key | ⏳ Não levantado | Opcional — MVP usa URL externa de GIF, sem key |
 | Stadia Maps / MapTiler API Key | ⏳ Não levantado | Opcional — tema padrão usa CartoDB, sem key |
 
 - ✅ Repositório conectado e primeiro push feito: https://github.com/silassantos21/map-pinha (branch `main`)
 - ✅ Design system definido com você: fonte display **Silkscreen** (pixel, legível), fonte corpo **Inter**, tema base **Dark HUD gamer** (só dark por agora — luz fica pra depois se quisermos, tokens já em CSS vars isolados para isso)
-- ⏸️ **Deploy Vercel/Railway pausado:** trial grátis do Railway acabou (deploys bloqueados até assinar o plano Hobby, ~US$5/mês). Decisão de pagar vs. migrar para Supabase/alternativa gratuita foi **adiada** — por ora seguimos o desenvolvimento 100% local via `docker compose` (já validado de ponta a ponta). Retomar essa decisão quando o projeto estiver pronto para expor publicamente.
+- ✅ **Decisão retomada em 01/11/2026: migrar pra stack 100% gratuita em vez de pagar Railway.** Backend (FastAPI) → Render, banco (Postgres+PostGIS) → Supabase, Redis → Upstash. Frontend continua na Vercel (já conectada, nunca foi o bloqueio). Sem domínio customizado por agora — segue nos subdomínios gratuitos de cada plataforma.
 - ⏳ **Pendente — você (sem pressa, não bloqueia):** confirmar se já criou o serviço PostgreSQL no Railway e se conseguiu habilitar PostGIS nele (risco técnico 2 do `docs/00_OVERVIEW.md`) — relevante só quando retomarmos o deploy
 - ✅ `backend/.env` e `frontend/.env.local` preenchidos com os valores reais (R2, Google OAuth, Anthropic, `NEXTAUTH_SECRET` gerado por mim)
 - ✅ Decisão: NextAuth.js só com **Google OAuth** por enquanto — o MVP (`docs/00_OVERVIEW.md`) só pede login Google; Credentials (email/senha) fica pra depois, se vocë quiser, evitando construir uma tela de cadastro/senha que ninguém pediu ainda
@@ -799,4 +799,39 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 **Rodada de validação visual durante a sessão de prints (30/10/2026):**
 
 - **Bug real encontrado por você:** os botões "Pular"/"Próximo" do `OnboardingDialog` ficavam colados na borda inferior do dialog, sem respiro. Causa: o `DialogFooter` customizado desse componente sobrescrevia o padding padrão (`p-4`) do footer do design system com `p-0`, zerando o espaçamento — a margem some, mas o fundo/borda do footer (que eu já tinha removido de propósito, pra um visual mais limpo sem a barrinha cinza separadora) continuava tirado. Corrigido removendo o `p-0` indevido (`frontend/src/components/layout/onboarding-dialog.tsx`), voltando ao padding padrão de 16px nas bordas — mantém o visual limpo (sem fundo/borda) mas com margem correta.
+
+---
+
+**Commit e push do lote completo da Sprint 6 (01/11/2026):** tudo que foi implementado desde "pode implementar tudo que não envolva deploy" (compartilhamento, perfil, animações, PWA, onboarding, Sentry, testes E2E, otimizações de performance, README) subiu pro `origin/main` num commit só (`a244586`), com sua confirmação explícita antes do push. 49 arquivos alterados.
+
+**Preparação de infraestrutura pro deploy gratuito (01/11/2026):**
+
+- **Decisão de hosting:** em vez de pagar o plano Hobby da Railway (~US$5/mês), migrar pra uma stack 100% gratuita — Supabase (Postgres+PostGIS), Upstash (Redis) e Render (FastAPI). Vercel continua pro frontend (já estava conectada, nunca foi o bloqueio). Sem domínio customizado por agora.
+- **`backend/Dockerfile` ajustado pra produção, sem quebrar o dev local:** o `CMD` agora é `uvicorn ... --port ${PORT:-8000}` (forma shell, não exec — precisa expandir a variável), sem `--reload`. A Render injeta a porta dinamicamente via `$PORT`; sem essa env var (ex: fora da Render), cai em 8000 por padrão. O `--reload` que existia ali era só pra dev — virou um `command:` específico no `docker-compose.yml`, que sobrescreve o `CMD` da imagem só no ambiente local. Testado dos dois jeitos: subi o `docker compose` normal (confirma hot-reload funcionando igual antes) e rodei um container avulso simulando exatamente o que a Render vai rodar (`-e PORT=9001`, sem reload) — os dois responderam `200` no health check.
+- **`backend/.env.example` documentado** com `ALLOWED_ORIGINS` (CORS — pydantic-settings espera uma lista em JSON, ex: `["https://mapinha.vercel.app"]`) e `ENVIRONMENT`, pra quando configurarmos as env vars na Render. Também corrigi um comentário desatualizado ali que ainda citava Celery pro `ANTHROPIC_API_KEY` (Sprint 5 decidiu não usar Celery — ver Decisões daquela sprint).
+- **Docker Desktop estava parado** (a máquina deve ter reiniciado desde a última sessão) — subi de novo antes de testar qualquer coisa. Aconteceu de novo no meio da sessão (motivo não investigado — pode ser alguma política de economia de energia do Windows derrubando o serviço), religuei de novo sem problema.
+
+---
+
+**Banco e cache em produção — Supabase + Upstash (01/11/2026):**
+
+- **Supabase (Postgres + PostGIS):** você criou o projeto, mas a conexão "direta" (`db.<ref>.supabase.co:5432`) **só resolve em IPv6** — achado real, não suposição: testei (`socket.getaddrinfo`) e só veio endereço `2600:...`, sem IPv4 nenhum. É uma mudança de política do Supabase (IPv4 virou add-on pago pra projetos novos). Como nem este ambiente local nem a Render (quase certamente) têm saída IPv6, a conexão direta nunca funcionaria em produção — descobri isso tentando conectar de verdade, antes de simplesmente confiar na string que a UI sugeriu primeiro.
+  - **Solução: Session Pooler** (Supavisor, IPv4, porta 5432, host `aws-0-us-east-2.pooler.supabase.com`, usuário no formato `postgres.<project-ref>`) — é o modo certo pra um processo de servidor de vida longa como o nosso (diferente do Transaction Pooler, pensado pra serverless/edge, que não suporta tudo que o SQLAlchemy usa por padrão).
+  - PostGIS habilitado (`CREATE EXTENSION IF NOT EXISTS postgis` — rodei direto por conexão Python, sem precisar da UI) e **migrações do Alembic aplicadas até `head`** (confirmei as 12 tabelas, incluindo as 3 do PostGIS e as `alembic_version`, e as 8 categorias seedadas).
+  - **Detalhe técnico ao rodar o Alembic com a senha do banco**: o `configparser` que o Alembic usa internamente trata `%` como início de interpolação (`%(nome)s`) — a senha tinha `%40` (percent-encoding do `@`), e isso quebrava com `ValueError: invalid interpolation syntax`. Resolvido escapando pra `%%40` só nessa variável de ambiente passada pro comando (o valor real da senha não muda, é só como o Alembic precisa recebê-la).
+- **Upstash (Redis):** confundimos as credenciais na primeira tentativa — a tela de "Connect" padrão mostra as credenciais da **API REST** (`UPSTASH_REDIS_REST_URL`/`TOKEN`, pra uso serverless/edge via HTTP), não a conexão Redis nativa que nosso backend usa (`redis-py` via `redis.from_url`). Achamos a string certa (`rediss://default:senha@host:6379`) na aba certa do painel. Testado com `PING`/`SET`/`GET` de verdade, não só a conexão abrindo.
+- **Nenhuma credencial de produção foi commitada** — tudo ficou só na conversa e vai direto pras env vars da Render no próximo passo, nunca em arquivo versionado.
+
+---
+
+**Backend em produção — Render (01/11/2026):**
+
+- **Web Service criado** (`mapinha-backend`, região Ohio — mesma do Supabase, menor latência), **Root Directory `backend`**, runtime Docker, plano Free.
+- **2 erros reais no formulário de criação, achados revisando os prints antes de você confirmar** (não depois de quebrar em produção):
+  - **Health Check Path** veio `/apiV1/health` (sem as barras entre "api"/"v1") em vez de `/api/v1/health` — teria feito a Render marcar o serviço como "unhealthy" mesmo funcionando, porque bateria num 404. Corrigido antes do deploy.
+  - **Dockerfile Path** veio só `backend/` (a pasta), mas esse campo específico precisa do caminho até o **arquivo** (diferente do "Docker Build Context Directory", que aí sim é só a pasta e estava certo) — corrigido pra `backend/Dockerfile`.
+- **11 variáveis de ambiente** coladas via "Add from .env" da própria Render: `DATABASE_URL` (pooler do Supabase), `REDIS_URL` (Upstash), as 5 do R2, `ANTHROPIC_API_KEY`, `INTERNAL_API_SECRET`, `SENTRY_DSN`, `ENVIRONMENT=production`. `ALLOWED_ORIGINS` ficou de fora por enquanto — falta a URL da Vercel pra saber o que liberar no CORS.
+- **Deploy funcionou de primeira** depois das 2 correções — validei de fora (não só confiando no log "Your service is live" da própria Render): `/api/v1/health` → 200, `/docs` → 200 com o título certo ("MaPinha API", confirma que o fix de branding também foi pra produção), e **`/api/v1/categories` retornando as categorias de verdade vindas do Supabase** — prova que a conexão com o banco funciona em produção, não só localmente.
+- URL pública: `https://mapinha-backend.onrender.com`
+- ⚠️ **Plano Free da Render "dorme" depois de inatividade** — primeira requisição depois de um tempo parado pode demorar uns 30-50s pra responder (cold start). Normal do tier gratuito, vale avisar quem for testar o link depois de um tempo sem uso.
 - `type-check`, `lint` e `next build` limpos (`next.config.mjs` voltou ao estado original depois do experimento com o bundle-analyzer).
