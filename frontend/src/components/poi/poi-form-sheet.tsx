@@ -288,14 +288,27 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         poiId = created.id;
       }
 
-      for (const item of pendingMedia) {
-        const { objectKey } = await uploadMediaFile(
-          item.file,
-          item.filename,
-          item.contentType,
-          item.mediaType,
-        );
-        await attachMediaToPoi(poiId, objectKey, item.mediaType);
+      try {
+        for (const item of pendingMedia) {
+          const { objectKey } = await uploadMediaFile(
+            item.file,
+            item.filename,
+            item.contentType,
+            item.mediaType,
+          );
+          await attachMediaToPoi(poiId, objectKey, item.mediaType);
+        }
+      } catch (mediaError) {
+        // O POI (campos de texto) já foi criado com sucesso acima — sem
+        // isso, uma falha de upload (ex: CORS mal configurado no R2, como
+        // aconteceu de verdade em produção) deixa um POI órfão sem mídia, e
+        // quem tenta de novo acaba criando um duplicado. Desfaz o POI recém
+        // criado só nesse caso (nunca em modo de edição, onde o POI já
+        // existia antes dessa chamada) antes de propagar o erro original.
+        if (!isEditMode) {
+          await fetch(`/api/pois/${poiId}`, { method: "DELETE" }).catch(() => {});
+        }
+        throw mediaError;
       }
 
       await queryClient.invalidateQueries({ queryKey: ["pois"] });

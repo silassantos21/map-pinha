@@ -2,6 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Silkscreen } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
+// Estilo padrão dos balões de cluster (react-leaflet-cluster usa o
+// leaflet.markercluster por baixo, mas não injeta o CSS dele sozinho) — sem
+// isso, um cluster de 2+ POIs próximos renderiza só o número, sem nenhum
+// estilo (bug real visto em produção: POIs na mesma coordenada ficavam
+// "invisíveis" no mapa, só o número do cluster flutuando sem fundo).
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ServiceWorkerRegister } from "@/components/layout/sw-register";
