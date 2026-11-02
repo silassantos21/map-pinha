@@ -23,7 +23,7 @@ export function SearchBar({ userId }: SearchBarProps) {
 
   return (
     <div className="relative min-w-0 flex-1">
-      <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-2 backdrop-blur-md">
+      <div className="pointer-events-auto flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-2 backdrop-blur-md sm:gap-2 sm:px-4">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
           type="text"

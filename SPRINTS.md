@@ -578,7 +578,7 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 
 ## Sprint 6 — Compartilhamento, Polimento Visual e Deploy Final
 
-**Status:** 🔄 Em andamento (12/14) · **Duração estimada:** 10 dias
+**Status:** ✅ Concluído (14/14) · **Duração estimada:** 10 dias
 
 ### Tarefas
 - [x] **Upgrade Next.js 14 → 16** (resolver CVEs críticas, inclusive 2 de RCE — ver "Pendências de Segurança" no topo deste arquivo), antes de qualquer deploy público — feito em 28/10/2026, ver Notas abaixo
@@ -593,14 +593,14 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 - [x] Configurar Sentry: error tracking frontend e backend, alertas de erros críticos — feito em 30/10/2026, ver Notas
 - [x] Realizar testes E2E dos fluxos principais: criar POI com mídia, calcular rota, compartilhar link — feito em 30/10/2026, ver Notas
 - [x] Otimizações de performance: lazy loading de POIs fora do viewport, compressão de imagens, bundle analysis — feito em 30/10/2026, ver Notas
-- [~] Criar README detalhado com screenshots, GIFs e instruções de deploy (essencial para portfólio) — texto completo (features, stack, arquitetura, setup local, testes, deploy) feito em 30/10/2026; **screenshots/GIFs pendentes** (preciso que você gere/forneça, não tenho navegador pra capturar), ver Notas
-- [ ] Deploy final revisado em produção com domínio customizado
+- [x] Criar README detalhado com screenshots, GIFs e instruções de deploy (essencial para portfólio) — texto reescrito em 30/10/2026, screenshots capturados e README finalizado em 01/11/2026, ver Notas
+- [x] ~~Deploy final revisado em produção com domínio customizado~~ — feito em 01/11/2026 sem domínio customizado (decisão sua), ver Notas
 
 ### Entregáveis
 - Sistema de compartilhamento de POIs com URLs públicas e SEO
 - Identidade visual unificada: paleta derivada da logo oficial aplicada de forma consistente em temas, header e UI geral
 - PWA instalável funcionando em mobile com cache offline parcial
-- Aplicação deployada em produção com domínio customizado
+- Aplicação deployada em produção (subdomínios gratuitos — sem domínio customizado, decisão sua em 01/11/2026)
 - README de portfólio com screenshots, demo GIF e documentação técnica completa
 - Monitoramento Sentry ativo em produção
 
@@ -834,4 +834,56 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 - **Deploy funcionou de primeira** depois das 2 correções — validei de fora (não só confiando no log "Your service is live" da própria Render): `/api/v1/health` → 200, `/docs` → 200 com o título certo ("MaPinha API", confirma que o fix de branding também foi pra produção), e **`/api/v1/categories` retornando as categorias de verdade vindas do Supabase** — prova que a conexão com o banco funciona em produção, não só localmente.
 - URL pública: `https://mapinha-backend.onrender.com`
 - ⚠️ **Plano Free da Render "dorme" depois de inatividade** — primeira requisição depois de um tempo parado pode demorar uns 30-50s pra responder (cold start). Normal do tier gratuito, vale avisar quem for testar o link depois de um tempo sem uso.
+
+---
+
+**Frontend em produção — Vercel, e deploy final fechado (01/11/2026):**
+
+- **Projeto Vercel criado ("mapinha"), mas o primeiro deploy nunca disparou sozinho** — o painel mostrava "No Production Deployment" mesmo com o repositório conectado. Investigamos junto (conferi se não era só um filtro escondendo os deploys na aba "Deployments" — não era, lista vazia mesmo sem filtro nenhum). Resolvido destravando com um push de verdade pro `main` (a atualização do `SPRINTS.md` documentando Supabase/Upstash/Render, que já estava pendente) — isso acionou o webhook do GitHub e o build rodou normal.
+- **Domínio público saiu diferente do nome do projeto:** `mapinha.vercel.app` já pertencia a outro projeto de outra pessoa (confirmei acessando e vendo que era um app completamente diferente) — domínios `.vercel.app` são globais, não por conta. A Vercel atribuiu `mapinha-iota.vercel.app` pro nosso projeto automaticamente.
+- **2 bugs reais encontrados no primeiro teste real em produção** (você testou e mandou o console do navegador — não eram hipóteses, eram erros de verdade acontecendo):
+  - **CORS bloqueando toda chamada do frontend pro backend** — esperado, já tínhamos deixado `ALLOWED_ORIGINS` de propósito pra depois (dependia de saber o domínio final da Vercel). Resolvido setando `ALLOWED_ORIGINS=["https://mapinha-iota.vercel.app"]` na Render.
+  - **Tiles do mapa com 401 (Stadia Maps)** — esse não era esperado, achado só ao ver o console de produção. Causa real: o Stadia libera requisição sem API key vindas de `localhost` (allowlist de desenvolvimento), por isso nunca tinha dado problema local; em produção, sem key, ele exige autenticação. Nunca tinha sido documentado em nenhum `.env.example` do projeto. Resolvido criando conta gratuita no Stadia, gerando uma API key e configurando `NEXT_PUBLIC_STADIA_API_KEY` na Vercel.
+  - **(Não deu erro, mas também precisava ser setado)** `NEXTAUTH_URL=https://mapinha-iota.vercel.app` — só dava pra saber o valor certo depois do primeiro deploy revelar o domínio final.
+  - Google OAuth: adicionado `https://mapinha-iota.vercel.app/api/auth/callback/google` nos Authorized redirect URIs e `https://mapinha-iota.vercel.app` nos Authorized JavaScript origins (Google Cloud Console), senão o login trava em produção mesmo com tudo mais certo.
+- **Validação de ponta a ponta depois de todo ajuste, não só "parece que funcionou":**
+  - CORS: testei preflight (`OPTIONS`) e `GET` de verdade com header `Origin: https://mapinha-iota.vercel.app` contra o backend na Render — `access-control-allow-origin` retornando certo nos dois.
+  - Stadia: tile real buscado com a API key → `200`.
+  - NextAuth: `/api/auth/providers` respondendo com `signinUrl`/`callbackUrl` já apontando pro domínio de produção certo (confirma que o `NEXTAUTH_URL` pegou).
+  - BFF → backend: rota pública (`/api/pois/by-slug/{slug}`) com slug inexistente retornando `404` de verdade (não `500` nem erro de proxy) — confirma que o segredo compartilhado (`INTERNAL_API_SECRET`) bate entre Vercel e Render.
+  - Página pública SSR (`/p/[slug]`) e `manifest.webmanifest` (PWA) também testados, respondendo certo.
+- **URLs de produção:**
+  - Frontend: `https://mapinha-iota.vercel.app`
+  - Backend: `https://mapinha-backend.onrender.com` (docs em `/docs`)
+- **Sprint 6 fecha em 13/14** — só falta a seção de screenshots/GIF do README, que você vai mandar separado num prompt específico.
+
+---
+
+**Screenshots reais e README final de portfólio (01/11/2026):**
+
+- **Achado real que mudou o plano:** os POIs já existentes no banco local (dados seus de verdade, de uso real do app) tinham conteúdo pessoal/informal demais pra um README público — um deles com foto de rosto e legenda estilo meme, outro chamado literalmente "Igreja Batista Aliança dos meme". Só percebi isso ao conferir o primeiro screenshot gerado (não presumi de antemão) — parei, te mostrei o problema e perguntei como prosseguir. Você escolheu criar dados de demonstração limpos em vez de usar os reais.
+- **Solução: conta de demonstração dedicada** (`Marina Castro`, sincronizada via o mesmo endpoint `/auth/sync` que o login real usa, sessão forjada com `encode()` do Auth.js — mesma técnica já validada nos testes E2E) com **4 POIs criados de verdade pela UI** (não inseridos direto no banco): Barbearia do Zé, Cantina da Vó, Parque das Mangueiras e Estúdio Rec, cada um com uma imagem gerada localmente (gradiente + nome + categoria, via Pillow — sem baixar nada da internet) e descrição própria.
+- **3 bugs reais achados rodando o script de captura** (Playwright dirigindo um Chromium de verdade contra o app local), cada um só descoberto na prática, não hipótese:
+  - **Toast de sucesso cobrindo o botão de criar o próximo POI** — depois de criar um POI, o toast "POI criado" ficava sobreposto por cima do botão "+" (mesmo canto da tela) tempo suficiente pra interceptar o clique seguinte. Resolvido esperando o toast sumir antes de abrir o próximo formulário.
+  - **Mapa inicial "vazio"**: no zoom padrão de carregamento (13, cidade inteira), os 4 POIs de demo — a ~300m uns dos outros — colapsavam num cluster pequeno demais pra aparecer bem no screenshot. Corrigido aproximando o zoom (cliques reais no botão "+" do mapa) até o mesmo nível usado quando se seleciona um POI (zoom 16) antes de capturar.
+  - **Falha silenciosa na criação do POI**: o formulário tem duas validações que só mostram um texto de erro discreto (sem toast) — posição não marcada, ou nenhuma mídia anexada — e meu primeiro script não checava por isso, só ficava esperando o toast de sucesso que nunca vinha. Precisei ler o código do formulário (`poi-form-sheet.tsx`) pra entender as duas condições reais de bloqueio.
+- **Idempotência**: o script checa `/api/pois/mine` antes de criar cada POI de demo, pra poder rodar de novo (ajustando só a parte de screenshot) sem duplicar dados — precisei disso na prática, porque rodei o script 3 vezes até acertar os bugs acima.
+- **Limpeza dos POIs de demo parciais** das tentativas com erro: descobri que `DELETE /pois/{id}` **não limpa os objetos no R2** sozinho (só remove a linha do banco) — o cleanup de verdade precisa chamar `DELETE /pois/{id}/media/{media_id}` primeiro pra cada mídia (que aí sim apaga do R2) antes de deletar o POI. Script de limpeza ajustado pra fazer os dois passos, nessa ordem.
+- **7 screenshots capturados** (desktop 1440×900 e mobile 390×844, validando responsividade no mesmo passe, como discutimos): mapa principal, formulário de criação (com a sugestão de categoria por IA em uso), detalhe do POI, cálculo de rota, perfil com estatísticas, página pública de compartilhamento, e a versão mobile do mapa. Conferi cada um visualmente antes de considerar pronto — não só rodei o script e assumi que saiu certo.
+- **README reescrito pela segunda vez**, agora seguindo à risca a estrutura que você passou: sem badges nem emojis, tom objetivo, screenshots em tabela markdown 2 colunas com legenda em negrito, funcionalidades agrupadas por área (não por tela), tabela de arquitetura com um parágrafo do fluxo principal (POI criado → geometria no PostGIS → agente de categorização da IA em background → sugestão no card), estrutura de pastas comentada, e tabela de serviços/portas pro setup local.
+- Script de captura (`frontend/e2e/portfolio-screenshots.spec.ts`) era de uso único — deletado depois de gerar os screenshots finais, mesmo padrão já usado nesta sprint pros scripts de medição de bundle.
+- Os 4 POIs de demonstração **ficaram no banco local** (não removidos) — são dados limpos e reais (criados pela UI de verdade), úteis se precisar de mais screenshots depois; só não vão pra produção a menos que você peça.
+
+---
+
+**Polimento mobile, fora do checklist da sprint (01/11/2026):** depois de ver os screenshots, você pediu 3 ajustes pontuais — atendidos, mais 2 achados extras que encontrei conferindo o resultado:
+
+- **Indicador de dev do Next removido** (`devIndicators: false` no `next.config.mjs`) — o círculo "N" que aparecia no canto inferior esquerdo em todo screenshot, só em modo dev.
+- **Logo sem o texto "MaPinha" no mobile** (`hud-header.tsx`, classe `hidden sm:inline` no texto) — só o ícone abaixo de 640px; mantido o texto em telas maiores.
+- **Fade nas bordas dos chips de categoria** (`category-chips.tsx`) — a fileira de categorias rola horizontalmente mas não tinha nenhum sinal visual disso (scrollbar escondida de propósito); adicionado um gradiente de opacidade nas duas bordas, sinalizando "tem mais pra rolar" sem precisar de JS.
+- **Achado ao validar (não pedido, mas real): a barra de busca ficava reduzida a 1 caractere visível no mobile** — com o header mais compacto (texto da logo escondida) ainda sobrava pouco espaço pra busca, porque o seletor de temas (4 botões fixos) e o botão de usuário não encolhiam. Corrigido deixando o seletor de temas mais compacto no mobile (`size-6` em vez de `size-7`, gaps menores) e apertando o padding da logo/busca — confirmado rodando de novo em viewport mobile: "Buscar POIs..." aparece legível agora.
+- **Achado ao validar (bug real, não cosmético): o popup de detalhe do POI abria por baixo do HUD** quando o marcador ficava perto do topo da tela — o Leaflet não sabe que o header/busca/chips flutuam por cima do mapa (são um overlay à parte, fora do conhecimento do Leaflet sobre os limites do container), então o auto-pan do popup não reservava espaço pra eles. Só percebi isso ao olhar o screenshot de detalhe em mobile: o título "Barbearia do Zé" saía escondido atrás da fileira de chips. Corrigido com `autoPanPaddingTopLeft`/`autoPanPaddingBottomRight` no `<Popup>` (`map-view.tsx`), reservando a altura aproximada do HUD — confirmado reabrindo o popup, título aparece abaixo dos chips agora.
+- **Validação:** rodei uma varredura visual própria (Playwright, viewport 390×844, reaproveitando a conta demo e os 4 POIs já existentes) pelas telas principais — mapa, criar POI, detalhe do POI, rota, perfil — conferindo cada print antes de reportar pronto. Script era de uso único, deletado depois. `type-check`, `lint` e `build` de produção, todos limpos.
+- Não cheguei a revisar os painéis de favoritos e histórico de rotas em mobile (o script de varredura ficou instável tentando abri-los em sequência — provável tooltip ficando aberto por foco em vez de hover, não investiguei a fundo por ser só a ferramenta de teste, não o app). Ficam pendentes de uma olhada se você notar algo neles.
+- **`docs/portfolio-screenshots/07-mobile-mapa.png` recapturado** depois dos ajustes de header acima (não precisou de deploy — é captura do app local, que já tinha as mudanças via hot reload).
 - `type-check`, `lint` e `next build` limpos (`next.config.mjs` voltou ao estado original depois do experimento com o bundle-analyzer).

@@ -9,7 +9,9 @@ export function CategoryChips() {
   const setActiveCategorySlug = useMapStore((s) => s.setActiveCategorySlug);
 
   return (
-    <div className="pointer-events-auto -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      className="pointer-events-auto -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%_-_16px),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       {categories?.map((category) => {
         const isActive = activeCategorySlug === category.slug;
         return (

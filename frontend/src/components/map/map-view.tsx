@@ -159,7 +159,18 @@ export function MapView({ userId }: MapViewProps) {
         <MarkerClusterGroup chunkedLoading>
           {pois.map((poi) => (
             <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={poiIcons[poi.id]}>
-              <Popup maxWidth={440} minWidth={260} closeButton={false}>
+              <Popup
+                maxWidth={440}
+                minWidth={260}
+                closeButton={false}
+                // O Leaflet só conhece os limites do container do mapa — não
+                // sabe que o HUD (header + busca + chips de categoria) flutua
+                // por cima dele. Sem isso, um popup de marcador perto do topo
+                // da tela abre atrás do HUD (achado real em viewport mobile,
+                // onde o HUD ocupa uma fatia maior da altura da tela).
+                autoPanPaddingTopLeft={[16, 110]}
+                autoPanPaddingBottomRight={[16, 90]}
+              >
                 <PoiCardPopup poi={poi} currentUserId={userId} />
               </Popup>
             </Marker>

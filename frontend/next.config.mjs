@@ -7,6 +7,9 @@ const nextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  // Remove o indicador flutuante do Next (círculo "N" no canto inferior
+  // esquerdo, visível só em dev) — só ruído visual pra quem usa/printa o app.
+  devIndicators: false,
 };
 
 export default withSentryConfig(nextConfig, {
