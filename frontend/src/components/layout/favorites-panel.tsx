@@ -56,7 +56,7 @@ export function FavoritesPanel({ isAuthenticated }: FavoritesPanelProps) {
           <SheetDescription>
             {favorites.length > 0
               ? `${favorites.length} POI(s) favoritado(s) — toque pra voar até eles.`
-              : "Você ainda não favoritou nenhum POI. Toque na estrela no popup de um POI pra guardá-lo aqui."}
+              : "Você ainda não favoritou nenhum POI. Toque na estrela no card de um POI pra guardá-lo aqui."}
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4">

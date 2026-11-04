@@ -9,6 +9,7 @@ import { ProfilePanel } from "@/components/layout/profile-panel";
 import { RouteHistoryPanel } from "@/components/layout/route-history-panel";
 import { RoutePanel } from "@/components/layout/route-panel";
 import { MapViewLoader } from "@/components/map/map-view-loader";
+import { PoiDetailSheet } from "@/components/map/poi-detail-sheet";
 import { PoiFormSheet } from "@/components/poi/poi-form-sheet";
 
 export async function AppShell() {
@@ -41,6 +42,7 @@ export async function AppShell() {
       </div>
 
       <RoutePanel isAuthenticated={userId !== null} />
+      <PoiDetailSheet userId={userId} />
       <PoiFormSheet userId={userId} />
       {userId && <OnboardingDialog userId={userId} />}
     </div>

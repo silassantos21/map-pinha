@@ -10,8 +10,10 @@
 | 4 | Fase 4 — Sistema de Rotas e Integração Google Maps | 10 dias |
 | 5 | Fase 5 — Agentes de IA e Features Inteligentes | 10 dias |
 | 6 | Fase 6 — Compartilhamento, Polimento Visual e Deploy Final | 10 dias |
-| 7 | Fase 7 — Sistema Social (Seguir, Grupos) e Notificações | 16 dias |
-| | **Total** | **86 dias (12.3 semanas)** |
+| 7 | Fase 7 — Sistema Social (Seguir, Grupos) e Notificações | 18 dias |
+| 8 | Fase 8 — Busca de Endereço no Mapa | 2 dias |
+| 9 | Fase 9 — Galeria de Avatares Pré-definidos | 2 dias |
+| | **Total** | **92 dias (13.1 semanas)** |
 
 ---
 
@@ -164,13 +166,13 @@
 
 ---
 
-### Fase 7: Fase 7 — Sistema Social (Seguir, Grupos) e Notificações (16 dias)
+### Fase 7: Fase 7 — Sistema Social (Seguir, Grupos) e Notificações (18 dias)
 
-> Planejada em 23/10/2026, a pedido do dono do projeto. Formaliza e expande uma ideia já registrada como "v2+" em 22/10/2026 (grupos com visibilidade compartilhada — ver `SPRINTS.md`), somando o pedido novo de seguir contas individuais e de notificações in-app.
+> Planejada em 23/10/2026, a pedido do dono do projeto. Formaliza e expande uma ideia já registrada como "v2+" em 22/10/2026 (grupos com visibilidade compartilhada — ver `SPRINTS.md`), somando o pedido novo de seguir contas individuais e de notificações in-app. Ampliada em 02/11/2026 com comentários em POIs (pedido novo do dono do projeto, mesma leva de perguntas que confirmou a visibilidade por seguidor já planejada aqui).
 
 #### Tarefas
 
-- [ ] Modelar schema: tabelas `follows` (follower_id, followed_id, únique, índice), `groups` (id, name, owner_id, created_at), `group_members` (group_id, user_id, role, joined_at), `notifications` (id, user_id, type, actor_id, poi_id nullable, group_id nullable, payload, read_at nullable, created_at)
+- [ ] Modelar schema: tabelas `follows` (follower_id, followed_id, únique, índice), `groups` (id, name, owner_id, created_at), `group_members` (group_id, user_id, role, joined_at), `notifications` (id, user_id, type, actor_id, poi_id nullable, group_id nullable, payload, read_at nullable, created_at), `comments` (id, poi_id, user_id, body, created_at, deleted_at nullable)
 - [ ] Migrar `POI.is_public` (booleano) para um campo `visibility` (enum: `public` / `followers` / `group` / `private`) + `group_id` opcional quando `visibility=group` — migration Alembic com backfill (`is_public=True` → `public`, `is_public=False` → `private`) para não quebrar POIs já existentes
 - [ ] Endpoints de seguir: `POST/DELETE /users/{id}/follow`, `GET /users/{id}/followers`, `GET /users/{id}/following`, `GET /users/me/following`
 - [ ] Endpoint de busca/descoberta de usuários: `GET /users/search?q=` — expõe só nome/avatar/id, nunca email
@@ -180,9 +182,11 @@
 - [ ] UI de perfil de usuário básico: nome, avatar, contagem de seguidores/seguindo, botão seguir/deixar de seguir — pré-requisito inexistente hoje (não há nenhuma tela que mostre outro usuário)
 - [ ] UI de busca/descoberta de usuários para seguir
 - [ ] UI de grupos: criar grupo, adicionar/remover membros, listar meus grupos
-- [ ] Gerar notificação nos eventos: alguém começou a te seguir, alguém reagiu a um POI seu (reação já existe desde a Sprint 3, só falta notificar), POI novo de alguém que você segue, convite para um grupo
+- [ ] Gerar notificação nos eventos: alguém começou a te seguir, alguém reagiu a um POI seu (reação já existe desde a Sprint 3, só falta notificar), alguém comentou em um POI seu, POI novo de alguém que você segue, convite para um grupo
 - [ ] Endpoints de notificação: `GET /notifications` (paginado, mais recentes primeiro), `POST /notifications/{id}/read`, `POST /notifications/read-all`
 - [ ] Sininho de notificações no HUD header: badge com contagem de não lidas, painel com a lista, atualização via polling (`refetchInterval` do React Query) — sem WebSocket por enquanto, para não introduzir infraestrutura nova antes de validar o uso real do recurso
+- [ ] Endpoints de comentário: `POST /pois/{id}/comments`, `GET /pois/{id}/comments` (paginado, mais recentes primeiro), `DELETE /comments/{id}` (autor do comentário ou dono do POI)
+- [ ] UI de comentários na Sheet de detalhe do POI (`PoiDetailSheet`): lista de comentários + campo de texto para novo comentário, reaproveitando o mesmo padrão visual das reações já existentes
 
 #### Entregáveis
 
@@ -190,11 +194,47 @@
 - Grupos funcionando: criar, adicionar/remover membros
 - Novo modelo de visibilidade de POI (público/seguidores/grupo/privado) substituindo o booleano atual, com migration segura dos dados existentes
 - Mapa mostrando POIs de quem você segue e dos seus grupos, além dos seus e dos públicos
-- Notificações in-app funcionando (sininho + lista + marcar como lida) para: novo seguidor, reação ao seu POI, novo POI de quem você segue, convite de grupo
+- Notificações in-app funcionando (sininho + lista + marcar como lida) para: novo seguidor, reação ao seu POI, novo comentário no seu POI, novo POI de quem você segue, convite de grupo
+- Comentários em POIs funcionando (criar, listar, excluir o próprio ou o do seu POI)
 
 #### Observação de escopo
 
-Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (escopo inflado), a ordem de prioridade dentro da fase é: (1) seguir usuários + notificações + visibilidade `followers` no mapa primeiro — isso sozinho já entrega o pedido original; (2) grupos depois, como extensão do mesmo modelo (`group_members` + `visibility=group`). Se o prazo apertar, grupos podem virar uma Fase 7.1 separada sem bloquear o resto.
+Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (escopo inflado), a ordem de prioridade dentro da fase é: (1) seguir usuários + notificações + visibilidade `followers` no mapa primeiro — isso sozinho já entrega o pedido original; (2) grupos depois, como extensão do mesmo modelo (`group_members` + `visibility=group`); (3) comentários por último, como extensão do mesmo padrão das reações. Se o prazo apertar, grupos e/ou comentários podem virar uma Fase 7.1 separada sem bloquear o resto.
+
+---
+
+### Fase 8: Fase 8 — Busca de Endereço no Mapa (2 dias)
+
+> Planejada em 02/11/2026, a pedido do dono do projeto. Hoje a busca de endereço (geocodificação via Nominatim) só existe dentro do formulário de criação/edição de POI, para marcar a posição de um novo ponto — a barra de busca principal do mapa busca apenas entre POIs já cadastrados (`usePoiSearch`). Esta fase estende a busca principal para também aceitar endereços/lugares genéricos, reaproveitando o endpoint de geocodificação já existente no backend.
+
+#### Tarefas
+
+- [ ] Reaproveitar o endpoint de geocodificação já existente (`/api/geocode/search`) na SearchBar principal do mapa, além do uso atual no formulário de POI
+- [ ] Unificar os resultados da SearchBar: POIs cadastrados e endereços/lugares geocodificados na mesma lista, diferenciados visualmente (ex.: ícone de pin de POI vs. ícone de endereço)
+- [ ] Ao selecionar um resultado de endereço (em vez de um POI), mover o mapa até a coordenada (`flyTo`) sem criar nenhum POI nem abrir formulário
+
+#### Entregáveis
+
+- Busca unificada de POIs e endereços na barra de busca principal do mapa
+
+---
+
+### Fase 9: Fase 9 — Galeria de Avatares Pré-definidos (2 dias)
+
+> Planejada em 02/11/2026, a pedido do dono do projeto. Substitui a ideia original de avatar gerado por IA a partir da foto real do usuário (descartada por questão de consentimento de imagem) e a ideia intermediária de um criador com campo de texto livre (exigiria chamada de API de geração de imagem em tempo real, com custo recorrente e necessidade de moderação do texto). Nesta versão final, ~20 avatares são gerados **uma única vez, fora do sistema** (prompts prontos em `docs/avatar-prompts.txt`, estilo "Cocoricó"/claymation, variando tom de pele, cabelo, óculos/acessório e roupa da cintura pra cima) e enviados manualmente ao bucket R2 já existente — sem nenhuma chamada de API de IA em produção, sem custo recorrente, sem dado pessoal de ninguém.
+
+#### Tarefas
+
+- [ ] Gerar as 20 imagens a partir de `docs/avatar-prompts.txt` numa IA de imagem externa e subir manualmente no bucket R2 em `avatars/presets/avatar-01.png` até `avatar-20.png` (reaproveita o mesmo bucket/CDN já usado pra mídia de POI — `settings.r2_public_url` + chave do objeto)
+- [ ] Migration: novo campo `avatar_choice_url` (nullable) em `User` — **não reaproveitar o `avatar_url` atual**, porque esse campo já é sobrescrito a cada login com a foto do Google (`auth.ts` → `/auth/sync`); a escolha do usuário precisa sobreviver a logins futuros
+- [ ] Backend: lista fixa (whitelist) dos 20 presets válidos (id + URL), para não aceitar URL arbitrária vinda do cliente — `PATCH /users/me/avatar` recebe um `preset_id`, não uma URL livre
+- [ ] Ajustar toda leitura de avatar do usuário (header, perfil, página pública `/p/[slug]`, autor do POI) para usar `avatar_choice_url ?? avatar_url` (prioriza a escolha; sem escolha, cai na foto do Google como hoje)
+- [ ] UI: galeria de escolha no perfil — grid com os 20 presets, preview ampliado ao selecionar, confirmar escolha
+
+#### Entregáveis
+
+- Usuário pode escolher um avatar entre 20 opções pré-geradas (sem upload de foto própria, sem chamada de IA em produção)
+- Escolha persistente entre logins, exibida em todos os lugares que hoje mostram o avatar do Google
 
 ---
 

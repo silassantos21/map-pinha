@@ -6,9 +6,11 @@ import { Howl } from "howler";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
+  MapPin,
   Navigation,
   Pause,
   Pencil,
@@ -20,11 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useMap } from "react-leaflet";
 
-import { getPoiIcon } from "@/components/map/poi-marker-icon";
-import { acceptAiSuggestion, dismissAiSuggestion } from "@/lib/api-client";
-import { resolveIconName } from "@/lib/poi-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,10 +35,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { usePois } from "@/hooks/use-pois";
+import { acceptAiSuggestion, dismissAiSuggestion } from "@/lib/api-client";
+import { getPoiIcon, resolveIconName } from "@/lib/poi-icons";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 import type { Category, Poi, PoiMedia, PoiReaction } from "@/types/poi";
@@ -63,25 +66,91 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 }
 
-interface PoiCardPopupProps {
-  poi: Poi;
-  currentUserId?: string | null;
+interface PoiDetailSheetProps {
+  userId?: string | null;
 }
 
-export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
+/** Card de detalhes do POI aberto ao clicar num marcador. Era um Popup do
+ * Leaflet (ancorado ao marcador) — virou uma Sheet fora da árvore do mapa,
+ * igual o formulário de edição (`PoiFormSheet`), pra ficar imune ao que o
+ * Leaflet/clustering faz internamente a cada pan/zoom (remover/readicionar
+ * marcadores pra reagrupar clusters), que causava o marcador/popup
+ * "piscando" mesmo com os dados do POI já estáveis. */
+export function PoiDetailSheet({ userId }: PoiDetailSheetProps) {
+  const selectedPoiId = useMapStore((s) => s.selectedPoiId);
+  const deselectPoi = useMapStore((s) => s.deselectPoi);
+  const startEditingPoi = useMapStore((s) => s.startEditingPoi);
+  const startRouteTo = useMapStore((s) => s.startRouteTo);
+  const isCreatingPoi = useMapStore((s) => s.isCreatingPoi);
+  const editingPoiId = useMapStore((s) => s.editingPoiId);
+  // Mesmo breakpoint do formulário de edição — abre do lado no desktop,
+  // embaixo no mobile (pouco espaço de mapa pra tocar fora da Sheet).
+  const isMobile = useMediaQuery("(max-width: 639px)");
+
+  const { data: pois = [] } = usePois(userId);
+  const poi = pois.find((p) => p.id === selectedPoiId) ?? null;
+
+  // Nunca aberto junto com o formulário de criação/edição (mesmo lado da
+  // tela) — `startCreatingPoi`/`startEditingPoi` já limpam `selectedPoiId`,
+  // mas esta checagem extra cobre também o caso de clicar num marcador
+  // enquanto o formulário já está aberto.
+  const isOpen = selectedPoiId !== null && poi !== null && !isCreatingPoi && !editingPoiId;
+
+  return (
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => !open && deselectPoi()}
+      // Não-modal, igual o formulário de edição: o mapa continua
+      // clicável/arrastável por trás enquanto o card está aberto.
+      modal={false}
+      disablePointerDismissal
+    >
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col gap-0 p-0", isMobile && "max-h-[75vh]")}
+        showOverlay={false}
+        showCloseButton={false}
+      >
+        {poi && (
+          <PoiDetailContent
+            key={poi.id}
+            poi={poi}
+            currentUserId={userId}
+            onClose={deselectPoi}
+            onEdit={() => startEditingPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+            onRoute={() => {
+              startRouteTo({ id: poi.id, name: poi.name, lat: poi.lat, lng: poi.lng });
+              deselectPoi();
+            }}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+interface PoiDetailContentProps {
+  poi: Poi;
+  currentUserId?: string | null;
+  onClose: () => void;
+  onEdit: () => void;
+  onRoute: () => void;
+}
+
+function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiDetailContentProps) {
   const visuals = poi.media.filter((m) => m.media_type === "image" || m.media_type === "gif");
   const audioTracks = poi.media.filter((m) => m.media_type === "audio");
   const isOwner = currentUserId != null && poi.user_id === currentUserId;
   const isAuthenticated = currentUserId != null;
 
-  const map = useMap();
   const queryClient = useQueryClient();
-  const startEditingPoi = useMapStore((s) => s.startEditingPoi);
-  const startRouteTo = useMapStore((s) => s.startRouteTo);
   const { data: categories } = useCategories();
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  // Fechado por padrão — endereço completo ocupava espaço demais no card,
+  // competindo com foto/descrição/áudio (que devem ser o foco principal).
+  const [isAddressOpen, setIsAddressOpen] = useState(false);
 
   const category = categories?.find((c) => c.id === poi.category_id);
   const categoryColor = category?.color_hex ?? DEFAULT_BORDER_COLOR;
@@ -101,7 +170,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     try {
       const res = await fetch(`/api/pois/${poi.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Falha ao excluir o POI");
-      map.closePopup();
+      onClose();
       await queryClient.invalidateQueries({ queryKey: ["pois"] });
       await queryClient.invalidateQueries({ queryKey: ["my-pois"] });
       toast.add({ title: "POI excluído", description: poi.name, type: "success" });
@@ -217,7 +286,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  map.closePopup();
+                  onClose();
                 }}
                 className="text-muted-foreground hover:text-foreground"
                 aria-label="Fechar"
@@ -237,25 +306,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
       {isOwner && poi.ai_category_slug && (
         <AiSuggestionBanner poi={poi} categories={categories} onResolved={invalidatePoi} />
       )}
-      {(poi.description || poi.address) && (
-        <div>
-          {poi.description && (
-            <p className="text-xs text-muted-foreground">{poi.description}</p>
-          )}
-          {poi.address && (
-            <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
-              <span className="min-w-0 flex-1">{poi.address}</span>
-              <CopyField value={poi.address} label="endereço" />
-            </p>
-          )}
-        </div>
-      )}
-      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <span>
-          {poi.lat.toFixed(5)}, {poi.lng.toFixed(5)}
-        </span>
-        <CopyField value={`${poi.lat}, ${poi.lng}`} label="coordenadas" />
-      </p>
+      {poi.description && <p className="text-xs text-muted-foreground">{poi.description}</p>}
       {visuals.length === 0 && (
         <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <CalendarDays className="size-3" />
@@ -273,6 +324,47 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     </>
   );
 
+  // Setor próprio pro endereço/coordenadas — separado da descrição/mídia
+  // acima e dos botões de ação abaixo. Expansível e fechado por padrão: o
+  // endereço completo ocupava espaço demais no card, competindo com
+  // foto/descrição/áudio (que devem ser o foco principal do espaço).
+  const addressSection = (
+    <div className="rounded-lg border border-border/60 bg-muted/20">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setIsAddressOpen((open) => !open);
+        }}
+        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-xs text-muted-foreground"
+      >
+        <span className="flex items-center gap-1.5">
+          <MapPin className="size-3.5" />
+          Endereço e coordenadas
+        </span>
+        <ChevronDown
+          className={cn("size-3.5 shrink-0 transition-transform", isAddressOpen && "rotate-180")}
+        />
+      </button>
+      {isAddressOpen && (
+        <div className="flex flex-col gap-1 border-t border-border/60 px-2.5 py-2">
+          {poi.address && (
+            <p className="flex items-start gap-1 text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1">{poi.address}</span>
+              <CopyField value={poi.address} label="endereço" />
+            </p>
+          )}
+          <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span>
+              {poi.lat.toFixed(5)}, {poi.lng.toFixed(5)}
+            </span>
+            <CopyField value={`${poi.lat}, ${poi.lng}`} label="coordenadas" />
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   const footer = (
     <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-2">
       <div className="min-w-0">
@@ -287,8 +379,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  map.closePopup();
-                  startRouteTo({ id: poi.id, name: poi.name, lat: poi.lat, lng: poi.lng });
+                  onRoute();
                 }}
                 aria-label="Como chegar"
                 className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-foreground"
@@ -309,7 +400,7 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    startEditingPoi({ id: poi.id, lat: poi.lat, lng: poi.lng });
+                    onEdit();
                   }}
                   className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-foreground"
                 />
@@ -364,44 +455,33 @@ export function PoiCardPopup({ poi, currentUserId }: PoiCardPopupProps) {
     </div>
   );
 
-  // Sem mídia visual: cartão simples, vertical e compacto.
-  if (visuals.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.18 }}
-        className="flex w-64 flex-col gap-3 rounded-xl border-2 bg-popover p-4 shadow-xl"
-        style={{ borderColor: categoryColor }}
-      >
-        {header}
-        {body}
-        {footer}
-      </motion.div>
-    );
-  }
-
-  // Com foto/GIF: layout paisagem (imagem à esquerda, info à direita) pra não
-  // ficar alto demais. O cabeçalho e o rodapé viram faixas cobrindo a largura
-  // toda do card (inclusive acima/abaixo da imagem), não só ao lado dela.
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.18 }}
-      className="flex max-h-96 w-104 max-w-[calc(100vw-2rem)] flex-col gap-3 rounded-xl border-2 bg-popover p-4 shadow-xl"
-      style={{ borderColor: categoryColor }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {header}
-      <div className="flex min-h-0 flex-1 gap-3">
-        <div className="w-40 shrink-0 overflow-hidden rounded-lg">
-          <ImageGallery poi={poi} visuals={visuals} />
+      {/* Faixa colorida por categoria no topo — era a borda do card antigo,
+          vira um acento simples agora que o conteúdo preenche a Sheet. */}
+      <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: categoryColor }} />
+
+      <div className="flex flex-col gap-3 p-4 pb-0">{header}</div>
+
+      {visuals.length > 0 && (
+        <div className="mt-3 h-48 w-full shrink-0 overflow-hidden px-4">
+          <div className="h-full w-full overflow-hidden rounded-lg">
+            <ImageGallery poi={poi} visuals={visuals} />
+          </div>
         </div>
-        <div className="popup-scroll flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          {body}
-        </div>
+      )}
+
+      <div className="popup-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+        {body}
+        {addressSection}
       </div>
-      {footer}
+
+      <div className="p-4 pt-0">{footer}</div>
     </motion.div>
   );
 }

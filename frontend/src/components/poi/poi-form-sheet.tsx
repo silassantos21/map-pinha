@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { MediaUploader, type PendingMedia } from "@/components/poi/media-uploader";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -49,6 +50,11 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
 
   const isEditMode = editingPoiId !== null;
   const isOpen = isCreatingPoi || isEditMode;
+  // Sheet lateral (w-3/4 da tela) deixa pouco espaço de mapa visível pra
+  // marcar a posição no celular — abre de baixo pra cima no mobile, mantendo
+  // uma faixa do mapa sempre tocável (ver `max-h` abaixo), e continua lateral
+  // a partir do breakpoint `sm` do Tailwind (640px), onde o espaço já sobra.
+  const isMobile = useMediaQuery("(max-width: 639px)");
   const { data: editingPoi } = usePoi(editingPoiId, userId);
   const { data: categories } = useCategories();
   const queryClient = useQueryClient();
@@ -340,7 +346,11 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
       modal={false}
       disablePointerDismissal
     >
-      <SheetContent side="right" className="flex flex-col" showOverlay={false}>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+        showOverlay={false}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">{isEditMode ? "Editar POI" : "Novo POI"}</SheetTitle>
           <SheetDescription>

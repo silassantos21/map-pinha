@@ -16,8 +16,19 @@ function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+function DialogPortal({ container, ...props }: DialogPrimitive.Portal.Props) {
+  return (
+    <DialogPrimitive.Portal
+      data-slot="dialog-portal"
+      // Sem isso, um Dialog aberto de dentro de outro portal (ex: a Sheet de
+      // detalhes do POI, ver `PoiDetailSheet`) herda o container de portal do
+      // pai em vez de ir pro <body> — o Dialog nasce confinado na caixa da
+      // Sheet, perdendo a centralização/blur de tela cheia. Antes disso não
+      // existia Dialog nenhum aninhado dentro de outro portal no app.
+      container={container ?? (typeof document !== "undefined" ? document.body : undefined)}
+      {...props}
+    />
+  )
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {

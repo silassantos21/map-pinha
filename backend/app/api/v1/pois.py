@@ -153,6 +153,17 @@ def list_pois(
     else:
         stmt = stmt.where(POI.is_public.is_(True))
 
+    # Sem ORDER BY, o Postgres não garante a mesma ordem entre execuções da
+    # mesma query ST_Intersects (varredura de índice pode mudar) — isso
+    # quebrava o structural sharing padrão do React Query no frontend: ele
+    # reaproveita a referência antiga de cada item quando o conteúdo é igual,
+    # mas só casa por posição no array, então uma reordenação faz ele tratar
+    # POIs idênticos como "novos" a cada refetch. Resultado real visto em
+    # produção: isso recriava os ícones de TODOS os marcadores (inclusive o
+    # do popup aberto) a cada refetch, piscando o mapa inteiro mesmo sem
+    # nenhum dado ter mudado de verdade. ORDER BY estável resolve na raiz.
+    stmt = stmt.order_by(POI.id)
+
     pois = db.scalars(stmt).unique().all()
     return [_to_read(poi) for poi in pois]
 

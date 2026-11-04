@@ -51,7 +51,18 @@ class POI(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    # `order_by` aqui (não só no endpoint) garante ordem estável em TODO
+    # lugar que carrega essas relações (`selectinload`), não só na listagem —
+    # sem isso, o Postgres pode devolver `media`/`reactions` em ordens
+    # diferentes entre chamadas (sem ORDER BY, a ordem de retorno não é
+    # garantida), o que por sua vez quebrava o structural sharing do React
+    # Query no frontend mesmo com a lista de POIs já em ordem estável: um POI
+    # com 2+ mídias/reações parecia "mudado" a cada refetch só por causa da
+    # ordem interna de `media`/`reactions`, recriando o ícone do marcador à
+    # toa (causa real do popup "piscando" em POIs com mais de uma mídia).
     media: Mapped[list["POIMedia"]] = relationship(
-        back_populates="poi", cascade="all, delete-orphan"
+        back_populates="poi", cascade="all, delete-orphan", order_by="POIMedia.created_at"
     )
-    reactions: Mapped[list["PoiReaction"]] = relationship(cascade="all, delete-orphan")
+    reactions: Mapped[list["PoiReaction"]] = relationship(
+        cascade="all, delete-orphan", order_by="PoiReaction.created_at"
+    )

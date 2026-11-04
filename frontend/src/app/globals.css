@@ -145,9 +145,10 @@
      regras vivem dentro de `@layer base` do Tailwind v4, e uma regra em
      camada SEMPRE perde pra uma regra sem camada (como as do leaflet.css),
      não importa a ordem/especificidade — só `!important` vence isso.
-     PoiCardPopup (`poi-card-popup.tsx`) passou a desenhar seu próprio cartão
-     (fundo, borda colorida por categoria, cantos arredondados), então o
-     wrapper do Leaflet vira só um contêiner invisível por trás. */
+     Hoje só sobra o popup simples do marcador "Você está aqui" (o card de
+     detalhes do POI deixou de usar Popup do Leaflet — ver `PoiDetailSheet`),
+     mas mantém esse reset porque esse popup também não usa o fundo branco
+     padrão do Leaflet. */
   .leaflet-popup-content-wrapper,
   .leaflet-popup-tip {
     background: transparent !important;

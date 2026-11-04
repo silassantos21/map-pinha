@@ -1,6 +1,7 @@
 "use client";
 
 import L from "leaflet";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
@@ -11,10 +12,10 @@ import { MapControls } from "@/components/map/map-controls";
 import { DraftFlyToWatcher } from "@/components/map/draft-flyto-watcher";
 import { DraftPoiMarker } from "@/components/map/draft-poi-marker";
 import { LocationLoadingOverlay } from "@/components/map/location-loading-overlay";
-import { PoiCardPopup } from "@/components/map/poi-card-popup";
 import { PoiPlacementHandler } from "@/components/map/poi-placement-handler";
 import { createPoiIcon } from "@/components/map/poi-marker-icon";
 import { RouteLayer } from "@/components/map/route-layer";
+import { SelectedPoiCenterer } from "@/components/map/selected-poi-centerer";
 import { SelectedPoiFlyTo } from "@/components/map/selected-poi-flyto";
 import { useCategories } from "@/hooks/use-categories";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -70,6 +71,7 @@ export function MapView({ userId }: MapViewProps) {
   const { position, error: locationError } = useGeolocation();
   const setUserPosition = useMapStore((s) => s.setUserPosition);
   const flyToPoi = useMapStore((s) => s.flyToPoi);
+  const selectPoi = useMapStore((s) => s.selectPoi);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -106,19 +108,52 @@ export function MapView({ userId }: MapViewProps) {
   }, [position, locationError]);
 
   const { data: categories } = useCategories();
-  const { data: pois = [] } = usePois(userId);
+  // `isLoading` (do React Query) só é true na PRIMEIRA busca de cada
+  // combinação de filtros, sem nenhum dado anterior pra mostrar enquanto
+  // isso — diferente de um pan/zoom normal, onde `placeholderData` já
+  // mantém os marcadores antigos visíveis sem precisar de indicador nenhum.
+  // Sem isso, achado real: o mapa fica com 0 marcadores e nenhum sinal de
+  // que algo está carregando (ex: no cold start do plano gratuito da Render
+  // em produção, a 1ª resposta pode demorar 30-50s) — parece travado.
+  const { data: pois = [], isLoading: isLoadingPois } = usePois(userId);
 
   const categoriesById = useMemo(
     () => new Map((categories ?? []).map((category) => [category.id, category])),
     [categories],
   );
 
+  // O React Query já reaproveita (structural sharing, padrão da lib) a
+  // referência antiga de cada POI quando o conteúdo não mudou — mas isso só
+  // funciona se o backend devolver a lista sempre na mesma ordem. O fix real
+  // pro bug de marcador/popup "piscando" ficou no backend (`ORDER BY POI.id`
+  // em `list_pois`, ver `backend/app/api/v1/pois.py`): sem ordem estável, o
+  // Postgres podia devolver os mesmos POIs em ordens diferentes entre
+  // chamadas, o structural sharing via de cada item como "novo", e todo
+  // marcador recriava o ícone (`setIcon` destrói e recria o nó DOM) a cada
+  // refetch — inclusive o do popup aberto. Com `pois` estável, este useMemo
+  // só recalcula quando algo realmente mudou.
   const poiIcons = useMemo(
     () =>
       Object.fromEntries(
         pois.map((poi) => [poi.id, createPoiIcon(poi, categoriesById.get(poi.category_id))]),
       ),
     [pois, categoriesById],
+  );
+
+  const selectedPoiId = useMapStore((s) => s.selectedPoiId);
+  const editingPoiId = useMapStore((s) => s.editingPoiId);
+
+  // Ícone "selecionado" calculado à parte do `poiIcons` acima — só o POI
+  // selecionado troca de referência de ícone quando a seleção muda (o resto
+  // continua apontando pro mesmo objeto em `poiIcons`), em vez de recalcular
+  // o mapa inteiro de ícones a cada seleção.
+  const selectedPoi = pois.find((poi) => poi.id === selectedPoiId);
+  const selectedIcon = useMemo(
+    () =>
+      selectedPoi
+        ? createPoiIcon(selectedPoi, categoriesById.get(selectedPoi.category_id), true)
+        : null,
+    [selectedPoi, categoriesById],
   );
 
   // Rede de segurança: se a geolocalização nunca chamar sucesso nem erro
@@ -132,6 +167,14 @@ export function MapView({ userId }: MapViewProps) {
   return (
     <div className="relative h-full w-full">
       <LocationLoadingOverlay show={!hasResolvedLocation} />
+      {isLoadingPois && (
+        <div className="pointer-events-none absolute bottom-20 left-1/2 z-[1000] -translate-x-1/2">
+          <div className="flex items-center gap-1.5 rounded-full border border-border bg-popover/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur-sm">
+            <Loader2 className="size-3.5 animate-spin" />
+            Carregando pontos...
+          </div>
+        </div>
+      )}
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={13}
@@ -157,28 +200,33 @@ export function MapView({ userId }: MapViewProps) {
         <BoundsWatcher />
         <PoiPlacementHandler />
         <MarkerClusterGroup chunkedLoading>
-          {pois.map((poi) => (
-            <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={poiIcons[poi.id]}>
-              <Popup
-                maxWidth={440}
-                minWidth={260}
-                closeButton={false}
-                // O Leaflet só conhece os limites do container do mapa — não
-                // sabe que o HUD (header + busca + chips de categoria) flutua
-                // por cima dele. Sem isso, um popup de marcador perto do topo
-                // da tela abre atrás do HUD (achado real em viewport mobile,
-                // onde o HUD ocupa uma fatia maior da altura da tela).
-                autoPanPaddingTopLeft={[16, 110]}
-                autoPanPaddingBottomRight={[16, 90]}
-              >
-                <PoiCardPopup poi={poi} currentUserId={userId} />
-              </Popup>
-            </Marker>
-          ))}
+          {pois
+            // Some durante a edição: o marcador de rascunho arrastável
+            // (`DraftPoiMarker`) nasce exatamente na mesma posição do POI
+            // real, e os dois sobrepostos tornavam incerto qual marcador
+            // respondia ao arrastar. Igual já acontece ao criar um POI novo
+            // (que não tem marcador "real" ainda), editar passa a mostrar só
+            // o marcador de rascunho enquanto dura.
+            .filter((poi) => poi.id !== editingPoiId)
+            .map((poi) => (
+              <Marker
+                key={poi.id}
+                position={[poi.lat, poi.lng]}
+                icon={poi.id === selectedPoiId && selectedIcon ? selectedIcon : poiIcons[poi.id]}
+                // O card de detalhes deixou de ser um Popup do Leaflet (ver
+                // `PoiDetailSheet`, renderizado fora do mapa) — motivo: o
+                // plugin de clustering remove/readiciona marcadores do mapa a
+                // cada pan/zoom pra reagrupar, e isso fechava/reabria o popup
+                // do marcador selecionado sozinho (o "pisca ao mexer o mapa"),
+                // independente de qualquer estabilidade dos dados do POI.
+                eventHandlers={{ click: () => selectPoi(poi.id) }}
+              />
+            ))}
         </MarkerClusterGroup>
         <DraftPoiMarker />
         <DraftFlyToWatcher />
         <SelectedPoiFlyTo />
+        <SelectedPoiCenterer pois={pois} />
         <UserLocationMarker position={position} />
         <RouteLayer />
         <MapControls userPosition={position} />

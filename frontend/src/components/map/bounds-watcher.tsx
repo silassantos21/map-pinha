@@ -8,9 +8,9 @@ import type { MapBounds } from "@/types/poi";
 
 const DEBOUNCE_MS = 200;
 // Tolerância pra considerar os bounds "iguais" (graus) — evita commitar no
-// store uma mudança desprezível (ex: o leve autoPan do Leaflet ao abrir/
-// redimensionar um popup), que senão realimentava a query de POIs e podia
-// entrar em loop com o próprio reposicionamento do popup.
+// store uma mudança desprezível (ex: o fim de um `flyTo` de centralização, ou
+// qualquer microajuste de posição do Leaflet), que senão realimentava a
+// query de POIs sem necessidade real.
 const EPSILON = 1e-5;
 
 function almostEqual(a: MapBounds | null, b: MapBounds): boolean {

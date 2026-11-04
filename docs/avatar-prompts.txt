@@ -1,0 +1,65 @@
+PROMPTS PARA GERAR OS 20 AVATARES PRE-DEFINIDOS (estilo Cocoricó / claymation)
+Gere cada um numa IA de imagem a sua escolha e salve como avatar-01.png ... avatar-20.png.
+Dica: se a IA permitir usar uma imagem de referencia de estilo, use a primeira gerada como ancora nas outras 19, para manter o conjunto visualmente coeso.
+
+--------------------------------------------------------------------------------
+
+01 (avatar-01.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with fair, pink-beige skin, short, neatly combed straight dark-brown hair, no glasses, no extra accessories, wearing a plain solid-color crewneck t-shirt. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+02 (avatar-02.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with fair, pink-beige skin, long wavy chestnut-brown hair, round tortoiseshell glasses, small gold stud earrings, wearing a buttoned collared blouse. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+03 (avatar-03.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with fair, pink-beige skin, a buzzed, shaved head, square black-framed glasses, a light stubble beard, wearing a casual zip-up hoodie jacket. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+04 (avatar-04.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with fair, pink-beige skin, curly afro-textured hair styled in a high puff, no glasses, a small flower hair clip, wearing a simple round-neck dress. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+05 (avatar-05.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with light olive skin, short, neatly combed straight dark-brown hair, no glasses, no extra accessories, wearing a plain solid-color crewneck t-shirt. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+06 (avatar-06.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with light olive skin, long wavy chestnut-brown hair, round tortoiseshell glasses, small gold stud earrings, wearing a buttoned collared blouse. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+07 (avatar-07.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with light olive skin, a buzzed, shaved head, square black-framed glasses, a light stubble beard, wearing a casual zip-up hoodie jacket. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+08 (avatar-08.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with light olive skin, curly afro-textured hair styled in a high puff, no glasses, a small flower hair clip, wearing a simple round-neck dress. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+09 (avatar-09.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with warm tan skin, short, neatly combed straight dark-brown hair, no glasses, no extra accessories, wearing a plain solid-color crewneck t-shirt. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+10 (avatar-10.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with warm tan skin, long wavy chestnut-brown hair, round tortoiseshell glasses, small gold stud earrings, wearing a buttoned collared blouse. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+11 (avatar-11.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with warm tan skin, a buzzed, shaved head, square black-framed glasses, a light stubble beard, wearing a casual zip-up hoodie jacket. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+12 (avatar-12.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with warm tan skin, curly afro-textured hair styled in a high puff, no glasses, a small flower hair clip, wearing a simple round-neck dress. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+13 (avatar-13.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with deep brown skin, short, neatly combed straight dark hair, no glasses, no extra accessories, wearing a plain solid-color crewneck t-shirt. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+14 (avatar-14.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with deep brown skin, long wavy dark hair, round tortoiseshell glasses, small gold stud earrings, wearing a buttoned collared blouse. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+15 (avatar-15.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with deep brown skin, a buzzed, shaved head, square black-framed glasses, a light stubble beard, wearing a casual zip-up hoodie jacket. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+16 (avatar-16.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with deep brown skin, curly afro-textured hair styled in a high puff, no glasses, a small flower hair clip, wearing a simple round-neck dress. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+17 (avatar-17.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with dark, deep-ebony skin, short, neatly combed straight dark hair, no glasses, no extra accessories, wearing a plain solid-color crewneck t-shirt. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+18 (avatar-18.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with dark, deep-ebony skin, long wavy dark hair, round tortoiseshell glasses, small gold stud earrings, wearing a buttoned collared blouse. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+19 (avatar-19.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with dark, deep-ebony skin, a buzzed, shaved head, square black-framed glasses, a light stubble beard, wearing a casual zip-up hoodie jacket. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.
+
+20 (avatar-20.png)
+A clean, modern profile avatar character in the iconic TV Cultura "Cocoricó" puppet and claymation style: a cute, hand-crafted felt and clay-textured puppet with dark, deep-ebony skin, curly afro-textured hair styled in a high puff, no glasses, a small flower hair clip, wearing a simple round-neck dress. Simple, rounded proportions, big expressive eyes, soft friendly smile, handcrafted felt-fabric and matte-clay textures, visible from the chest up. Centered bust portrait, plain soft pastel-colored studio background, even soft lighting, square 1:1 composition.

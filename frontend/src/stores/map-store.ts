@@ -47,6 +47,17 @@ interface MapState {
   selectedPoiTarget: LatLng & { id: string } | null;
   flyToPoi: (poi: { id: string; lat: number; lng: number }) => void;
 
+  // Card de detalhes do POI (clique no marcador) — deixou de ser um Popup do
+  // Leaflet (ancorado ao marcador, vítima de qualquer reclusterização/pan do
+  // mapa) e passou a ser uma Sheet fora da árvore do mapa, igual o formulário
+  // de edição. Só guarda o id: o conteúdo vem da própria lista de POIs já
+  // carregada. Nunca deve ficar aberto ao mesmo tempo que o formulário de
+  // criação/edição (mesmo lado da tela) — por isso `startCreatingPoi` e
+  // `startEditingPoi` sempre limpam este campo.
+  selectedPoiId: string | null;
+  selectPoi: (id: string) => void;
+  deselectPoi: () => void;
+
   // Posição atual do usuário (geolocalização) — espelhada aqui a partir do
   // `useGeolocation()` chamado em `MapView` (dentro da árvore do mapa) pra
   // ficar disponível também pro painel de rota, que vive fora dela.
@@ -81,7 +92,8 @@ export const useMapStore = create<MapState>((set) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   isCreatingPoi: false,
-  startCreatingPoi: () => set({ isCreatingPoi: true, editingPoiId: null, draftPoiPosition: null }),
+  startCreatingPoi: () =>
+    set({ isCreatingPoi: true, editingPoiId: null, draftPoiPosition: null, selectedPoiId: null }),
   cancelCreatingPoi: () => set({ isCreatingPoi: false, draftPoiPosition: null, pendingFlyTo: null }),
   draftPoiPosition: null,
   setDraftPoiPosition: (position) => set({ draftPoiPosition: position, pendingFlyTo: position }),
@@ -96,11 +108,16 @@ export const useMapStore = create<MapState>((set) => ({
       isCreatingPoi: false,
       draftPoiPosition: { lat: poi.lat, lng: poi.lng },
       pendingFlyTo: { lat: poi.lat, lng: poi.lng },
+      selectedPoiId: null,
     }),
   stopEditingPoi: () => set({ editingPoiId: null, draftPoiPosition: null }),
 
   selectedPoiTarget: null,
   flyToPoi: (poi) => set({ selectedPoiTarget: poi }),
+
+  selectedPoiId: null,
+  selectPoi: (id) => set({ selectedPoiId: id }),
+  deselectPoi: () => set({ selectedPoiId: null }),
 
   userPosition: null,
   setUserPosition: (position) => set({ userPosition: position }),

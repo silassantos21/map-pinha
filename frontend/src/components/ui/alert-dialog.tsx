@@ -16,9 +16,17 @@ function AlertDialogTrigger({ ...props }: AlertDialogPrimitive.Trigger.Props) {
   )
 }
 
-function AlertDialogPortal({ ...props }: AlertDialogPrimitive.Portal.Props) {
+function AlertDialogPortal({ container, ...props }: AlertDialogPrimitive.Portal.Props) {
   return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+    <AlertDialogPrimitive.Portal
+      data-slot="alert-dialog-portal"
+      // Mesmo motivo do DialogPortal (ver `ui/dialog.tsx`): sem isso, o
+      // AlertDialog de confirmar exclusão (aberto de dentro da Sheet de
+      // detalhes do POI) herda o container de portal da Sheet em vez de ir
+      // pro <body>, perdendo a centralização de tela cheia.
+      container={container ?? (typeof document !== "undefined" ? document.body : undefined)}
+      {...props}
+    />
   )
 }
 
