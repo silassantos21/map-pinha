@@ -225,11 +225,11 @@ Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (es
 
 #### Tarefas
 
-- [ ] Gerar as 20 imagens a partir de `docs/avatar-prompts.txt` numa IA de imagem externa e subir manualmente no bucket R2 em `avatars/presets/avatar-01.png` até `avatar-20.png` (reaproveita o mesmo bucket/CDN já usado pra mídia de POI — `settings.r2_public_url` + chave do objeto)
-- [ ] Migration: novo campo `avatar_choice_url` (nullable) em `User` — **não reaproveitar o `avatar_url` atual**, porque esse campo já é sobrescrito a cada login com a foto do Google (`auth.ts` → `/auth/sync`); a escolha do usuário precisa sobreviver a logins futuros
-- [ ] Backend: lista fixa (whitelist) dos 20 presets válidos (id + URL), para não aceitar URL arbitrária vinda do cliente — `PATCH /users/me/avatar` recebe um `preset_id`, não uma URL livre
-- [ ] Ajustar toda leitura de avatar do usuário (header, perfil, página pública `/p/[slug]`, autor do POI) para usar `avatar_choice_url ?? avatar_url` (prioriza a escolha; sem escolha, cai na foto do Google como hoje)
-- [ ] UI: galeria de escolha no perfil — grid com os 20 presets, preview ampliado ao selecionar, confirmar escolha
+- [x] Gerar as 20 imagens a partir de `docs/avatar-prompts.txt` numa IA de imagem externa e subir manualmente no bucket R2 em `avatars/presets/avatar-01.jpg` até `avatar-20.jpg` (reaproveita o mesmo bucket/CDN já usado pra mídia de POI — `settings.r2_public_url` + chave do objeto)
+- [x] Migration: novo campo `avatar_choice_url` (nullable) em `User` — **não reaproveitou o `avatar_url` atual**, porque esse campo já é sobrescrito a cada login com a foto do Google (`auth.ts` → `/auth/sync`); a escolha do usuário sobrevive a logins futuros
+- [x] Backend: lista fixa (whitelist) dos 20 presets válidos (id + URL), para não aceitar URL arbitrária vinda do cliente — `PATCH /users/{id}/avatar` recebe um `preset_id` validado (`Field(ge=1, le=20)`), não uma URL livre
+- [x] Ajustada leitura de avatar do usuário (header/HUD, perfil, onboarding, página pública `/p/[slug]`) para usar `avatar_choice_url ?? avatar_url` (prioriza a escolha; sem escolha, cai na foto do Google como antes)
+- [x] UI: galeria de escolha (`AvatarPicker`) — grid com os 20 presets, destaque do selecionado, usada tanto no painel de perfil quanto como primeiro passo do onboarding (escolha já no "momento de criar a conta")
 
 #### Entregáveis
 

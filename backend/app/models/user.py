@@ -17,6 +17,12 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Avatar pré-definido escolhido pelo usuário (Fase 9) — campo separado de
+    # `avatar_url` porque esse é sobrescrito a cada login pela foto do Google
+    # (ver `sync_user`); quando preenchido, tem prioridade sobre `avatar_url`
+    # em toda exibição. Guarda a URL pública já pronta (não o preset_id), pra
+    # não precisar reconstruir a URL toda vez que o avatar é lido.
+    avatar_choice_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Credentials Provider (email/senha) — null quando o usuário entra só via Google
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_id: Mapped[str | None] = mapped_column(

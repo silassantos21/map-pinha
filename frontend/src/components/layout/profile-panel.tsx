@@ -1,8 +1,11 @@
 "use client";
 
-import { Sparkles, UserRound } from "lucide-react";
+import { Pencil, Sparkles, UserRound } from "lucide-react";
+import { useState } from "react";
 
+import { AvatarPicker } from "@/components/profile/avatar-picker";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MotionListItem } from "@/components/ui/motion-list-item";
 import {
   Sheet,
@@ -14,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMyPois } from "@/hooks/use-my-pois";
 import { useUserStats } from "@/hooks/use-user-stats";
 import { useMapStore } from "@/stores/map-store";
@@ -37,9 +41,15 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
   const { data: myPois = [] } = useMyPois(isAuthenticated);
   const { data: categories } = useCategories();
   const { data: stats } = useUserStats(isAuthenticated);
+  // `avatar_choice_url` vem do banco (não da sessão NextAuth, que só é
+  // atualizada no login) — precisa de uma busca à parte pra refletir uma
+  // troca de avatar na hora, sem precisar relogar.
+  const { data: currentUser } = useCurrentUser(isAuthenticated);
   const flyToPoi = useMapStore((s) => s.flyToPoi);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+  const displayedAvatarUrl = currentUser?.avatar_choice_url ?? userAvatarUrl;
 
   if (!isAuthenticated) return null;
 
@@ -73,19 +83,40 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
 
         <div className="flex flex-col gap-4 px-4">
           <div className="flex items-center gap-3">
-            {userAvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google (host externo, sem domínio fixo configurado em next.config.mjs)
-              <img
-                src={userAvatarUrl}
-                alt=""
-                className="size-12 rounded-full"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <UserRound className="size-5 text-muted-foreground" />
-              </span>
-            )}
+            <Dialog open={avatarPickerOpen} onOpenChange={setAvatarPickerOpen}>
+              <DialogTrigger
+                render={
+                  <button
+                    type="button"
+                    className="group relative shrink-0"
+                    aria-label="Trocar avatar"
+                  />
+                }
+              >
+                {displayedAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos, sem domínio fixo configurado em next.config.mjs)
+                  <img
+                    src={displayedAvatarUrl}
+                    alt=""
+                    className="size-12 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+                    <UserRound className="size-5 text-muted-foreground" />
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/40">
+                  <Pencil className="size-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                </span>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="font-display">Escolher avatar</DialogTitle>
+                </DialogHeader>
+                <AvatarPicker currentAvatarChoiceUrl={currentUser?.avatar_choice_url ?? null} />
+              </DialogContent>
+            </Dialog>
             <p className="truncate font-display text-base text-foreground">{userName ?? "Você"}</p>
           </div>
 

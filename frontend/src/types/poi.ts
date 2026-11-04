@@ -109,3 +109,22 @@ export interface UserStats {
   total_pois: number;
   total_km: number;
 }
+
+/** Um dos 20 avatares pré-gerados (Fase 9) — URL pública já pronta,
+ * construída no backend a partir do `preset_id`. */
+export interface AvatarPreset {
+  preset_id: number;
+  url: string;
+}
+
+/** Usuário atual com os campos vindos do banco (não da sessão NextAuth, que
+ * só guarda o que o Google devolveu no login) — em especial
+ * `avatar_choice_url`, que pode mudar a qualquer momento sem precisar de um
+ * novo login. */
+export interface CurrentUser {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  avatar_choice_url: string | null;
+}

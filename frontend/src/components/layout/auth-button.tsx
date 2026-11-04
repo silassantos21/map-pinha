@@ -1,4 +1,5 @@
 import { auth, signIn, signOut } from "@/auth";
+import { UserAvatarBadge } from "@/components/layout/user-avatar-badge";
 import { Button } from "@/components/ui/button";
 
 export async function AuthButton() {
@@ -12,14 +13,7 @@ export async function AuthButton() {
           await signOut();
         }}
       >
-        <Button
-          type="submit"
-          size="sm"
-          variant="secondary"
-          className="rounded-full"
-        >
-          {session.user.name?.split(" ")[0] ?? "Sair"}
-        </Button>
+        <UserAvatarBadge userName={session.user.name} googleAvatarUrl={session.user.image} />
       </form>
     );
   }

@@ -206,7 +206,7 @@ def get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
         "category_icon_name": category.icon_name,
         "category_color_hex": category.color_hex,
         "owner_name": owner.name,
-        "owner_avatar_url": owner.avatar_url,
+        "owner_avatar_url": owner.avatar_choice_url or owner.avatar_url,
         "created_at": poi.created_at,
         "media": poi.media,
     })

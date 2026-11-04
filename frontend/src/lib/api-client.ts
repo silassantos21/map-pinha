@@ -1,5 +1,7 @@
 import type {
+  AvatarPreset,
   Category,
+  CurrentUser,
   LatLng,
   MapBounds,
   Poi,
@@ -83,6 +85,31 @@ export async function fetchMyPois(): Promise<Poi[]> {
 export async function fetchUserStats(): Promise<UserStats> {
   const res = await fetch("/api/users/me/stats");
   if (!res.ok) throw new Error("Falha ao carregar estatísticas");
+  return res.json();
+}
+
+// Galeria fixa de avatares (Fase 9) — sem dado de usuário, chama o FastAPI
+// direto, sem passar pelo BFF (mesmo padrão de `fetchCategories`).
+export async function fetchAvatarPresets(): Promise<AvatarPreset[]> {
+  const res = await fetch(`${API_URL}/api/v1/users/avatar-presets`);
+  if (!res.ok) throw new Error("Falha ao carregar os avatares");
+  return res.json();
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser> {
+  const res = await fetch("/api/users/me");
+  if (!res.ok) throw new Error("Falha ao carregar o usuário");
+  return res.json();
+}
+
+// `presetId: null` remove a escolha e volta a usar a foto do Google.
+export async function updateAvatarChoice(presetId: number | null): Promise<CurrentUser> {
+  const res = await fetch("/api/users/me/avatar", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset_id: presetId }),
+  });
+  if (!res.ok) throw new Error("Não foi possível atualizar o avatar");
   return res.json();
 }
 

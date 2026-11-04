@@ -1,13 +1,17 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPinPlus, Navigation, Sparkles } from "lucide-react";
+import { MapPinPlus, Navigation, Sparkles, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AvatarPicker } from "@/components/profile/avatar-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 const STORAGE_PREFIX = "mapinha-onboarding-seen:";
+// Total de passos = 1 (escolher avatar) + os da tutorial abaixo.
+const TOTAL_STEPS_OFFSET = 1;
 
 const STEPS = [
   {
@@ -63,9 +67,18 @@ export function OnboardingDialog({ userId }: OnboardingDialogProps) {
     }
   };
 
-  const current = STEPS[step];
-  const Icon = current.icon;
-  const isLast = step === STEPS.length - 1;
+  // Passo 0 (novo): escolher avatar, antes do tutorial de 3 passos já
+  // existente — reaproveita o mesmo seletor usado na tela de perfil
+  // (`AvatarPicker`), chamado aqui porque é o "momento de criar a conta" na
+  // prática: não existe formulário de cadastro próprio (login é só "Entrar
+  // com Google"), este diálogo já é o primeiro contato com o app.
+  const isAvatarStep = step === 0;
+  const totalSteps = TOTAL_STEPS_OFFSET + STEPS.length;
+  const isLast = step === totalSteps - 1;
+  const { data: currentUser } = useCurrentUser(open);
+
+  const current = isAvatarStep ? null : STEPS[step - TOTAL_STEPS_OFFSET];
+  const Icon = current?.icon ?? UserRound;
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && finish()}>
@@ -85,16 +98,28 @@ export function OnboardingDialog({ userId }: OnboardingDialogProps) {
               transition={{ duration: 0.2 }}
               className="flex flex-col items-center gap-1.5 text-center"
             >
-              <DialogTitle className="font-display text-base">{current.title}</DialogTitle>
-              <p className="text-sm text-muted-foreground">{current.description}</p>
+              <DialogTitle className="font-display text-base">
+                {isAvatarStep ? "Escolha seu avatar" : current!.title}
+              </DialogTitle>
+              {isAvatarStep ? (
+                <p className="text-sm text-muted-foreground">
+                  Um dos 20 avatares prontos, ou pule e continue com sua foto do Google.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">{current!.description}</p>
+              )}
             </motion.div>
           </AnimatePresence>
         </DialogHeader>
 
+        {isAvatarStep && (
+          <AvatarPicker currentAvatarChoiceUrl={currentUser?.avatar_choice_url ?? null} />
+        )}
+
         <div className="flex items-center justify-center gap-1.5">
-          {STEPS.map((s, index) => (
+          {Array.from({ length: totalSteps }, (_, index) => (
             <span
-              key={s.title}
+              key={index}
               className={`h-1.5 rounded-full transition-all ${
                 index === step ? "w-5 bg-primary" : "w-1.5 bg-muted"
               }`}
