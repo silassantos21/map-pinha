@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 from app.api.v1.auth import verify_internal_secret
 from app.core.avatar_presets import avatar_preset_url, list_avatar_presets
 from app.db.session import get_db
+from app.models.follow import Follow
 from app.models.poi import POI
 from app.models.route import Route
 from app.models.user import User
-from app.schemas.user import AvatarPresetRead, UserAvatarUpdate, UserRead
+from app.schemas.user import AvatarPresetRead, UserAvatarUpdate, UserProfileRead, UserRead
 
 router = APIRouter()
 
@@ -37,6 +38,46 @@ def get_user_stats(user_id: uuid.UUID, db: Session = Depends(get_db)):
         select(func.coalesce(func.sum(Route.distance_m), 0)).where(Route.user_id == user_id)
     ) or 0
     return UserStatsRead(total_pois=total_pois, total_km=round(total_m / 1000, 1))
+
+
+@router.get(
+    "/users/{user_id}/profile",
+    response_model=UserProfileRead,
+    dependencies=[Depends(verify_internal_secret)],
+)
+def get_user_profile(
+    user_id: uuid.UUID, viewer_id: uuid.UUID | None = None, db: Session = Depends(get_db)
+):
+    """Perfil público de outro usuário (Fase 7) — nome/avatar/contagens, nunca
+    `email`. Reaproveita a mesma query de `total_pois` de `get_user_stats`."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    followers_count = db.scalar(
+        select(func.count(Follow.id)).where(Follow.followed_id == user_id)
+    ) or 0
+    following_count = db.scalar(
+        select(func.count(Follow.id)).where(Follow.follower_id == user_id)
+    ) or 0
+    total_pois = db.scalar(select(func.count(POI.id)).where(POI.user_id == user_id)) or 0
+
+    is_following = None
+    if viewer_id is not None and viewer_id != user_id:
+        is_following = db.scalar(
+            select(Follow.id).where(Follow.follower_id == viewer_id, Follow.followed_id == user_id)
+        ) is not None
+
+    return UserProfileRead(
+        id=user.id,
+        name=user.name,
+        avatar_url=user.avatar_url,
+        avatar_choice_url=user.avatar_choice_url,
+        is_following=is_following,
+        followers_count=followers_count,
+        following_count=following_count,
+        total_pois=total_pois,
+    )
 
 
 @router.get("/users/avatar-presets", response_model=list[AvatarPresetRead])

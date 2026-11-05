@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import { AuthButton } from "@/components/layout/auth-button";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { SearchBar } from "@/components/layout/search-bar";
 import { ThemeSwitcher } from "@/components/map/theme-switcher";
 
@@ -19,6 +20,10 @@ export function HudHeader({ userId }: HudHeaderProps) {
       <SearchBar userId={userId} />
 
       <ThemeSwitcher />
+
+      <div className="pointer-events-auto shrink-0">
+        <NotificationBell userId={userId} />
+      </div>
 
       <div className="pointer-events-auto shrink-0">
         <AuthButton />

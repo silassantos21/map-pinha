@@ -5,10 +5,13 @@ import type {
   CurrentUser,
   LatLng,
   MapBounds,
+  NotificationListResult,
   Poi,
   RouteHistoryEntry,
   RouteProfile,
   RouteResult,
+  UserProfile,
+  UserPublic,
   UserStats,
 } from "@/types/poi";
 
@@ -200,4 +203,42 @@ export async function acceptAiSuggestion(poiId: string): Promise<void> {
 
 export async function dismissAiSuggestion(poiId: string): Promise<void> {
   await fetch(`/api/pois/${poiId}/ai-suggestion/dismiss`, { method: "POST" });
+}
+
+// --- Fase 7: seguir, perfil, busca de pessoas, notificações ----------------
+
+export async function fetchUserProfile(userId: string): Promise<UserProfile> {
+  const res = await fetch(`/api/users/${userId}/profile`);
+  if (!res.ok) throw new Error("Falha ao carregar o perfil");
+  return res.json();
+}
+
+export async function searchUsers(q: string): Promise<UserPublic[]> {
+  const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+  if (!res.ok) throw new Error("Falha ao buscar pessoas");
+  return res.json();
+}
+
+export async function followUser(userId: string): Promise<void> {
+  const res = await fetch(`/api/follows/${userId}`, { method: "POST" });
+  if (!res.ok) throw new Error("Não foi possível seguir essa pessoa");
+}
+
+export async function unfollowUser(userId: string): Promise<void> {
+  const res = await fetch(`/api/follows/${userId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Não foi possível deixar de seguir essa pessoa");
+}
+
+export async function fetchNotifications(offset = 0): Promise<NotificationListResult> {
+  const res = await fetch(`/api/notifications?offset=${offset}`);
+  if (!res.ok) throw new Error("Falha ao carregar notificações");
+  return res.json();
+}
+
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  await fetch(`/api/notifications/${notificationId}/read`, { method: "POST" });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await fetch("/api/notifications/read-all", { method: "POST" });
 }

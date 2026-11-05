@@ -33,7 +33,7 @@ const EMPTY_FORM_VALUES: PoiFormValues = {
   description: "",
   address: "",
   categoryId: "",
-  isPublic: true,
+  visibility: "public",
 };
 
 interface PoiFormSheetProps {
@@ -136,7 +136,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         description: editingPoi.description ?? "",
         address: editingPoi.address ?? "",
         categoryId: editingPoi.category_id,
-        isPublic: editingPoi.is_public,
+        visibility: editingPoi.visibility,
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado local com o POI carregado ao entrar em modo de edição
       setIconName(editingPoi.icon_name);
@@ -270,7 +270,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         category_id: values.categoryId,
         lat: draftPosition.lat,
         lng: draftPosition.lng,
-        is_public: values.isPublic,
+        visibility: values.visibility,
         icon_name: isOutrosCategory ? iconName : null,
       };
 
@@ -569,10 +569,20 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
             {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-foreground">
-            <input type="checkbox" {...register("isPublic")} />
-            Visível publicamente no mapa
-          </label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="poi-visibility" className="text-xs font-medium text-foreground">
+              Quem pode ver
+            </label>
+            <select
+              id="poi-visibility"
+              {...register("visibility")}
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+            >
+              <option value="public">Público (qualquer pessoa no mapa)</option>
+              <option value="followers">Seguidores</option>
+              <option value="private">Só eu</option>
+            </select>
+          </div>
 
           {existingMedia.length > 0 && (
             <div className="flex flex-col gap-1.5">

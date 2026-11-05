@@ -83,6 +83,13 @@ interface MapState {
   // avatar do HUD (`UserAvatarBadge`) — que precisam abrir a mesma instância.
   profilePanelOpen: boolean;
   setProfilePanelOpen: (open: boolean) => void;
+
+  // Sheet de perfil de outro usuário (Fase 7) — só guarda o id, múltiplos
+  // gatilhos: resultado de busca de pessoas, clique no ator de uma
+  // notificação de novo seguidor.
+  viewedUserId: string | null;
+  viewUserProfile: (id: string) => void;
+  closeUserProfile: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -140,4 +147,8 @@ export const useMapStore = create<MapState>((set) => ({
 
   profilePanelOpen: false,
   setProfilePanelOpen: (open) => set({ profilePanelOpen: open }),
+
+  viewedUserId: null,
+  viewUserProfile: (id) => set({ viewedUserId: id }),
+  closeUserProfile: () => set({ viewedUserId: null }),
 }));

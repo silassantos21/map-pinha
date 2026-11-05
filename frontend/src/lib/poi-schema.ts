@@ -5,7 +5,7 @@ export const poiFormSchema = z.object({
   description: z.string().max(2000).optional().or(z.literal("")),
   address: z.string().min(1, "Informe o endereço").max(500),
   categoryId: z.string().min(1, "Selecione uma categoria"),
-  isPublic: z.boolean(),
+  visibility: z.enum(["public", "followers", "private"]),
 });
 
 export type PoiFormValues = z.infer<typeof poiFormSchema>;

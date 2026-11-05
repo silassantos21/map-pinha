@@ -8,9 +8,11 @@ import { PoiPanel } from "@/components/layout/poi-panel";
 import { ProfilePanel } from "@/components/layout/profile-panel";
 import { RouteHistoryPanel } from "@/components/layout/route-history-panel";
 import { RoutePanel } from "@/components/layout/route-panel";
+import { UserSearchPanel } from "@/components/layout/user-search-panel";
 import { MapViewLoader } from "@/components/map/map-view-loader";
 import { PoiDetailSheet } from "@/components/map/poi-detail-sheet";
 import { PoiFormSheet } from "@/components/poi/poi-form-sheet";
+import { UserProfileSheet } from "@/components/profile/user-profile-sheet";
 
 export async function AppShell() {
   const session = await auth();
@@ -43,12 +45,14 @@ export async function AppShell() {
           userAvatarUrl={session?.user?.image}
         />
         <RouteHistoryPanel isAuthenticated={userId !== null} />
+        <UserSearchPanel isAuthenticated={userId !== null} />
         <PoiPanel userId={userId} />
       </div>
 
       <RoutePanel isAuthenticated={userId !== null} />
       <PoiDetailSheet userId={userId} />
       <PoiFormSheet userId={userId} />
+      <UserProfileSheet currentUserId={userId} />
       {userId && <OnboardingDialog userId={userId} />}
     </div>
   );

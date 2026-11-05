@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
-from sqlalchemy import cast, func, or_, select
+from sqlalchemy import and_, cast, func, insert, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.v1.auth import verify_internal_secret
@@ -14,7 +14,9 @@ from app.core.rate_limit import enforce_ai_rate_limit
 from app.core.storage import build_public_url, delete_object_by_public_url
 from app.db.session import SessionLocal, get_db
 from app.models.category import Category
-from app.models.poi import POI
+from app.models.follow import Follow
+from app.models.notification import Notification, NotificationType
+from app.models.poi import POI, POIVisibility
 from app.models.poi_media import MediaType, POIMedia
 from app.models.poi_reaction import PoiReaction
 from app.models.user import User
@@ -78,7 +80,7 @@ def _serialize(poi: POI) -> dict:
         "address": poi.address,
         "lat": point.y,
         "lng": point.x,
-        "is_public": poi.is_public,
+        "visibility": poi.visibility,
         "icon_name": poi.icon_name,
         "ai_category_slug": poi.ai_category_slug,
         "ai_icon_name": poi.ai_icon_name,
@@ -97,6 +99,24 @@ def _serialize(poi: POI) -> dict:
 
 def _to_read(poi: POI) -> POIRead:
     return POIRead.model_validate(_serialize(poi))
+
+
+def _poi_visible_to(poi: POI, user_id: uuid.UUID | None, db: Session) -> bool:
+    """`True` se `poi` for público, se `user_id` for o dono, ou se
+    `visibility=followers` e `user_id` seguir o dono do POI."""
+    if poi.visibility == POIVisibility.public:
+        return True
+    if user_id is None:
+        return False
+    if poi.user_id == user_id:
+        return True
+    if poi.visibility == POIVisibility.followers:
+        return db.scalar(
+            select(Follow.id).where(
+                Follow.follower_id == user_id, Follow.followed_id == poi.user_id
+            )
+        ) is not None
+    return False
 
 
 @router.get(
@@ -149,9 +169,17 @@ def list_pois(
             )
         stmt = stmt.where(POI.user_id == user_id)
     elif user_id:
-        stmt = stmt.where(or_(POI.is_public.is_(True), POI.user_id == user_id))
+        # Meus POIs + públicos + de quem eu sigo (visibility=followers).
+        followed_ids = select(Follow.followed_id).where(Follow.follower_id == user_id)
+        stmt = stmt.where(
+            or_(
+                POI.user_id == user_id,
+                POI.visibility == POIVisibility.public,
+                and_(POI.visibility == POIVisibility.followers, POI.user_id.in_(followed_ids)),
+            )
+        )
     else:
-        stmt = stmt.where(POI.is_public.is_(True))
+        stmt = stmt.where(POI.visibility == POIVisibility.public)
 
     # Sem ORDER BY, o Postgres não garante a mesma ordem entre execuções da
     # mesma query ST_Intersects (varredura de índice pode mudar) — isso
@@ -175,18 +203,18 @@ def list_pois(
 )
 def get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
     """Busca por slug pra página pública de compartilhamento (`/p/{slug}` no
-    frontend, Sprint 6) — só devolve POIs com `is_public=True`; privados dão
-    404 igual a inexistentes, pra não vazar que o slug existe. Declarado
-    ANTES de `/pois/{poi_id}` no router: como "by-slug" não é um UUID válido,
-    se viesse depois o FastAPI casaria a rota pelo formato do path primeiro
-    e devolveria 422 (falha ao converter "by-slug" pra UUID) em vez de cair
-    nesta rota."""
+    frontend, Sprint 6) — só devolve POIs com `visibility=public`; privados/
+    seguidores dão 404 igual a inexistentes, pra não vazar que o slug existe.
+    Declarado ANTES de `/pois/{poi_id}` no router: como "by-slug" não é um
+    UUID válido, se viesse depois o FastAPI casaria a rota pelo formato do
+    path primeiro e devolveria 422 (falha ao converter "by-slug" pra UUID)
+    em vez de cair nesta rota."""
     row = db.execute(
         select(POI, Category, User)
         .join(Category, POI.category_id == Category.id)
         .join(User, POI.user_id == User.id)
         .options(selectinload(POI.media))
-        .where(POI.slug == slug, POI.is_public.is_(True))
+        .where(POI.slug == slug, POI.visibility == POIVisibility.public)
     ).first()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
@@ -219,7 +247,7 @@ def get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
 )
 def get_poi(poi_id: uuid.UUID, user_id: uuid.UUID | None = None, db: Session = Depends(get_db)):
     poi = db.scalar(_with_relations(select(POI)).where(POI.id == poi_id))
-    if poi is None or not (poi.is_public or poi.user_id == user_id):
+    if poi is None or not _poi_visible_to(poi, user_id, db):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
 
     return _to_read(poi)
@@ -243,12 +271,36 @@ def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Sessio
         description=payload.description,
         address=payload.address,
         location=WKTElement(f"POINT({payload.lng} {payload.lat})", srid=4326),
-        is_public=payload.is_public,
+        visibility=payload.visibility,
         icon_name=payload.icon_name,
     )
     db.add(poi)
     db.commit()
     db.refresh(poi)
+
+    # Notifica quem segue o dono do POI (exceto se for privado) — um único
+    # INSERT em lote, não um loop (ver nota de performance no HANDOFF/plano).
+    if poi.visibility != POIVisibility.private:
+        follower_ids = db.scalars(
+            select(Follow.follower_id).where(Follow.followed_id == poi.user_id)
+        ).all()
+        if follower_ids:
+            db.execute(
+                insert(Notification),
+                [
+                    {
+                        "id": uuid.uuid4(),
+                        "user_id": follower_id,
+                        "type": NotificationType.new_poi_from_followed,
+                        "actor_id": poi.user_id,
+                        "poi_id": poi.id,
+                        "payload": {"poi_name": poi.name},
+                    }
+                    for follower_id in follower_ids
+                ],
+            )
+            db.commit()
+
     background_tasks.add_task(_run_categorizer_background, poi.id)
     return _to_read(poi)
 
@@ -379,6 +431,18 @@ def toggle_reaction(poi_id: uuid.UUID, payload: ReactionToggle, db: Session = De
         db.delete(existing)
     else:
         db.add(PoiReaction(poi_id=poi_id, user_id=payload.user_id, emoji=payload.emoji))
+        # Notifica o dono do POI só ao adicionar (não ao remover) e só se não
+        # for autorreação.
+        if poi.user_id != payload.user_id:
+            db.add(
+                Notification(
+                    user_id=poi.user_id,
+                    type=NotificationType.poi_reaction,
+                    actor_id=payload.user_id,
+                    poi_id=poi.id,
+                    payload={"emoji": payload.emoji, "poi_name": poi.name},
+                )
+            )
     db.commit()
 
     poi = db.scalar(_with_relations(select(POI)).where(POI.id == poi_id))

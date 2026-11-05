@@ -1,9 +1,10 @@
+import enum
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from geoalchemy2 import Geography
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +13,15 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.poi_media import POIMedia
     from app.models.poi_reaction import PoiReaction
+
+
+class POIVisibility(str, enum.Enum):
+    public = "public"
+    followers = "followers"
+    private = "private"
+    # "group" entra na Fase 7 Parte 2, junto com a tabela `groups` e a coluna
+    # `group_id` — via `ALTER TYPE poi_visibility ADD VALUE` numa migration
+    # própria (não pode estar na mesma transação que já usa o valor novo).
 
 
 class POI(Base):
@@ -32,7 +42,9 @@ class POI(Base):
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # GeoAlchemy2 já cria o índice espacial GIST automaticamente nesta coluna
     location: Mapped[str] = mapped_column(Geography(geometry_type="POINT", srid=4326))
-    is_public: Mapped[bool] = mapped_column(Boolean, default=True)
+    visibility: Mapped[POIVisibility] = mapped_column(
+        Enum(POIVisibility, name="poi_visibility"), default=POIVisibility.public, index=True
+    )
     # Ícone escolhido livremente pelo usuário (categoria "outros") — quando
     # presente, sobrepõe o ícone fixo da categoria só nesse POI.
     icon_name: Mapped[str | None] = mapped_column(String(100), nullable=True)

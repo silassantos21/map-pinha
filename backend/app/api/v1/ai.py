@@ -14,7 +14,7 @@ from app.core.rate_limit import enforce_ai_rate_limit
 from app.db.session import get_db
 from app.models.ai_feedback import AiFeedback
 from app.models.category import Category
-from app.models.poi import POI
+from app.models.poi import POI, POIVisibility
 from app.schemas.ai import (
     AiFeedbackCreate,
     AiSuggestionAction,
@@ -77,7 +77,7 @@ def get_recommendations(
         select(POI, Category.name)
         .join(Category, POI.category_id == Category.id)
         .where(func.ST_DWithin(POI.location, origin, _RECOMMENDATION_RADIUS_M))
-        .where(POI.is_public.is_(True))
+        .where(POI.visibility == POIVisibility.public)
         .limit(_RECOMMENDATION_CANDIDATE_LIMIT)
     )
     rows = db.execute(stmt).all()

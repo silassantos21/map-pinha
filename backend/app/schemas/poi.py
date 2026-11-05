@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.models.poi import POIVisibility
 from app.schemas.media import POIMediaRead
 
 
@@ -27,7 +28,7 @@ class POICreate(BaseModel):
     category_id: uuid.UUID
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
-    is_public: bool = True
+    visibility: POIVisibility = POIVisibility.public
     # Ícone escolhido livremente pelo usuário (só faz sentido na categoria
     # "outros" — as demais usam o ícone fixo da própria categoria). Nome de
     # ícone do lucide-react em kebab-case, igual ao `icon_name` de categoria.
@@ -44,7 +45,7 @@ class POIUpdate(BaseModel):
     category_id: uuid.UUID | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
-    is_public: bool | None = None
+    visibility: POIVisibility | None = None
     icon_name: str | None = Field(default=None, max_length=100)
     # Quem está pedindo a alteração — usado só para o check de dono, injetado
     # pelo proxy confiável do Next.js.
@@ -61,7 +62,7 @@ class POIRead(BaseModel):
     address: str | None
     lat: float
     lng: float
-    is_public: bool
+    visibility: POIVisibility
     icon_name: str | None
     # Sugestão pendente do POICategorizerAgent (Sprint 5) — não-nula só
     # enquanto o dono não aceitou/dispensou. Ver SPRINTS.md.

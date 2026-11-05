@@ -261,7 +261,7 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        {poi.is_public && (
+        {poi.visibility === "public" && (
           <Tooltip>
             <TooltipTrigger
               render={

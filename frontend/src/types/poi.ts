@@ -1,5 +1,7 @@
 export type MediaType = "image" | "gif" | "audio";
 
+export type PoiVisibility = "public" | "followers" | "private";
+
 export interface Category {
   id: string;
   slug: string;
@@ -32,7 +34,7 @@ export interface Poi {
   address: string | null;
   lat: number;
   lng: number;
-  is_public: boolean;
+  visibility: PoiVisibility;
   // Ícone escolhido livremente pelo dono (só faz sentido na categoria
   // "outros") — quando presente, sobrepõe o ícone fixo da categoria.
   icon_name: string | null;
@@ -136,4 +138,43 @@ export interface CurrentUser {
   name: string | null;
   avatar_url: string | null;
   avatar_choice_url: string | null;
+}
+
+/** Versão de usuário pra exibir OUTRA pessoa (Fase 7: busca, listas de
+ * seguidores/seguindo) — nunca tem `email` (ver `CurrentUser`, que tem). */
+export interface UserPublic {
+  id: string;
+  name: string | null;
+  avatar_url: string | null;
+  avatar_choice_url: string | null;
+  // `null` quando não há viewer logado (ou é o próprio viewer).
+  is_following: boolean | null;
+}
+
+/** Perfil de outro usuário (Fase 7) — `UserPublic` + contagens. */
+export interface UserProfile extends UserPublic {
+  followers_count: number;
+  following_count: number;
+  total_pois: number;
+}
+
+export type NotificationType = "new_follower" | "poi_reaction" | "new_poi_from_followed";
+
+/** Notificação in-app (Fase 7). Nome `AppNotification` em vez de
+ * `Notification` pra não colidir com o tipo global `Notification` do DOM. */
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  actor_id: string;
+  actor_name: string | null;
+  actor_avatar_url: string | null;
+  poi_id: string | null;
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationListResult {
+  items: AppNotification[];
+  unread_count: number;
 }
