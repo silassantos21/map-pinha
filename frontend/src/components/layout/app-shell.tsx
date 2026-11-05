@@ -16,8 +16,13 @@ export async function AppShell() {
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
+  // h-svh (não h-dvh): dvh recalcula com o teclado virtual mobile abrindo/
+  // fechando, e o Leaflet reage a isso (resize automático da janela) como se
+  // o mapa tivesse sido movido de verdade — refazendo a busca de POIs
+  // sozinho sem o usuário ter mexido no mapa. svh fica estável nesse caso
+  // (só muda em rotação/resize de janela de verdade).
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-background">
+    <div className="relative h-svh w-full overflow-hidden bg-background">
       {/* isolate: contém o stacking context do Leaflet (seus controles internos
           usam z-index até 1000) para que nunca vaze e compita com o HUD abaixo */}
       <div className="absolute inset-0 isolate">

@@ -77,6 +77,12 @@ interface MapState {
   isNavigating: boolean;
   startNavigating: () => void;
   stopNavigating: () => void;
+
+  // Painel de Perfil: precisa ser controlado (não só um `SheetTrigger`
+  // uncontrolled) porque tem dois gatilhos — o botão "Perfil" do rodapé e o
+  // avatar do HUD (`UserAvatarBadge`) — que precisam abrir a mesma instância.
+  profilePanelOpen: boolean;
+  setProfilePanelOpen: (open: boolean) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -131,4 +137,7 @@ export const useMapStore = create<MapState>((set) => ({
   isNavigating: false,
   startNavigating: () => set({ isNavigating: true }),
   stopNavigating: () => set({ isNavigating: false }),
+
+  profilePanelOpen: false,
+  setProfilePanelOpen: (open) => set({ profilePanelOpen: open }),
 }));

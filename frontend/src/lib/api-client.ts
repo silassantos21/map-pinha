@@ -1,4 +1,5 @@
 import type {
+  AddressResult,
   AvatarPreset,
   Category,
   CurrentUser,
@@ -62,6 +63,22 @@ export async function fetchPois({ bounds, categorySlug, q }: FetchPoisParams): P
   const res = await fetch(`/api/pois?${params.toString()}`);
   if (!res.ok) throw new Error("Falha ao carregar POIs");
   return res.json();
+}
+
+// Geocodificação (Nominatim) via BFF — sem dado de usuário, mas passa pelo
+// Next.js mesmo assim porque o User-Agent exigido pelo Nominatim mora lá
+// (`lib/nominatim.ts`), não faz sentido duplicar no navegador.
+// `viewbox` (opcional): área visível atual do mapa, usada pra priorizar
+// resultados próximos de onde o usuário está olhando (ver SPRINTS.md).
+export async function searchAddresses(q: string, viewbox?: MapBounds | null): Promise<AddressResult[]> {
+  const params = new URLSearchParams({ q, limit: "5" });
+  if (viewbox) {
+    params.set("viewbox", `${viewbox.minLng},${viewbox.maxLat},${viewbox.maxLng},${viewbox.minLat}`);
+  }
+  const res = await fetch(`/api/geocode/search?${params.toString()}`);
+  if (!res.ok) return [];
+  const data: { results: AddressResult[] } = await res.json();
+  return data.results;
 }
 
 export async function fetchPoiById(id: string): Promise<Poi> {

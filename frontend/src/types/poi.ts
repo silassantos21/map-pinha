@@ -83,6 +83,15 @@ export interface LatLng {
   lng: number;
 }
 
+/** Resultado de geocodificação (Nominatim) — usado tanto no formulário de
+ * POI (buscar endereço pra posicionar o rascunho) quanto na SearchBar
+ * principal do mapa (Fase 8). */
+export interface AddressResult {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
 export type RouteProfile = "driving" | "walking";
 
 export interface RouteResult {

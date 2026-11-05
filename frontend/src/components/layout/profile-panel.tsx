@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Sparkles, UserRound } from "lucide-react";
+import { LogOut, Pencil, Sparkles, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { AvatarPicker } from "@/components/profile/avatar-picker";
@@ -20,6 +20,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMyPois } from "@/hooks/use-my-pois";
 import { useUserStats } from "@/hooks/use-user-stats";
+import { signOutAction } from "@/lib/auth-actions";
 import { useMapStore } from "@/stores/map-store";
 
 interface ProfilePanelProps {
@@ -36,6 +37,14 @@ interface ProfilePanelProps {
  * o mesmo padrão de overlay responsivo (`Sheet`) dos demais painéis, não
  * uma rota/página separada — decisão de arquitetura registrada desde o
  * Sprint 1 (ver SPRINTS.md).
+ *
+ * `Sheet` controlada (`profilePanelOpen` no `map-store.ts`), não um
+ * `SheetTrigger` uncontrolled isolado — tem dois gatilhos: o botão "Perfil"
+ * do rodapé (`SheetTrigger` abaixo) e o avatar do HUD (`UserAvatarBadge`),
+ * que precisam abrir a mesma instância. O botão "Sair" mora aqui dentro
+ * (entre o avatar e as estatísticas) em vez do avatar do HUD deslogar direto
+ * — tocar sem querer no avatar e já sair da conta sem confirmação nenhuma
+ * era surpreendente demais.
  */
 export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: ProfilePanelProps) {
   const { data: myPois = [] } = useMyPois(isAuthenticated);
@@ -46,15 +55,23 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
   // troca de avatar na hora, sem precisar relogar.
   const { data: currentUser } = useCurrentUser(isAuthenticated);
   const flyToPoi = useMapStore((s) => s.flyToPoi);
+  const profilePanelOpen = useMapStore((s) => s.profilePanelOpen);
+  const setProfilePanelOpen = useMapStore((s) => s.setProfilePanelOpen);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
   const displayedAvatarUrl = currentUser?.avatar_choice_url ?? userAvatarUrl;
 
+  const handleSignOut = () => {
+    setIsSigningOut(true);
+    void signOutAction();
+  };
+
   if (!isAuthenticated) return null;
 
   return (
-    <Sheet>
+    <Sheet open={profilePanelOpen} onOpenChange={setProfilePanelOpen}>
       <Tooltip>
         <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
           <SheetTrigger
@@ -119,6 +136,16 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
             </Dialog>
             <p className="truncate font-display text-base text-foreground">{userName ?? "Você"}</p>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-60"
+          >
+            <LogOut className="size-4" />
+            {isSigningOut ? "Saindo..." : "Sair"}
+          </button>
 
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg border border-border bg-card p-3 text-center">

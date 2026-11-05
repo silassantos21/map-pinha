@@ -4,31 +4,45 @@ import { UserRound } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useMapStore } from "@/stores/map-store";
+import type { CurrentUser } from "@/types/poi";
 
 interface UserAvatarBadgeProps {
   userName?: string | null;
   googleAvatarUrl?: string | null;
+  initialCurrentUser?: CurrentUser;
 }
 
 /** Avatar + primeiro nome empilhados no canto superior direito do HUD (Fase 9)
  * — substitui o antigo botão de texto puro do `AuthButton`. Usa
  * `useCurrentUser` pra refletir a escolha de avatar na hora (o
  * `session.user.image` do NextAuth só é atualizado no login, não quando o
- * usuário troca o avatar no perfil). O próprio botão continua sendo o
- * submit do form de logout em `auth-button.tsx`. */
-export function UserAvatarBadge({ userName, googleAvatarUrl }: UserAvatarBadgeProps) {
-  const { data: currentUser } = useCurrentUser(true);
+ * usuário troca o avatar no perfil).
+ *
+ * Abre o painel de Perfil (mesma Sheet do botão "Perfil" do rodapé, ver
+ * `profilePanelOpen` em `map-store.ts`) — não desloga mais direto: era
+ * surpreendente demais tocar no avatar e já sair da conta sem confirmação
+ * nenhuma. O botão "Sair" de verdade agora mora dentro do painel de Perfil.
+ *
+ * `initialCurrentUser` vem já pronto do servidor (`auth-button.tsx`) — sem
+ * isso, o primeiro render mostrava a foto do Google (fallback) e só trocava
+ * pro avatar escolhido quando o fetch do cliente terminava, um "pisca"
+ * perceptível. Com `initialData`, já nasce certo. */
+export function UserAvatarBadge({ userName, googleAvatarUrl, initialCurrentUser }: UserAvatarBadgeProps) {
+  const { data: currentUser } = useCurrentUser(true, initialCurrentUser);
+  const setProfilePanelOpen = useMapStore((s) => s.setProfilePanelOpen);
   const avatarUrl = currentUser?.avatar_choice_url ?? googleAvatarUrl;
-  const firstName = userName?.split(" ")[0] ?? "Sair";
+  const firstName = userName?.split(" ")[0] ?? "Perfil";
 
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <button
-            type="submit"
+            type="button"
+            onClick={() => setProfilePanelOpen(true)}
             className="pointer-events-auto flex flex-col items-center gap-1 transition-transform active:scale-95"
-            aria-label="Sair da conta"
+            aria-label="Abrir perfil"
           />
         }
       >
@@ -44,7 +58,7 @@ export function UserAvatarBadge({ userName, googleAvatarUrl }: UserAvatarBadgePr
           {firstName}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="left">Sair</TooltipContent>
+      <TooltipContent side="left">Perfil</TooltipContent>
     </Tooltip>
   );
 }

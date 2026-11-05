@@ -209,9 +209,9 @@ Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (es
 
 #### Tarefas
 
-- [ ] Reaproveitar o endpoint de geocodificação já existente (`/api/geocode/search`) na SearchBar principal do mapa, além do uso atual no formulário de POI
-- [ ] Unificar os resultados da SearchBar: POIs cadastrados e endereços/lugares geocodificados na mesma lista, diferenciados visualmente (ex.: ícone de pin de POI vs. ícone de endereço)
-- [ ] Ao selecionar um resultado de endereço (em vez de um POI), mover o mapa até a coordenada (`flyTo`) sem criar nenhum POI nem abrir formulário
+- [x] Reaproveitar o endpoint de geocodificação já existente (`/api/geocode/search`) na SearchBar principal do mapa, além do uso atual no formulário de POI
+- [x] Unificar os resultados da SearchBar: POIs cadastrados e endereços/lugares geocodificados na mesma lista, diferenciados visualmente (ícone `MapPin` pros POIs, `Signpost` pros endereços)
+- [x] Ao selecionar um resultado de endereço (em vez de um POI), mover o mapa até a coordenada (`flyTo`) sem criar nenhum POI nem abrir formulário
 
 #### Entregáveis
 

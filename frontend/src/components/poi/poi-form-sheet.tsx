@@ -21,7 +21,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import { useCategories } from "@/hooks/use-categories";
 import { usePoi } from "@/hooks/use-poi";
-import { generatePoiBio } from "@/lib/api-client";
+import { generatePoiBio, searchAddresses } from "@/lib/api-client";
 import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
 import { poiFormSchema, type PoiFormValues } from "@/lib/poi-schema";
 import { attachMediaToPoi, uploadMediaFile } from "@/lib/upload-media";
@@ -47,6 +47,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
   const editingPoiId = useMapStore((s) => s.editingPoiId);
   const setDraftPoiPosition = useMapStore((s) => s.setDraftPoiPosition);
   const stopEditingPoi = useMapStore((s) => s.stopEditingPoi);
+  const mapBounds = useMapStore((s) => s.mapBounds);
 
   const isEditMode = editingPoiId !== null;
   const isOpen = isCreatingPoi || isEditMode;
@@ -200,15 +201,14 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     setIsGeocoding(true);
     setPositionError(null);
     try {
-      const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(addressQuery)}`);
-      const data: { result: { lat: number; lng: number; address: string } | null } =
-        await res.json();
-      if (!data.result) {
+      const results = await searchAddresses(addressQuery, mapBounds);
+      const result = results[0] ?? null;
+      if (!result) {
         setPositionError("Endereço não encontrado");
         return;
       }
-      setDraftPoiPosition({ lat: data.result.lat, lng: data.result.lng });
-      setValue("address", data.result.address, { shouldDirty: true });
+      setDraftPoiPosition({ lat: result.lat, lng: result.lng });
+      setValue("address", result.address, { shouldDirty: true });
     } catch {
       setPositionError("Falha ao buscar o endereço");
     } finally {
