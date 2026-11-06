@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { Loader2, LocateFixed, Search, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { MediaUploader, type PendingMedia } from "@/components/poi/media-uploader";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/toast";
 import { useCategories } from "@/hooks/use-categories";
+import { useMyGroups } from "@/hooks/use-groups";
 import { usePoi } from "@/hooks/use-poi";
 import { generatePoiBio, searchAddresses } from "@/lib/api-client";
 import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
@@ -34,6 +35,7 @@ const EMPTY_FORM_VALUES: PoiFormValues = {
   address: "",
   categoryId: "",
   visibility: "public",
+  groupId: null,
 };
 
 interface PoiFormSheetProps {
@@ -96,6 +98,10 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
   const isOutrosCategory =
     categories?.find((c) => c.id === selectedCategoryId)?.slug === "outros";
 
+  // Seletor de grupo só aparece quando a visibilidade escolhida é "group".
+  const selectedVisibility = useWatch({ control, name: "visibility" });
+  const { data: myGroups } = useMyGroups(userId != null && selectedVisibility === "group");
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- limpa o ícone livre escolhido quando sai da categoria "outros", intencional
     if (!isOutrosCategory) setIconName(null);
@@ -137,6 +143,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         address: editingPoi.address ?? "",
         categoryId: editingPoi.category_id,
         visibility: editingPoi.visibility,
+        groupId: editingPoi.group_id,
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza estado local com o POI carregado ao entrar em modo de edição
       setIconName(editingPoi.icon_name);
@@ -271,6 +278,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
         lat: draftPosition.lat,
         lng: draftPosition.lng,
         visibility: values.visibility,
+        group_id: values.visibility === "group" ? values.groupId : null,
         icon_name: isOutrosCategory ? iconName : null,
       };
 
@@ -580,9 +588,54 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
             >
               <option value="public">Público (qualquer pessoa no mapa)</option>
               <option value="followers">Seguidores</option>
+              <option value="group">Grupo específico</option>
               <option value="private">Só eu</option>
             </select>
           </div>
+
+          {selectedVisibility === "group" && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor="poi-group" className="text-xs font-medium text-foreground">
+                Qual grupo
+              </label>
+              <Controller
+                control={control}
+                name="groupId"
+                render={({ field }) => (
+                  // Controlado (em vez de `register` uncontrolled) — as opções
+                  // só chegam depois de um fetch assíncrono (`useMyGroups`),
+                  // e em modo de edição o valor inicial vem de um `reset()`
+                  // que roda antes deste `<select>` existir no DOM; um select
+                  // uncontrolled não reaplica esse valor quando o elemento
+                  // aparece depois, então ele ficava sempre "Selecione um
+                  // grupo..." mesmo com um grupo já escolhido/salvo.
+                  <select
+                    id="poi-group"
+                    value={field.value ?? ""}
+                    onChange={(event) => field.onChange(event.target.value || null)}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                  >
+                    <option value="">Selecione um grupo...</option>
+                    {myGroups?.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+              {myGroups?.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Você ainda não faz parte de nenhum grupo — crie um no painel &quot;Social&quot;.
+                </p>
+              )}
+              {errors.groupId && (
+                <p className="text-xs text-destructive">{errors.groupId.message}</p>
+              )}
+            </div>
+          )}
 
           {existingMedia.length > 0 && (
             <div className="flex flex-col gap-1.5">

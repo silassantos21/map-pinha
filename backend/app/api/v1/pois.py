@@ -15,6 +15,7 @@ from app.core.storage import build_public_url, delete_object_by_public_url
 from app.db.session import SessionLocal, get_db
 from app.models.category import Category
 from app.models.follow import Follow
+from app.models.group import GroupMember, GroupMemberStatus
 from app.models.notification import Notification, NotificationType
 from app.models.poi import POI, POIVisibility
 from app.models.poi_media import MediaType, POIMedia
@@ -82,6 +83,7 @@ def _serialize(poi: POI) -> dict:
         "lat": point.y,
         "lng": point.x,
         "visibility": poi.visibility,
+        "group_id": poi.group_id,
         "icon_name": poi.icon_name,
         "ai_category_slug": poi.ai_category_slug,
         "ai_icon_name": poi.ai_icon_name,
@@ -105,8 +107,9 @@ def _to_read(poi: POI) -> POIRead:
 
 
 def _poi_visible_to(poi: POI, user_id: uuid.UUID | None, db: Session) -> bool:
-    """`True` se `poi` for público, se `user_id` for o dono, ou se
-    `visibility=followers` e `user_id` seguir o dono do POI."""
+    """`True` se `poi` for público, se `user_id` for o dono, se
+    `visibility=followers` e `user_id` seguir o dono do POI, ou se
+    `visibility=group` e `user_id` for membro aceito de `poi.group_id`."""
     if poi.visibility == POIVisibility.public:
         return True
     if user_id is None:
@@ -117,6 +120,16 @@ def _poi_visible_to(poi: POI, user_id: uuid.UUID | None, db: Session) -> bool:
         return db.scalar(
             select(Follow.id).where(
                 Follow.follower_id == user_id, Follow.followed_id == poi.user_id
+            )
+        ) is not None
+    if poi.visibility == POIVisibility.group:
+        if poi.group_id is None:
+            return False
+        return db.scalar(
+            select(GroupMember.id).where(
+                GroupMember.group_id == poi.group_id,
+                GroupMember.user_id == user_id,
+                GroupMember.status == GroupMemberStatus.accepted,
             )
         ) is not None
     return False
@@ -172,13 +185,18 @@ def list_pois(
             )
         stmt = stmt.where(POI.user_id == user_id)
     elif user_id:
-        # Meus POIs + públicos + de quem eu sigo (visibility=followers).
+        # Meus POIs + públicos + de quem eu sigo (visibility=followers) +
+        # dos grupos dos quais sou membro aceito (visibility=group).
         followed_ids = select(Follow.followed_id).where(Follow.follower_id == user_id)
+        my_group_ids = select(GroupMember.group_id).where(
+            GroupMember.user_id == user_id, GroupMember.status == GroupMemberStatus.accepted
+        )
         stmt = stmt.where(
             or_(
                 POI.user_id == user_id,
                 POI.visibility == POIVisibility.public,
                 and_(POI.visibility == POIVisibility.followers, POI.user_id.in_(followed_ids)),
+                and_(POI.visibility == POIVisibility.group, POI.group_id.in_(my_group_ids)),
             )
         )
     else:
@@ -256,6 +274,30 @@ def get_poi(poi_id: uuid.UUID, user_id: uuid.UUID | None = None, db: Session = D
     return _to_read(poi)
 
 
+def _validate_group_membership(group_id: uuid.UUID | None, user_id: uuid.UUID, db: Session) -> uuid.UUID:
+    """`visibility=group` exige um `group_id` de um grupo do qual `user_id`
+    é membro ACEITO — nunca confia no `group_id` vindo do payload sem checar
+    isso, senão daria pra marcar um POI como de um grupo que a pessoa nem
+    faz parte."""
+    if group_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="group_id is required when visibility=group",
+        )
+    is_member = db.scalar(
+        select(GroupMember.id).where(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == user_id,
+            GroupMember.status == GroupMemberStatus.accepted,
+        )
+    ) is not None
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You are not a member of this group"
+        )
+    return group_id
+
+
 @router.post(
     "/pois",
     response_model=POIRead,
@@ -266,6 +308,15 @@ def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Sessio
     if db.get(Category, payload.category_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category_id")
 
+    # Visibilidade != group nunca guarda group_id, mesmo que o cliente tenha
+    # mandado um (ex: trocou de "grupo" pra "público" no formulário sem
+    # limpar o campo) — nunca confia nisso sem revalidar.
+    group_id = (
+        _validate_group_membership(payload.group_id, payload.user_id, db)
+        if payload.visibility == POIVisibility.group
+        else None
+    )
+
     poi = POI(
         user_id=payload.user_id,
         category_id=payload.category_id,
@@ -275,15 +326,18 @@ def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Sessio
         address=payload.address,
         location=WKTElement(f"POINT({payload.lng} {payload.lat})", srid=4326),
         visibility=payload.visibility,
+        group_id=group_id,
         icon_name=payload.icon_name,
     )
     db.add(poi)
     db.commit()
     db.refresh(poi)
 
-    # Notifica quem segue o dono do POI (exceto se for privado) — um único
-    # INSERT em lote, não um loop (ver nota de performance no HANDOFF/plano).
-    if poi.visibility != POIVisibility.private:
+    # Notifica quem segue o dono do POI — só pra `public`/`followers`. POIs
+    # de grupo não entram aqui (quem segue pode nem ser membro do grupo e
+    # não teria como ver o POI de qualquer forma); notificar membros do
+    # grupo sobre POI novo fica fora de escopo desta parte (ver plano).
+    if poi.visibility in (POIVisibility.public, POIVisibility.followers):
         follower_ids = db.scalars(
             select(Follow.follower_id).where(Follow.followed_id == poi.user_id)
         ).all()
@@ -330,6 +384,17 @@ def update_poi(poi_id: uuid.UUID, payload: POIUpdate, db: Session = Depends(get_
 
     if "category_id" in data and db.get(Category, data["category_id"]) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category_id")
+
+    # Mesma regra de `create_poi`: visibilidade final == group precisa de um
+    # group_id validado; qualquer outra visibilidade final nunca guarda
+    # group_id, mesmo que o POI já tivesse um de antes (trocar de "grupo" pra
+    # outra visibilidade limpa o vínculo).
+    new_visibility = data.get("visibility", poi.visibility)
+    if new_visibility == POIVisibility.group:
+        requested_group_id = data.get("group_id", poi.group_id)
+        data["group_id"] = _validate_group_membership(requested_group_id, payload.user_id, db)
+    else:
+        data["group_id"] = None
 
     for field, value in data.items():
         setattr(poi, field, value)

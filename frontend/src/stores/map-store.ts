@@ -90,6 +90,13 @@ interface MapState {
   viewedUserId: string | null;
   viewUserProfile: (id: string) => void;
   closeUserProfile: () => void;
+
+  // Painel "Grupos" (`GroupsPanel`) — controlado pelo mesmo motivo do
+  // `profilePanelOpen`: precisa abrir a partir de um clique numa notificação
+  // de convite de grupo, não só pelo próprio botão do rodapé.
+  groupsPanelOpen: boolean;
+  setGroupsPanelOpen: (open: boolean) => void;
+  openGroupInvites: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -151,4 +158,8 @@ export const useMapStore = create<MapState>((set) => ({
   viewedUserId: null,
   viewUserProfile: (id) => set({ viewedUserId: id }),
   closeUserProfile: () => set({ viewedUserId: null }),
+
+  groupsPanelOpen: false,
+  setGroupsPanelOpen: (open) => set({ groupsPanelOpen: open }),
+  openGroupInvites: () => set({ groupsPanelOpen: true }),
 }));

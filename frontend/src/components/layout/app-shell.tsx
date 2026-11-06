@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { CategoryChips } from "@/components/layout/category-chips";
-import { FavoritesPanel } from "@/components/layout/favorites-panel";
 import { FollowersPanel } from "@/components/layout/followers-panel";
+import { GroupsPanel } from "@/components/layout/groups-panel";
 import { HudHeader } from "@/components/layout/hud-header";
 import { OnboardingDialog } from "@/components/layout/onboarding-dialog";
 import { PoiCreateButton } from "@/components/layout/poi-create-button";
@@ -9,7 +9,6 @@ import { PoiPanel } from "@/components/layout/poi-panel";
 import { ProfilePanel } from "@/components/layout/profile-panel";
 import { RouteHistoryPanel } from "@/components/layout/route-history-panel";
 import { RoutePanel } from "@/components/layout/route-panel";
-import { UserSearchPanel } from "@/components/layout/user-search-panel";
 import { MapViewLoader } from "@/components/map/map-view-loader";
 import { PoiDetailSheet } from "@/components/map/poi-detail-sheet";
 import { PoiFormSheet } from "@/components/poi/poi-form-sheet";
@@ -39,10 +38,9 @@ export async function AppShell() {
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-end gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <PoiCreateButton />
-        <FavoritesPanel isAuthenticated={userId !== null} />
         <FollowersPanel isAuthenticated={userId !== null} />
+        <GroupsPanel isAuthenticated={userId !== null} currentUserId={userId} />
         <RouteHistoryPanel isAuthenticated={userId !== null} />
-        <UserSearchPanel isAuthenticated={userId !== null} />
         <PoiPanel userId={userId} />
       </div>
 

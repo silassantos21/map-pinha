@@ -17,8 +17,9 @@ class NotificationType(str, enum.Enum):
     new_follower = "new_follower"
     poi_reaction = "poi_reaction"
     new_poi_from_followed = "new_poi_from_followed"
-    # `group_invite` (Fase 7 Parte 2) e `poi_comment` (Parte 3) entram depois
-    # via `ALTER TYPE notification_type ADD VALUE` numa migration própria.
+    group_invite = "group_invite"
+    # `poi_comment` (Fase 7 Parte 3) entra depois via `ALTER TYPE
+    # notification_type ADD VALUE` numa migration própria.
 
 
 class Notification(Base):
@@ -38,9 +39,17 @@ class Notification(Base):
     actor_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
     )
-    # POI relacionado (reação, POI novo) — nulo pra "novo seguidor".
+    # POI relacionado (reação, POI novo) — nulo pra "novo seguidor"/"convite
+    # de grupo".
     poi_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("pois.id", ondelete="CASCADE"), nullable=True
+    )
+    # Grupo relacionado (convite de grupo) — nulo pros demais tipos.
+    # `CASCADE`: excluir o grupo também limpa as notificações de convite dele
+    # (diferente de `pois.group_id`, que é `SET NULL` — aqui não faz sentido
+    # manter uma notificação de convite pra um grupo que não existe mais).
+    group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=True
     )
     # Dados denormalizados pra renderizar a notificação sem join extra por
     # item da lista (ex: {"emoji": "👍", "poi_name": "..."}).

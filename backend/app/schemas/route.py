@@ -26,6 +26,7 @@ class RouteHistoryRead(BaseModel):
     id: uuid.UUID
     poi_id: uuid.UUID
     poi_name: str
+    poi_category_id: uuid.UUID
     poi_lat: float
     poi_lng: float
     distance_m: float

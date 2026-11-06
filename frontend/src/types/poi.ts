@@ -1,6 +1,6 @@
 export type MediaType = "image" | "gif" | "audio";
 
-export type PoiVisibility = "public" | "followers" | "private";
+export type PoiVisibility = "public" | "followers" | "group" | "private";
 
 export interface Category {
   id: string;
@@ -35,6 +35,8 @@ export interface Poi {
   lat: number;
   lng: number;
   visibility: PoiVisibility;
+  // Só preenchido quando `visibility === "group"`.
+  group_id: string | null;
   // Ícone escolhido livremente pelo dono (só faz sentido na categoria
   // "outros") — quando presente, sobrepõe o ícone fixo da categoria.
   icon_name: string | null;
@@ -111,6 +113,7 @@ export interface RouteHistoryEntry {
   id: string;
   poi_id: string;
   poi_name: string;
+  poi_category_id: string;
   poi_lat: number;
   poi_lng: number;
   distance_m: number;
@@ -169,7 +172,11 @@ export interface FollowListResult {
   total: number;
 }
 
-export type NotificationType = "new_follower" | "poi_reaction" | "new_poi_from_followed";
+export type NotificationType =
+  | "new_follower"
+  | "poi_reaction"
+  | "new_poi_from_followed"
+  | "group_invite";
 
 /** Notificação in-app (Fase 7). Nome `AppNotification` em vez de
  * `Notification` pra não colidir com o tipo global `Notification` do DOM. */
@@ -180,6 +187,8 @@ export interface AppNotification {
   actor_name: string | null;
   actor_avatar_url: string | null;
   poi_id: string | null;
+  group_id: string | null;
+  group_name: string | null;
   payload: Record<string, unknown>;
   read_at: string | null;
   created_at: string;
@@ -188,4 +197,41 @@ export interface AppNotification {
 export interface NotificationListResult {
   items: AppNotification[];
   unread_count: number;
+}
+
+// --- Fase 7 Parte 2: Grupos --------------------------------------------------
+
+export type GroupMemberRole = "owner" | "member";
+export type GroupMemberStatus = "pending" | "accepted";
+
+/** Grupo do ponto de vista de quem está olhando (`my_role`, `member_count`
+ * só conta `accepted`) — `GET /groups`, `GET /groups/{id}`. */
+export interface Group {
+  id: string;
+  name: string;
+  owner_id: string;
+  owner_name: string | null;
+  member_count: number;
+  my_role: GroupMemberRole;
+  created_at: string;
+}
+
+/** Convite pendente pra mim (`GET /groups/invites`). */
+export interface GroupInvite {
+  group_id: string;
+  group_name: string;
+  invited_by_name: string | null;
+  created_at: string;
+}
+
+export interface GroupMember {
+  user_id: string;
+  name: string | null;
+  avatar_url: string | null;
+  role: GroupMemberRole;
+  status: GroupMemberStatus;
+}
+
+export interface GroupDetail extends Group {
+  members: GroupMember[];
 }

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.group import Group
     from app.models.poi_media import POIMedia
     from app.models.poi_reaction import PoiReaction
     from app.models.user import User
@@ -20,9 +21,10 @@ class POIVisibility(str, enum.Enum):
     public = "public"
     followers = "followers"
     private = "private"
-    # "group" entra na Fase 7 Parte 2, junto com a tabela `groups` e a coluna
-    # `group_id` — via `ALTER TYPE poi_visibility ADD VALUE` numa migration
-    # própria (não pode estar na mesma transação que já usa o valor novo).
+    # Fase 7 Parte 2: só visível pros membros aceitos de `group_id` — exige
+    # `group_id` preenchido (validado em `create_poi`/`update_poi`, nunca
+    # confiado do payload sem checar membership).
+    group = "group"
 
 
 class POI(Base):
@@ -45,6 +47,13 @@ class POI(Base):
     location: Mapped[str] = mapped_column(Geography(geometry_type="POINT", srid=4326))
     visibility: Mapped[POIVisibility] = mapped_column(
         Enum(POIVisibility, name="poi_visibility"), default=POIVisibility.public, index=True
+    )
+    # Só preenchido quando `visibility=group`. `ondelete="SET NULL"`: excluir
+    # o grupo não excluir o POI — ele só vira invisível pra todo mundo exceto
+    # o próprio dono (nenhum `group_id` nulo bate no filtro de membership),
+    # sem precisar de lógica especial no endpoint.
+    group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("groups.id", ondelete="SET NULL"), nullable=True, index=True
     )
     # Ícone escolhido livremente pelo usuário (categoria "outros") — quando
     # presente, sobrepõe o ícone fixo da categoria só nesse POI.

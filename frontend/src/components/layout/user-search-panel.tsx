@@ -22,10 +22,6 @@ import { followUser, unfollowUser } from "@/lib/api-client";
 import { useMapStore } from "@/stores/map-store";
 import type { UserPublic } from "@/types/poi";
 
-interface UserSearchPanelProps {
-  isAuthenticated: boolean;
-}
-
 export function FollowToggleButton({ user }: { user: UserPublic }) {
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
@@ -73,32 +69,26 @@ export function FollowToggleButton({ user }: { user: UserPublic }) {
   );
 }
 
-export function UserSearchPanel({ isAuthenticated }: UserSearchPanelProps) {
+/** Busca de pessoas — vive dentro do cabeçalho do painel Social (ver
+ * `followers-panel.tsx`), não como botão próprio no rodapé. Abre sua Sheet
+ * por cima da Sheet do Social já aberta, mesmo padrão já usado por
+ * `CreateGroupDialog` (um Dialog sobre o Social já aberto). */
+export function UserSearchPanel() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 300);
-  const { data: results = [] } = useUserSearch(debouncedQuery, isAuthenticated);
+  const { data: results = [] } = useUserSearch(debouncedQuery, true);
   const viewUserProfile = useMapStore((s) => s.viewUserProfile);
-
-  if (!isAuthenticated) return null;
 
   return (
     <Sheet>
       <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <UserSearch />
+        <TooltipTrigger render={<span className="inline-flex" />}>
+          <SheetTrigger render={<Button size="icon-sm" variant="ghost" />}>
+            <UserSearch className="size-4" />
             <span className="sr-only">Buscar pessoas</span>
           </SheetTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Buscar pessoas</TooltipContent>
+        <TooltipContent>Buscar pessoas</TooltipContent>
       </Tooltip>
 
       <SheetContent>

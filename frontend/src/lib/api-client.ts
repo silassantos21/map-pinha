@@ -4,6 +4,9 @@ import type {
   Category,
   CurrentUser,
   FollowListResult,
+  Group,
+  GroupDetail,
+  GroupInvite,
   LatLng,
   MapBounds,
   NotificationListResult,
@@ -310,4 +313,70 @@ export async function markNotificationRead(notificationId: string): Promise<void
 
 export async function markAllNotificationsRead(): Promise<void> {
   await fetch("/api/notifications/read-all", { method: "POST" });
+}
+
+// --- Fase 7 Parte 2: Grupos --------------------------------------------------
+
+export async function fetchMyGroups(): Promise<Group[]> {
+  const res = await fetch("/api/groups");
+  if (!res.ok) throw new Error("Falha ao carregar seus grupos");
+  return res.json();
+}
+
+export async function fetchPendingInvites(): Promise<GroupInvite[]> {
+  const res = await fetch("/api/groups/invites");
+  if (!res.ok) throw new Error("Falha ao carregar convites pendentes");
+  return res.json();
+}
+
+export async function createGroup(name: string): Promise<Group> {
+  const res = await fetch("/api/groups", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível criar o grupo"));
+  return res.json();
+}
+
+export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
+  const res = await fetch(`/api/groups/${groupId}`);
+  if (!res.ok) throw new Error("Falha ao carregar o grupo");
+  return res.json();
+}
+
+export async function renameGroup(groupId: string, name: string): Promise<Group> {
+  const res = await fetch(`/api/groups/${groupId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível renomear o grupo"));
+  return res.json();
+}
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível excluir o grupo"));
+}
+
+export async function inviteToGroup(groupId: string, userId: string): Promise<void> {
+  const res = await fetch(`/api/groups/${groupId}/members`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível convidar essa pessoa"));
+}
+
+export async function acceptGroupInvite(groupId: string): Promise<void> {
+  const res = await fetch(`/api/groups/${groupId}/members/accept`, { method: "POST" });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível aceitar o convite"));
+}
+
+/** Recusar convite, sair do grupo ou (o dono) remover alguém — mesma ação
+ * no backend (apaga a linha de `group_members`), só muda quem está pedindo. */
+export async function leaveOrRemoveFromGroup(groupId: string, userId: string): Promise<void> {
+  const res = await fetch(`/api/groups/${groupId}/members/${userId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível completar a ação"));
 }

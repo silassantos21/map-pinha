@@ -140,6 +140,7 @@ def list_route_history(user_id: uuid.UUID, db: Session = Depends(get_db)):
                 id=route.id,
                 poi_id=poi.id,
                 poi_name=poi.name,
+                poi_category_id=poi.category_id,
                 poi_lat=point.y,
                 poi_lng=point.x,
                 distance_m=route.distance_m,

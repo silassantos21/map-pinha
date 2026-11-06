@@ -7,6 +7,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.categories import router as categories_router
 from app.api.v1.favorites import router as favorites_router
 from app.api.v1.follows import router as follows_router
+from app.api.v1.groups import router as groups_router
 from app.api.v1.health import router as health_router
 from app.api.v1.media import router as media_router
 from app.api.v1.notifications import router as notifications_router
@@ -49,3 +50,4 @@ app.include_router(ai_router, prefix="/api/v1")
 app.include_router(follows_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+app.include_router(groups_router, prefix="/api/v1")

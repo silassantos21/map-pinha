@@ -2,8 +2,9 @@
 
 import { Users as UsersIcon, UserRound } from "lucide-react";
 
-import { FollowToggleButton } from "@/components/layout/user-search-panel";
+import { FollowToggleButton, UserSearchPanel } from "@/components/layout/user-search-panel";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { MotionListItem } from "@/components/ui/motion-list-item";
 import {
   Sheet,
@@ -54,15 +55,14 @@ function UserRow({ user }: { user: UserPublic }) {
   );
 }
 
-function EmptyState({ text }: { text: string }) {
-  return <p className="px-1 text-xs text-muted-foreground">{text}</p>;
-}
-
-/** Painel "Seguidores e seguindo" (Fase 7) — ocupa o slot do rodapé que
- * antes era um botão próprio pro `ProfilePanel` (removido ali: o avatar do
- * HUD já abre o mesmo painel, ter os dois era redundante). Duas abas, cada
- * uma com sua própria lista — sem scroll infinito nem offset por página,
- * mesmo esquema "lista crescente por `limit`" do sininho de notificações. */
+/** Painel "Social" (Fase 7) — ocupa o slot do rodapé que antes era um botão
+ * próprio pro `ProfilePanel` (removido ali: o avatar do HUD já abre o mesmo
+ * painel, ter os dois era redundante). Duas abas (Seguidores / Seguindo) —
+ * "Grupos" tem botão próprio (`GroupsPanel`), separado daqui porque com 3
+ * abas ficava apertado no mobile. Sem scroll infinito nem offset por página,
+ * mesmo esquema "lista crescente por `limit`" do sininho de notificações.
+ * Sem controle externo (nada mais precisa abrir este painel numa aba
+ * específica) — `Sheet`/`Tabs` ficam uncontrolled mesmo. */
 export function FollowersPanel({ isAuthenticated }: FollowersPanelProps) {
   const { data: followers } = useMyFollowers(isAuthenticated);
   const { data: following } = useMyFollowing(isAuthenticated);
@@ -83,24 +83,27 @@ export function FollowersPanel({ isAuthenticated }: FollowersPanelProps) {
             }
           >
             <UsersIcon />
-            <span className="sr-only">Seguidores e seguindo</span>
+            <span className="sr-only">Social</span>
           </SheetTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Seguidores e seguindo</TooltipContent>
+        <TooltipContent side="left">Social</TooltipContent>
       </Tooltip>
 
       <SheetContent className="flex flex-col gap-0">
-        <SheetHeader>
-          <SheetTitle className="font-display">Seguidores e seguindo</SheetTitle>
-          <SheetDescription className="sr-only">
-            Quem segue você e quem você segue, em duas abas.
-          </SheetDescription>
+        <SheetHeader className="flex-row items-center justify-between">
+          <div>
+            <SheetTitle className="font-display">Social</SheetTitle>
+            <SheetDescription className="sr-only">
+              Quem segue você e quem você segue.
+            </SheetDescription>
+          </div>
+          <UserSearchPanel />
         </SheetHeader>
 
         <Tabs defaultValue="followers" className="flex min-h-0 flex-1 flex-col gap-3 px-4">
           <TabsList>
-            <TabsTab value="followers">Seguidores ({followers?.total ?? 0})</TabsTab>
-            <TabsTab value="following">Seguindo ({following?.total ?? 0})</TabsTab>
+            <TabsTab value="followers">Seguidores</TabsTab>
+            <TabsTab value="following">Seguindo</TabsTab>
           </TabsList>
 
           <TabsPanel value="followers" className="gap-2 overflow-y-auto">

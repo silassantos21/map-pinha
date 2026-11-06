@@ -46,6 +46,11 @@ def list_notifications(
             actor_name=n.actor.name,
             actor_avatar_url=n.actor.avatar_choice_url or n.actor.avatar_url,
             poi_id=n.poi_id,
+            group_id=n.group_id,
+            # `group_name` já vem denormalizado no `payload` (preenchido na
+            # criação, em `groups.py::invite_member`) — evita mais um join/
+            # selectinload só pra exibir o nome do grupo na lista.
+            group_name=n.payload.get("group_name"),
             payload=n.payload,
             read_at=n.read_at,
             created_at=n.created_at,

@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 import { auth } from "@/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -45,4 +47,21 @@ export async function backendFetch(path: string, init: RequestInit = {}): Promis
       ...init.headers,
     },
   });
+}
+
+/**
+ * Repassa a resposta do backend tal qual: corpo vazio em 204 (`res.json()`
+ * quebraria, não tem corpo pra ler), senão o JSON — incluindo erros com
+ * `{detail: "..."}` (ex: convite duplicado, 400), que o frontend precisa
+ * pra mostrar a mensagem certa em vez de um genérico. Endpoints de grupo
+ * (Fase 7 Parte 2) costumam devolver 204 no sucesso mas 400/403/404 com
+ * corpo no erro — sem isso, um `new NextResponse(null, {status})` simples
+ * descartaria a mensagem de erro do backend.
+ */
+export async function forwardJsonOr204(res: Response): Promise<NextResponse> {
+  if (res.status === 204) {
+    return new NextResponse(null, { status: 204 });
+  }
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status });
 }

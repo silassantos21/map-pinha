@@ -90,7 +90,11 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn("flex flex-col gap-0.5 p-4", className)}
+      // pr-12 (não p-4 simétrico): reserva espaço pro botão de fechar, que é
+      // `absolute top-3 right-3` por cima do header, não parte do seu fluxo.
+      // Sem isso, qualquer botão de ação encostado à direita do título (ex:
+      // "Marcar tudo como lido", busca de pessoas) fica embaixo do X.
+      className={cn("flex flex-col gap-0.5 p-4 pr-12", className)}
       {...props}
     />
   )

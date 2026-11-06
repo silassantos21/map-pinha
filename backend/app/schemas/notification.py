@@ -13,6 +13,8 @@ class NotificationRead(BaseModel):
     actor_name: str | None
     actor_avatar_url: str | None
     poi_id: uuid.UUID | None
+    group_id: uuid.UUID | None
+    group_name: str | None
     payload: dict
     read_at: datetime | None
     created_at: datetime

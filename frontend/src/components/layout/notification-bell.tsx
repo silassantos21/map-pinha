@@ -34,6 +34,8 @@ function formatNotificationText(n: AppNotification): string {
       return `${actor} reagiu com ${n.payload.emoji ?? "👍"} no seu POI ${n.payload.poi_name ?? ""}`;
     case "new_poi_from_followed":
       return `${actor} cadastrou um novo POI: ${n.payload.poi_name ?? ""}`;
+    case "group_invite":
+      return `${actor} te convidou pro grupo ${n.group_name ?? ""}`;
     default:
       return actor;
   }
@@ -56,6 +58,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const viewUserProfile = useMapStore((s) => s.viewUserProfile);
   const flyToPoi = useMapStore((s) => s.flyToPoi);
   const selectPoi = useMapStore((s) => s.selectPoi);
+  const openGroupInvites = useMapStore((s) => s.openGroupInvites);
 
   if (!isAuthenticated) return null;
 
@@ -78,6 +81,11 @@ export function NotificationBell({ userId }: NotificationBellProps) {
 
     if (notification.type === "new_follower") {
       viewUserProfile(notification.actor_id);
+      return;
+    }
+
+    if (notification.type === "group_invite") {
+      openGroupInvites();
       return;
     }
 

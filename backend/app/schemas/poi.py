@@ -29,6 +29,11 @@ class POICreate(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
     visibility: POIVisibility = POIVisibility.public
+    # Só relevante quando `visibility=group` — validado no endpoint (precisa
+    # ser um grupo do qual `user_id` é membro aceito). Pra qualquer outra
+    # visibilidade, o servidor ignora/zera isso, nunca confia no que o
+    # cliente mandou.
+    group_id: uuid.UUID | None = None
     # Ícone escolhido livremente pelo usuário (só faz sentido na categoria
     # "outros" — as demais usam o ícone fixo da própria categoria). Nome de
     # ícone do lucide-react em kebab-case, igual ao `icon_name` de categoria.
@@ -46,6 +51,7 @@ class POIUpdate(BaseModel):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     visibility: POIVisibility | None = None
+    group_id: uuid.UUID | None = None
     icon_name: str | None = Field(default=None, max_length=100)
     # Quem está pedindo a alteração — usado só para o check de dono, injetado
     # pelo proxy confiável do Next.js.
@@ -63,6 +69,7 @@ class POIRead(BaseModel):
     lat: float
     lng: float
     visibility: POIVisibility
+    group_id: uuid.UUID | None = None
     icon_name: str | None
     # Sugestão pendente do POICategorizerAgent (Sprint 5) — não-nula só
     # enquanto o dono não aceitou/dispensou. Ver SPRINTS.md.
