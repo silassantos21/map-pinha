@@ -4,7 +4,6 @@ import { LogOut, Pencil, Sparkles, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { AvatarPicker } from "@/components/profile/avatar-picker";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MotionListItem } from "@/components/ui/motion-list-item";
 import {
@@ -13,14 +12,13 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMyPois } from "@/hooks/use-my-pois";
 import { useUserStats } from "@/hooks/use-user-stats";
 import { signOutAction } from "@/lib/auth-actions";
+import { getPoiIcon } from "@/lib/poi-icons";
 import { useMapStore } from "@/stores/map-store";
 
 interface ProfilePanelProps {
@@ -38,10 +36,9 @@ interface ProfilePanelProps {
  * uma rota/página separada — decisão de arquitetura registrada desde o
  * Sprint 1 (ver SPRINTS.md).
  *
- * `Sheet` controlada (`profilePanelOpen` no `map-store.ts`), não um
- * `SheetTrigger` uncontrolled isolado — tem dois gatilhos: o botão "Perfil"
- * do rodapé (`SheetTrigger` abaixo) e o avatar do HUD (`UserAvatarBadge`),
- * que precisam abrir a mesma instância. O botão "Sair" mora aqui dentro
+ * `Sheet` controlada (`profilePanelOpen` no `map-store.ts`), sem `SheetTrigger`
+ * próprio — abre só via avatar do HUD (`UserAvatarBadge`, chama
+ * `setProfilePanelOpen(true)` direto). O botão "Sair" mora aqui dentro
  * (entre o avatar e as estatísticas) em vez do avatar do HUD deslogar direto
  * — tocar sem querer no avatar e já sair da conta sem confirmação nenhuma
  * era surpreendente demais.
@@ -60,7 +57,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
   const displayedAvatarUrl = currentUser?.avatar_choice_url ?? userAvatarUrl;
 
   const handleSignOut = () => {
@@ -70,26 +67,13 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
 
   if (!isAuthenticated) return null;
 
+  // Sem `SheetTrigger` próprio no rodapé: o avatar do HUD (`UserAvatarBadge`)
+  // já abre este painel via `setProfilePanelOpen(true)` — ter os dois
+  // (avatar E um botão redundante no rodapé) só duplicava o mesmo destino.
+  // O slot do rodapé que antes era "Perfil" virou o `FollowersPanel`
+  // (seguidores/seguindo), que não tinha lugar nenhum até agora.
   return (
     <Sheet open={profilePanelOpen} onOpenChange={setProfilePanelOpen}>
-      <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <UserRound />
-            <span className="sr-only">Abrir perfil</span>
-          </SheetTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Perfil</TooltipContent>
-      </Tooltip>
-
       <SheetContent>
         <SheetHeader>
           <SheetTitle className="font-display">Perfil</SheetTitle>
@@ -100,40 +84,59 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
 
         <div className="flex flex-col gap-4 px-4">
           <div className="flex items-center gap-3">
-            <Dialog open={avatarPickerOpen} onOpenChange={setAvatarPickerOpen}>
-              <DialogTrigger
-                render={
-                  <button
-                    type="button"
-                    className="group relative shrink-0"
-                    aria-label="Trocar avatar"
-                  />
-                }
-              >
-                {displayedAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos, sem domínio fixo configurado em next.config.mjs)
-                  <img
-                    src={displayedAvatarUrl}
-                    alt=""
-                    className="size-12 rounded-full"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                    <UserRound className="size-5 text-muted-foreground" />
-                  </span>
-                )}
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/40">
-                  <Pencil className="size-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="relative shrink-0">
+              {/* Ver a foto ampliada — alvo de clique é o avatar inteiro.
+                  Separado do editar (badge no canto abaixo) pra não competir
+                  pelo mesmo clique: antes, o avatar inteiro só abria o
+                  seletor de avatar, sem jeito nenhum de só ver a foto atual
+                  ampliada. */}
+              {displayedAvatarUrl ? (
+                <Dialog>
+                  <DialogTrigger render={<button type="button" aria-label="Ver foto de perfil" />}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos, sem domínio fixo configurado em next.config.mjs) */}
+                    <img
+                      src={displayedAvatarUrl}
+                      alt=""
+                      className="size-12 rounded-full"
+                      referrerPolicy="no-referrer"
+                    />
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[calc(100%-2rem)] bg-transparent p-0 ring-0 sm:max-w-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos) */}
+                    <img
+                      src={displayedAvatarUrl}
+                      alt=""
+                      className="w-full rounded-xl object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </DialogContent>
+                </Dialog>
+              ) : (
+                <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+                  <UserRound className="size-5 text-muted-foreground" />
                 </span>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="font-display">Escolher avatar</DialogTitle>
-                </DialogHeader>
-                <AvatarPicker currentAvatarChoiceUrl={currentUser?.avatar_choice_url ?? null} />
-              </DialogContent>
-            </Dialog>
+              )}
+
+              <Dialog open={avatarPickerOpen} onOpenChange={setAvatarPickerOpen}>
+                <DialogTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full border-2 border-background bg-secondary"
+                      aria-label="Trocar avatar"
+                    />
+                  }
+                >
+                  <Pencil className="size-2.5 text-secondary-foreground" />
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Escolher avatar</DialogTitle>
+                  </DialogHeader>
+                  <AvatarPicker currentAvatarChoiceUrl={currentUser?.avatar_choice_url ?? null} />
+                </DialogContent>
+              </Dialog>
+            </div>
             <p className="truncate font-display text-base text-foreground">{userName ?? "Você"}</p>
           </div>
 
@@ -168,30 +171,39 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
         </div>
 
         <div className="flex flex-col gap-2 overflow-y-auto px-4">
-          {myPois.map((poi, index) => (
-            <MotionListItem key={poi.id} index={index}>
-              <button
-                type="button"
-                onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
-                className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">{poi.name}</p>
-                  {poi.ai_category_slug && (
-                    <span
-                      className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
-                      title="A IA sugeriu uma categoria diferente pra esse POI — abra o pino no mapa pra ver"
-                    >
-                      <Sparkles className="size-2.5" /> sugestão
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
-                </p>
-              </button>
-            </MotionListItem>
-          ))}
+          {myPois.map((poi, index) => {
+            const category = categoryById.get(poi.category_id);
+            const Icon = getPoiIcon(poi, category);
+            const categoryColor = category?.color_hex ?? "var(--border)";
+            return (
+              <MotionListItem key={poi.id} index={index}>
+                <button
+                  type="button"
+                  onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                  className="flex w-full items-center gap-2 rounded-lg border border-border border-l-4 bg-card p-3 text-left transition-colors hover:bg-muted"
+                  style={{ borderLeftColor: categoryColor }}
+                >
+                  <Icon className="size-4 shrink-0" style={{ color: categoryColor }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium text-foreground">{poi.name}</p>
+                      {poi.ai_category_slug && (
+                        <span
+                          className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                          title="A IA sugeriu uma categoria diferente pra esse POI — abra o pino no mapa pra ver"
+                        >
+                          <Sparkles className="size-2.5" /> sugestão
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {category?.name ?? "Sem categoria"}
+                    </p>
+                  </div>
+                </button>
+              </MotionListItem>
+            );
+          })}
         </div>
       </SheetContent>
     </Sheet>

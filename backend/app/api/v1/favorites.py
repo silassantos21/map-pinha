@@ -20,7 +20,7 @@ def list_favorites(user_id: uuid.UUID, db: Session = Depends(get_db)):
         select(POI)
         .join(Favorite, Favorite.poi_id == POI.id)
         .where(Favorite.user_id == user_id)
-        .options(selectinload(POI.media))
+        .options(selectinload(POI.media), selectinload(POI.owner))
         .order_by(Favorite.created_at.desc())
     )
     pois = db.scalars(stmt).unique().all()

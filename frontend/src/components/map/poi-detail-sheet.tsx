@@ -19,6 +19,7 @@ import {
   SmilePlus,
   Star,
   Trash2,
+  UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -142,6 +143,7 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
   const audioTracks = poi.media.filter((m) => m.media_type === "audio");
   const isOwner = currentUserId != null && poi.user_id === currentUserId;
   const isAuthenticated = currentUserId != null;
+  const viewUserProfile = useMapStore((s) => s.viewUserProfile);
 
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
@@ -233,71 +235,97 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
   };
 
   const header = (
-    <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1">
-      <div className="flex min-w-0 items-center gap-1.5">
-        {/* eslint-disable-next-line react-hooks/static-components -- CategoryIcon vem de um registro fixo (ICON_REGISTRY), referência estável */}
-        <CategoryIcon className="size-4 shrink-0" style={{ color: categoryColor }} aria-hidden />
-        <p className="truncate font-display text-sm text-foreground">{poi.name}</p>
-        {isAuthenticated && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  onClick={toggleFavorite}
-                  disabled={isTogglingFavorite}
-                  className="shrink-0 text-muted-foreground hover:text-amber-400 disabled:opacity-50"
-                  aria-label={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                />
-              }
-            >
-              <Star className={cn("size-4", isFavorited && "fill-amber-400 text-amber-400")} />
-            </TooltipTrigger>
-            <TooltipContent>
-              {isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+    <div className="flex flex-col gap-1 border-b border-border/60 pb-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {/* eslint-disable-next-line react-hooks/static-components -- CategoryIcon vem de um registro fixo (ICON_REGISTRY), referência estável */}
+          <CategoryIcon className="size-4 shrink-0" style={{ color: categoryColor }} aria-hidden />
+          <p className="truncate font-display text-sm text-foreground">{poi.name}</p>
+          {isAuthenticated && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    onClick={toggleFavorite}
+                    disabled={isTogglingFavorite}
+                    className="shrink-0 text-muted-foreground hover:text-amber-400 disabled:opacity-50"
+                    aria-label={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                  />
+                }
+              >
+                <Star className={cn("size-4", isFavorited && "fill-amber-400 text-amber-400")} />
+              </TooltipTrigger>
+              <TooltipContent>
+                {isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        {poi.visibility === "public" && (
+        <div className="flex shrink-0 items-center gap-1">
+          {poi.visibility === "public" && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    onClick={shareLink}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Compartilhar"
+                  />
+                }
+              >
+                <Share2 className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>Compartilhar</TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger
               render={
                 <button
                   type="button"
-                  onClick={shareLink}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose();
+                  }}
                   className="text-muted-foreground hover:text-foreground"
-                  aria-label="Compartilhar"
+                  aria-label="Fechar"
                 />
               }
             >
-              <Share2 className="size-4" />
+              <X className="size-4" />
             </TooltipTrigger>
-            <TooltipContent>Compartilhar</TooltipContent>
+            <TooltipContent>Fechar</TooltipContent>
           </Tooltip>
-        )}
-
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClose();
-                }}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Fechar"
-              />
-            }
-          >
-            <X className="size-4" />
-          </TooltipTrigger>
-          <TooltipContent>Fechar</TooltipContent>
-        </Tooltip>
+        </div>
       </div>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          viewUserProfile(poi.user_id);
+        }}
+        className="flex items-center gap-1.5 self-start text-[11px] text-muted-foreground hover:text-foreground"
+      >
+        {poi.owner_avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
+          <img
+            src={poi.owner_avatar_url}
+            alt=""
+            className="size-4 rounded-full"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="flex size-4 items-center justify-center rounded-full bg-muted">
+            <UserRound className="size-2.5 text-muted-foreground" />
+          </span>
+        )}
+        <span className="truncate">Criado por {isOwner ? "você" : (poi.owner_name ?? "alguém")}</span>
+      </button>
     </div>
   );
 

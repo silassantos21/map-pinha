@@ -13,6 +13,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.poi_media import POIMedia
     from app.models.poi_reaction import PoiReaction
+    from app.models.user import User
 
 
 class POIVisibility(str, enum.Enum):
@@ -78,3 +79,7 @@ class POI(Base):
     reactions: Mapped[list["PoiReaction"]] = relationship(
         cascade="all, delete-orphan", order_by="PoiReaction.created_at"
     )
+    # Avatar do dono vira o marcador no mapa (ver `poi-marker-icon.tsx` no
+    # frontend) — sem `foreign_keys` explícito porque `user_id` é a única FK
+    # desta tabela pra `users.id`.
+    owner: Mapped["User"] = relationship()

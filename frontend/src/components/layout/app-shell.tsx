@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { CategoryChips } from "@/components/layout/category-chips";
 import { FavoritesPanel } from "@/components/layout/favorites-panel";
+import { FollowersPanel } from "@/components/layout/followers-panel";
 import { HudHeader } from "@/components/layout/hud-header";
 import { OnboardingDialog } from "@/components/layout/onboarding-dialog";
 import { PoiCreateButton } from "@/components/layout/poi-create-button";
@@ -39,11 +40,7 @@ export async function AppShell() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-end gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <PoiCreateButton />
         <FavoritesPanel isAuthenticated={userId !== null} />
-        <ProfilePanel
-          isAuthenticated={userId !== null}
-          userName={session?.user?.name}
-          userAvatarUrl={session?.user?.image}
-        />
+        <FollowersPanel isAuthenticated={userId !== null} />
         <RouteHistoryPanel isAuthenticated={userId !== null} />
         <UserSearchPanel isAuthenticated={userId !== null} />
         <PoiPanel userId={userId} />
@@ -53,6 +50,13 @@ export async function AppShell() {
       <PoiDetailSheet userId={userId} />
       <PoiFormSheet userId={userId} />
       <UserProfileSheet currentUserId={userId} />
+      {/* Sem botão próprio no rodapé (removido ali, ver `profile-panel.tsx`)
+          — abre só via avatar do HUD, mas precisa estar montado pra isso. */}
+      <ProfilePanel
+        isAuthenticated={userId !== null}
+        userName={session?.user?.name}
+        userAvatarUrl={session?.user?.image}
+      />
       {userId && <OnboardingDialog userId={userId} />}
     </div>
   );

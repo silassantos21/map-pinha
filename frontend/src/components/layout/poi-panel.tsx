@@ -14,6 +14,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
 import { usePois } from "@/hooks/use-pois";
+import { getPoiIcon } from "@/lib/poi-icons";
 import { useMapStore } from "@/stores/map-store";
 
 interface PoiPanelProps {
@@ -25,7 +26,7 @@ export function PoiPanel({ userId }: PoiPanelProps) {
   const { data: categories } = useCategories();
   const flyToPoi = useMapStore((s) => s.flyToPoi);
 
-  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   return (
     <Sheet>
@@ -55,19 +56,28 @@ export function PoiPanel({ userId }: PoiPanelProps) {
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4">
-          {pois.map((poi) => (
-            <button
-              key={poi.id}
-              type="button"
-              onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
-              className="rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
-            >
-              <p className="text-sm font-medium text-foreground">{poi.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
-              </p>
-            </button>
-          ))}
+          {pois.map((poi) => {
+            const category = categoryById.get(poi.category_id);
+            const Icon = getPoiIcon(poi, category);
+            const categoryColor = category?.color_hex ?? "var(--border)";
+            return (
+              <button
+                key={poi.id}
+                type="button"
+                onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                className="flex items-center gap-2 rounded-lg border border-border border-l-4 bg-card p-3 text-left transition-colors hover:bg-muted"
+                style={{ borderLeftColor: categoryColor }}
+              >
+                <Icon className="size-4 shrink-0" style={{ color: categoryColor }} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{poi.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {category?.name ?? "Sem categoria"}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </SheetContent>
     </Sheet>

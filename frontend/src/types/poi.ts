@@ -49,6 +49,11 @@ export interface Poi {
   updated_at: string;
   media: PoiMedia[];
   reactions: PoiReaction[];
+  // Nome/avatar de quem criou o POI — avatar usado no marcador do mapa (ver
+  // `poi-marker-icon.tsx`) em vez do ícone de categoria; nome exibido no
+  // card de detalhes (`PoiDetailSheet`).
+  owner_name: string | null;
+  owner_avatar_url: string | null;
 }
 
 /** Versão pública de um POI (página de compartilhamento `/p/[slug]`,
@@ -156,6 +161,12 @@ export interface UserProfile extends UserPublic {
   followers_count: number;
   following_count: number;
   total_pois: number;
+}
+
+/** Página de seguidores/seguindo (Fase 7) — `GET /users/{id}/followers|following`. */
+export interface FollowListResult {
+  items: UserPublic[];
+  total: number;
 }
 
 export type NotificationType = "new_follower" | "poi_reaction" | "new_poi_from_followed";

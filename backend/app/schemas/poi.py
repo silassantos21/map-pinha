@@ -75,6 +75,11 @@ class POIRead(BaseModel):
     updated_at: datetime
     media: list[POIMediaRead] = []
     reactions: list[ReactionRead] = []
+    # Nome/avatar de quem criou o POI — avatar usado no marcador do mapa em
+    # vez do ícone de categoria (a borda colorida continua indicando a
+    # categoria); nome exibido no card de detalhes.
+    owner_name: str | None = None
+    owner_avatar_url: str | None = None
 
     model_config = {"from_attributes": True}
 

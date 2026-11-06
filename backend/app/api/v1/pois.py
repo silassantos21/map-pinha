@@ -65,6 +65,7 @@ def _with_relations(stmt):
     return stmt.options(
         selectinload(POI.media),
         selectinload(POI.reactions).selectinload(PoiReaction.user),
+        selectinload(POI.owner),
     )
 
 
@@ -94,6 +95,8 @@ def _serialize(poi: POI) -> dict:
             {"emoji": r.emoji, "user_id": r.user_id, "user_name": r.user.name}
             for r in poi.reactions
         ],
+        "owner_name": poi.owner.name,
+        "owner_avatar_url": poi.owner.avatar_choice_url or poi.owner.avatar_url,
     }
 
 

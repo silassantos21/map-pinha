@@ -17,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNotifications } from "@/hooks/use-notifications";
 import { fetchPoiById, markAllNotificationsRead, markNotificationRead } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 import type { AppNotification } from "@/types/poi";
 
@@ -49,8 +50,8 @@ function formatRelativeTime(isoDate: string): string {
 
 export function NotificationBell({ userId }: NotificationBellProps) {
   const isAuthenticated = userId != null;
-  const [offset, setOffset] = useState(0);
-  const { data } = useNotifications(isAuthenticated, offset);
+  const [limit, setLimit] = useState(20);
+  const { data } = useNotifications(isAuthenticated, limit);
   const queryClient = useQueryClient();
   const viewUserProfile = useMapStore((s) => s.viewUserProfile);
   const flyToPoi = useMapStore((s) => s.flyToPoi);
@@ -132,12 +133,19 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           )}
           {items.map((notification) => {
             const avatarUrl = notification.actor_avatar_url;
+            // Notificação já lida: mesmo conteúdo, só mais apagada (sem o
+            // ponto de "não lida") — fica fácil escanear o que é novo sem
+            // esconder o histórico.
+            const isRead = notification.read_at !== null;
             return (
               <button
                 key={notification.id}
                 type="button"
                 onClick={() => handleItemClick(notification)}
-                className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
+                className={cn(
+                  "flex items-start gap-2 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted",
+                  isRead ? "bg-muted/40 opacity-60" : "bg-card",
+                )}
               >
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
@@ -155,7 +163,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <p className="text-sm text-foreground">
                     {formatNotificationText(notification)}
-                    {notification.read_at === null && (
+                    {!isRead && (
                       <span className="ml-1.5 inline-block size-1.5 rounded-full bg-primary align-middle" />
                     )}
                   </p>
@@ -168,13 +176,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           })}
         </div>
 
-        {items.length > 0 && (
+        {items.length >= limit && (
           <div className="flex justify-center px-4 pb-2">
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => setOffset((o) => o + 20)}
+              onClick={() => setLimit((l) => l + 20)}
             >
               Carregar mais
             </Button>

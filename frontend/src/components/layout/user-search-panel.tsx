@@ -26,7 +26,7 @@ interface UserSearchPanelProps {
   isAuthenticated: boolean;
 }
 
-function FollowToggleButton({ user }: { user: UserPublic }) {
+export function FollowToggleButton({ user }: { user: UserPublic }) {
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const isFollowing = user.is_following ?? false;
@@ -43,7 +43,15 @@ function FollowToggleButton({ user }: { user: UserPublic }) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["user-search"] }),
         queryClient.invalidateQueries({ queryKey: ["user-profile", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["user-pois", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["my-followers"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-following"] }),
       ]);
+      toast.add({
+        title: isFollowing ? "Deixou de seguir" : "Seguindo",
+        description: user.name ?? undefined,
+        type: "success",
+      });
     } catch {
       toast.add({ title: "Não foi possível atualizar", type: "error" });
     } finally {

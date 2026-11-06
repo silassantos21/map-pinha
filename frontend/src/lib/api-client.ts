@@ -3,10 +3,12 @@ import type {
   AvatarPreset,
   Category,
   CurrentUser,
+  FollowListResult,
   LatLng,
   MapBounds,
   NotificationListResult,
   Poi,
+  PoiPublic,
   RouteHistoryEntry,
   RouteProfile,
   RouteResult,
@@ -122,6 +124,15 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   return res.json();
 }
 
+async function extractErrorDetail(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    return typeof body?.detail === "string" ? body.detail : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // `presetId: null` remove a escolha e volta a usar a foto do Google.
 export async function updateAvatarChoice(presetId: number | null): Promise<CurrentUser> {
   const res = await fetch("/api/users/me/avatar", {
@@ -129,8 +140,48 @@ export async function updateAvatarChoice(presetId: number | null): Promise<Curre
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ preset_id: presetId }),
   });
-  if (!res.ok) throw new Error("Não foi possível atualizar o avatar");
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível atualizar o avatar"));
   return res.json();
+}
+
+interface AvatarPresignedUpload {
+  upload_url: string;
+  object_key: string;
+}
+
+/** Envia uma foto de perfil própria (não preset, não Google) — pede uma URL
+ * pré-assinada, sobe o arquivo direto pro R2, e confirma com o backend, que
+ * só então valida de verdade o conteúdo (tamanho, se é mesmo uma imagem) e
+ * processa (recorte quadrado, sem EXIF). Erros do backend (arquivo grande
+ * demais, formato inválido, limite diário de uploads) vêm em `detail` —
+ * propagados pra quem chamar poder mostrar a mensagem certa, não um genérico. */
+export async function uploadCustomAvatar(file: File): Promise<CurrentUser> {
+  const presignRes = await fetch("/api/users/me/avatar/presigned-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  });
+  if (!presignRes.ok) {
+    throw new Error(await extractErrorDetail(presignRes, "Não foi possível iniciar o envio"));
+  }
+  const presigned: AvatarPresignedUpload = await presignRes.json();
+
+  const uploadRes = await fetch(presigned.upload_url, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!uploadRes.ok) throw new Error("Falha ao enviar o arquivo para o storage");
+
+  const confirmRes = await fetch("/api/users/me/avatar", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ object_key: presigned.object_key }),
+  });
+  if (!confirmRes.ok) {
+    throw new Error(await extractErrorDetail(confirmRes, "Não foi possível processar a foto enviada"));
+  }
+  return confirmRes.json();
 }
 
 export async function fetchRouteHistory(): Promise<RouteHistoryEntry[]> {
@@ -213,6 +264,24 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
   return res.json();
 }
 
+export async function fetchUserPois(userId: string): Promise<PoiPublic[]> {
+  const res = await fetch(`/api/users/${userId}/pois`);
+  if (!res.ok) throw new Error("Falha ao carregar os POIs desse usuário");
+  return res.json();
+}
+
+export async function fetchMyFollowers(limit = 20, offset = 0): Promise<FollowListResult> {
+  const res = await fetch(`/api/users/me/followers?limit=${limit}&offset=${offset}`);
+  if (!res.ok) throw new Error("Falha ao carregar seguidores");
+  return res.json();
+}
+
+export async function fetchMyFollowing(limit = 20, offset = 0): Promise<FollowListResult> {
+  const res = await fetch(`/api/users/me/following?limit=${limit}&offset=${offset}`);
+  if (!res.ok) throw new Error("Falha ao carregar quem você segue");
+  return res.json();
+}
+
 export async function searchUsers(q: string): Promise<UserPublic[]> {
   const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error("Falha ao buscar pessoas");
@@ -229,8 +298,8 @@ export async function unfollowUser(userId: string): Promise<void> {
   if (!res.ok) throw new Error("Não foi possível deixar de seguir essa pessoa");
 }
 
-export async function fetchNotifications(offset = 0): Promise<NotificationListResult> {
-  const res = await fetch(`/api/notifications?offset=${offset}`);
+export async function fetchNotifications(limit = 20): Promise<NotificationListResult> {
+  const res = await fetch(`/api/notifications?limit=${limit}`);
   if (!res.ok) throw new Error("Falha ao carregar notificações");
   return res.json();
 }

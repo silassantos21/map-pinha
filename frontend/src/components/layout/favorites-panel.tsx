@@ -15,6 +15,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
 import { useFavorites } from "@/hooks/use-favorites";
+import { getPoiIcon } from "@/lib/poi-icons";
 import { useMapStore } from "@/stores/map-store";
 
 interface FavoritesPanelProps {
@@ -26,7 +27,7 @@ export function FavoritesPanel({ isAuthenticated }: FavoritesPanelProps) {
   const { data: categories } = useCategories();
   const flyToPoi = useMapStore((s) => s.flyToPoi);
 
-  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   if (!isAuthenticated) return null;
 
@@ -60,20 +61,29 @@ export function FavoritesPanel({ isAuthenticated }: FavoritesPanelProps) {
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4">
-          {favorites.map((poi, index) => (
-            <MotionListItem key={poi.id} index={index}>
-              <button
-                type="button"
-                onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
-                className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
-              >
-                <p className="text-sm font-medium text-foreground">{poi.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {categoryNameById.get(poi.category_id) ?? "Sem categoria"}
-                </p>
-              </button>
-            </MotionListItem>
-          ))}
+          {favorites.map((poi, index) => {
+            const category = categoryById.get(poi.category_id);
+            const Icon = getPoiIcon(poi, category);
+            const categoryColor = category?.color_hex ?? "var(--border)";
+            return (
+              <MotionListItem key={poi.id} index={index}>
+                <button
+                  type="button"
+                  onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                  className="flex w-full items-center gap-2 rounded-lg border border-border border-l-4 bg-card p-3 text-left transition-colors hover:bg-muted"
+                  style={{ borderLeftColor: categoryColor }}
+                >
+                  <Icon className="size-4 shrink-0" style={{ color: categoryColor }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{poi.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {category?.name ?? "Sem categoria"}
+                    </p>
+                  </div>
+                </button>
+              </MotionListItem>
+            );
+          })}
         </div>
       </SheetContent>
     </Sheet>
