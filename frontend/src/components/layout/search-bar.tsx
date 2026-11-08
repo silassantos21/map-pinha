@@ -20,12 +20,15 @@ interface SearchBarProps {
  * (comportamento já existente); selecionar um endereço só voa o mapa até lá
  * (`flyToPoi`), sem criar POI nem abrir formulário nenhum.
  *
- * No mobile a pill vira um botão (não um input editável) que abre um painel
- * de tela cheia com o campo de verdade — o dropdown flutuante original ficava
- * espremido em cima dos chips de categoria numa tela pequena. O painel só
- * fecha pelo X ou escolhendo um resultado, nunca por perda de foco (o teclado
- * soma sozinho ao rolar a lista de resultados, por exemplo, e isso não deveria
- * fechar o painel). */
+ * No mobile a pill continua com a aparência de campo aberto (texto "Buscar
+ * POIs ou endereços..." visível, igual ao Google Maps — numa rodada anterior
+ * ela tinha colapsado pra um botão só com a lupa, achado "fechado" demais),
+ * mas o toque ainda abre um painel de tela cheia com o campo de verdade em
+ * vez de um dropdown inline — o dropdown flutuante original ficava espremido
+ * em cima dos chips de categoria numa tela pequena. O painel só fecha pelo X
+ * ou escolhendo um resultado, nunca por perda de foco (o teclado soma sozinho
+ * ao rolar a lista de resultados, por exemplo, e isso não deveria fechar o
+ * painel). */
 export function SearchBar({ userId }: SearchBarProps) {
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -100,9 +103,10 @@ export function SearchBar({ userId }: SearchBarProps) {
             type="button"
             onClick={() => setIsOpen(true)}
             aria-label="Buscar POIs ou endereços"
-            className="pointer-events-auto flex size-10 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground backdrop-blur-md"
+            className="pointer-events-auto flex w-full items-center gap-1.5 rounded-full border border-border bg-card/80 py-2 pl-3 pr-3 text-left text-muted-foreground backdrop-blur-md"
           >
-            <Search className="size-4" />
+            <Search className="size-4 shrink-0" />
+            <span className="truncate text-sm">Buscar POIs ou endereços...</span>
           </button>
         </div>
 

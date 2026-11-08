@@ -74,7 +74,11 @@ export function RoutePanel({ isAuthenticated }: RoutePanelProps) {
   const durationMin = route ? Math.max(1, Math.round(route.duration_s / 60)) : null;
 
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-4 z-20 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2.5 rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md">
+    // bottom usa --hud-footer-height (definida em app-shell.tsx) em vez de um
+    // número fixo: a barra de navegação do rodapé ficou mais alta na
+    // reorganização do HUD (08/11/2026), e este painel não pode ficar
+    // escondido atrás dela.
+    <div className="pointer-events-auto absolute bottom-[calc(var(--hud-footer-height)+1rem)] left-4 z-20 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2.5 rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[11px] font-medium text-muted-foreground">

@@ -5,6 +5,7 @@ import { useMap } from "react-leaflet";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeSwitcher } from "@/components/map/theme-switcher";
 
 interface MapControlsProps {
   userPosition: { lat: number; lng: number } | null;
@@ -15,6 +16,10 @@ export function MapControls({ userPosition }: MapControlsProps) {
 
   return (
     <div className="pointer-events-auto absolute bottom-24 right-4 z-[1000] flex flex-col gap-1 rounded-full border border-border bg-card/80 p-1 backdrop-blur-md">
+      <ThemeSwitcher />
+
+      <div className="h-px bg-border" />
+
       <Tooltip>
         <TooltipTrigger
           render={

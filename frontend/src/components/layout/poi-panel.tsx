@@ -2,18 +2,10 @@
 
 import { List } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { PanelTrigger } from "@/components/layout/panel-trigger";
 import { MotionListItem } from "@/components/ui/motion-list-item";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
 import { useFavorites } from "@/hooks/use-favorites";
 import { usePois } from "@/hooks/use-pois";
@@ -68,23 +60,8 @@ export function PoiPanel({ userId }: PoiPanelProps) {
 
   return (
     <Sheet>
-      <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <List />
-            <span className="sr-only">Ver POIs</span>
-          </SheetTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Ver POIs</TooltipContent>
-      </Tooltip>
+      <PanelTrigger icon={List} label="Ver POIs" />
+
       <SheetContent className="flex flex-col gap-0">
         <SheetHeader>
           <SheetTitle className="font-display">POIs</SheetTitle>

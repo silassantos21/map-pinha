@@ -1272,3 +1272,44 @@ Rodada de pedidos pontuais do dono do projeto sobre o painel de Grupos, depois d
 - **Notificação "convite aceito" (`group_invite_accepted`):** faltava — o roadmap original só previu notificar o convidado no envio do convite (`group_invite`), não o dono do grupo quando alguém aceita. Confirmado via `AskUserQuestion` antes de implementar. Migration `eda7c0156ff4` (`ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'group_invite_accepted'`, mesma limitação de sempre — `downgrade()` não remove o valor). `accept_invite` (`groups.py`) passa a criar a notificação pro dono (`user_id=group.owner_id`, `actor_id=quem aceitou`). Sininho ganha o caso no `formatNotificationText` e `handleItemClick` (clique abre o painel de convites, igual `group_invite`).
 - **Impedir reconvite de quem já é membro/tem convite pendente:** `AddMemberSearch` agora recebe a lista de membros do grupo e, pra quem já está nela, troca o botão "Convidar" por um texto de status ("Já é membro"/"Convite pendente") — evita o erro 400 que o backend já devolvia (`"This person is already invited or already a member"`), só que antes só aparecia depois do clique.
 - Validado via `TestClient` (owner vê POIs do grupo, não-membro recebe 404; fluxo convite→aceite completo gerando a notificação nova) e `type-check`/`lint`/`build` limpos no frontend em cada rodada.
+
+---
+
+## Reorganização do HUD em camadas, inspirada no Google Maps (08/11/2026)
+
+Pedido a partir de um print do Google Maps mobile: o dono do projeto apontou 4 pontos de "customização" que faltavam — barra de busca enxuta com avatar sobreposto, chips de atalho (já existiam), botão de "camadas" isolado na lateral do mapa, e rodapé como barra de navegação em vez de cluster de ícones. Antes de desenvolver, mapeei **todo** o inventário de controles flutuantes do HUD (via subagente de exploração) e desenhei um plano formal (plan mode) com 3 pontos de decisão em aberto, resolvidos com o dono do projeto via `AskUserQuestion` antes de codar. Princípio norteador: é reorganização espacial, não redesign — nenhum estado do `map-store`, nenhuma lógica de Sheet/painel e nenhum token de design (`bg-card/80 backdrop-blur-md`, `border-border`, paleta, fontes) muda; só reposiciona.
+
+### Camada 1 — topo: de 5 elementos soltos pra 2 pills
+
+- `hud-header.tsx` reescrito: a fileira antes tinha logo + busca + tema + sino + avatar, cada um com pill/borda própria. Agora só a pill da logo e a pill de busca (`SearchBar`) sobram como containers visíveis.
+- **Avatar e sino sobrepostos na borda direita da pill de busca** (não mais soltos): `user-avatar-badge.tsx` perdeu o rótulo de nome embaixo (virou só o círculo `size-9`); `notification-bell.tsx` encolheu de `size-9` com borda própria pra `size-5` sem borda, posicionado no canto superior-esquerdo do avatar (`-left-2 -top-2`), mantendo o mesmo `Badge count={unreadCount}` e os mesmos 3 destinos de clique de sempre.
+- `search-bar.tsx` ganhou padding assimétrico (`pr-11`/`pr-12` em vez de padding simétrico) pra reservar espaço pro avatar+sino sem o texto digitado passar por baixo.
+- Deslogado: o botão "Entrar" ocupa o mesmo canto da pill, sem pill própria separada.
+
+### Camada 3 — botão de "camadas" isolado (coluna lateral do mapa)
+
+- `theme-switcher.tsx` reescrito: era uma pill horizontal com os 4 temas sempre visíveis dentro do `HudHeader`; virou um botão único (ícone `Layers`) que abre um **popover** (novo `components/ui/popover.tsx`, baseado no mesmo primitivo `@base-ui/react/popover` já usado por `tooltip.tsx`/`dialog.tsx`, com Portal pro `<body>` — mesmo padrão de sempre, não um `z-index` manual dentro do `isolate` do Leaflet) com a lista de temas.
+- Migrou de renderizar fora do `<MapContainer>` (dentro do `HudHeader`) pra dentro dele, como primeiro item do `map-controls.tsx` (que já tinha locate+zoom) — resultado: 1 única coluna vertical flutuante na borda direita do mapa (camadas → locate → zoom), nenhuma depende de autenticação.
+- Trade-off aceito conscientemente (decidido via pergunta direta ao dono do projeto): trocar tema agora exige 1 clique a mais (abrir o popover) — ganho de uma coluna mais enxuta, mais fiel à referência do Google.
+
+### Camada 4 — rodapé: de cluster de ícones pra barra de navegação + FAB elevado
+
+- `tab-bar-item.tsx` (novo): casca compartilhada (`TabBarButton`, com `forwardRef` pra funcionar como `render` target de `SheetTrigger`) com ícone em cima + rótulo de texto embaixo — substitui os botões `size="icon-lg" variant="secondary"` só-ícone de antes nos 4 painéis (`followers-panel.tsx`, `groups-panel.tsx`, `route-history-panel.tsx`, `poi-panel.tsx`).
+- **Os 4 slots agora são sempre renderizados**, mesmo deslogado — antes, `FollowersPanel`/`GroupsPanel`/`RouteHistoryPanel` retornavam `null` quando `!isAuthenticated`, fazendo o cluster "pular" de tamanho ao logar/deslogar. Agora ficam com aparência desabilitada + tooltip "Entre com sua conta pra ver" (mesmo truque de `aria-disabled`+`preventDefault` já usado por `poi-create-button-client.tsx` pra visitante, só replicado pros outros 3).
+- `app-shell.tsx`: o cluster `flex items-end justify-end gap-3` virou uma barra única `flex h-16 items-stretch justify-around rounded-2xl` com os 4 itens. O botão de criar POI (`PoiCreateButton`) saiu da fileira — flutua centralizado, sobrepondo a borda superior da barra (padrão "FAB sobre tab bar"), preservando a diferenciação visual (`default`/`destructive`) que já tinha como CTA principal.
+- Nova CSS custom property `--hud-footer-height` (definida no `style` do container raiz de `app-shell.tsx`) consumida por `route-panel.tsx` e pelo indicador "Carregando pontos..." (`map-view.tsx`) pra não ficarem escondidos atrás do rodapé mais alto — ponto único de ajuste se a altura mudar de novo.
+
+### Validação
+
+`npm run type-check && npm run lint && npm run build` limpos a cada camada (topo → coluna do mapa → rodapé, implementadas e validadas em sequência pra isolar qualquer regressão). Sem navegador neste ambiente — QA visual fica a cargo do dono do projeto.
+
+### Correção pós-QA visual (08/11/2026): mobile-only no rodapé, avatar/sino separados de novo
+
+Depois de ver a Camada 1 e 4 rodando de verdade, o dono do projeto trouxe 3 ajustes — a barra cheia do rodapé devia ser só mobile (no desktop tampava mapa demais), e tanto no desktop quanto no mobile o avatar+sino sobrepostos na pill de busca "ficaram meio feios"; no mobile, queria o campo de busca com aparência de "aberto" (texto visível, como no Google Maps), não colapsado num botão-ícone.
+
+- **Avatar e sino voltaram a ser elementos separados** no `hud-header.tsx`, igual eram antes da Camada 1 — `user-avatar-badge.tsx` ganhou de volta o rótulo de nome embaixo do avatar; `notification-bell.tsx` voltou ao tamanho/borda original (`size-9` com fundo e borda próprios). `search-bar.tsx` perdeu o padding assimétrico (`pr-11`/`pr-12`) que reservava espaço pro overlay, que não existe mais.
+- **Mobile: pill de busca sempre com aparência de campo aberto** (texto "Buscar POIs ou endereços..." visível, igual ao Google) em vez de colapsar pra um botão só com a lupa — mas o toque continua abrindo o mesmo painel de tela cheia de sempre (resolve o bug real já documentado do dropdown espremido em cima dos chips numa tela pequena; só mudou a aparência em repouso, não a mecânica).
+- **Rodapé: barra cheia + FAB só no mobile; desktop volta ao cluster compacto.** Para evitar duas instâncias da mesma `Sheet` montadas ao mesmo tempo (bug real que isso causaria: `GroupsPanel` controlado abriria duas vezes, React Query duplicaria requisições), a escolha arquitetural foi: **cada painel decide sozinho, via CSS puro (`sm:`), qual casca de botão mostrar** — novo `components/layout/panel-trigger.tsx` (compartilhado pelos 4 painéis) usa `useMediaQuery("(max-width: 639px)")` (mesmo hook/breakpoint já usado em `search-bar.tsx`) pra escolher entre o `TabBarButton` (ícone+rótulo, mobile) e o botão só-ícone `size="icon-lg" variant="secondary" rounded-full` de antes (desktop) — um único `<Sheet>` por painel, nunca duplicado. `app-shell.tsx` espelha isso só com CSS responsivo no **container** (sem JS): o wrapper vira `sm:flex sm:flex-row sm:items-end sm:justify-end sm:gap-3` no desktop, a barra perde fundo/borda/altura fixa (`sm:bg-transparent sm:border-none sm:h-auto`) e o FAB sai da posição elevada/absoluta pra virar o primeiro item do flex (`sm:static sm:order-first`) — exatamente a estrutura antiga, sem precisar de nenhum componente cliente novo só pra decidir layout.
+- `--hud-footer-height` (CSS var em `app-shell.tsx`) ganhou um valor menor pro desktop (`sm:[--hud-footer-height:3.5rem]` vs `6rem` no mobile), já que o cluster compacto ocupa bem menos espaço vertical que a barra.
+- Os 4 slots continuam **sempre presentes mesmo deslogado** (decisão da Camada 4 mantida) nos dois tamanhos de tela — só muda a casca visual, não essa regra.
+- Validado com `type-check`/`lint`/`build` limpos.

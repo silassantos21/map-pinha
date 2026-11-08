@@ -2,17 +2,9 @@
 
 import { History } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { PanelTrigger } from "@/components/layout/panel-trigger";
 import { MotionListItem } from "@/components/ui/motion-list-item";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCategories } from "@/hooks/use-categories";
 import { useRouteHistory } from "@/hooks/use-route-history";
 import { getCategoryIcon } from "@/lib/poi-icons";
@@ -29,27 +21,9 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
-  if (!isAuthenticated) return null;
-
   return (
     <Sheet>
-      <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <History />
-            <span className="sr-only">Abrir minhas rotas</span>
-          </SheetTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Minhas rotas</TooltipContent>
-      </Tooltip>
+      <PanelTrigger icon={History} label="Rotas" disabled={!isAuthenticated} />
 
       <SheetContent>
         <SheetHeader>

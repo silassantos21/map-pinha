@@ -168,7 +168,9 @@ export function MapView({ userId }: MapViewProps) {
     <div className="relative h-full w-full">
       <LocationLoadingOverlay show={!hasResolvedLocation} />
       {isLoadingPois && (
-        <div className="pointer-events-none absolute bottom-20 left-1/2 z-[1000] -translate-x-1/2">
+        // bottom usa --hud-footer-height (definida em app-shell.tsx) pra não
+        // ficar escondido atrás da barra de navegação do rodapé
+        <div className="pointer-events-none absolute bottom-[calc(var(--hud-footer-height)+1.5rem)] left-1/2 z-[1000] -translate-x-1/2">
           <div className="flex items-center gap-1.5 rounded-full border border-border bg-popover/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur-sm">
             <Loader2 className="size-3.5 animate-spin" />
             Carregando pontos...

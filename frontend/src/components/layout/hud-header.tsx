@@ -3,12 +3,17 @@ import Image from "next/image";
 import { AuthButton } from "@/components/layout/auth-button";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { SearchBar } from "@/components/layout/search-bar";
-import { ThemeSwitcher } from "@/components/map/theme-switcher";
 
 interface HudHeaderProps {
   userId?: string | null;
 }
 
+/** Topo do HUD (reorganização inspirada no Google Maps, 08/11/2026):
+ * `ThemeSwitcher` migrou pra dentro do Leaflet (ver `map-controls.tsx`),
+ * virando o botão "camadas" isolado na lateral do mapa — por isso sobra só
+ * logo, busca, sino e avatar aqui, cada um com seu próprio espaço, igual
+ * sempre foi (uma rodada anterior tentou sobrepor sino+avatar na borda da
+ * busca; o dono do projeto não gostou do resultado, revertido). */
 export function HudHeader({ userId }: HudHeaderProps) {
   return (
     <header className="pointer-events-none flex items-center gap-1.5 sm:gap-3">
@@ -18,8 +23,6 @@ export function HudHeader({ userId }: HudHeaderProps) {
       </div>
 
       <SearchBar userId={userId} />
-
-      <ThemeSwitcher />
 
       <div className="pointer-events-auto shrink-0">
         <NotificationBell userId={userId} />

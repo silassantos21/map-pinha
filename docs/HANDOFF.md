@@ -142,6 +142,45 @@ Pedidos pontuais do dono do projeto depois do roadmap original já fechado:
   fluxo convite→aceite completo gerando a notificação nova) e
   `type-check`/`lint`/`build` limpos no frontend.
 
+### Reorganização do HUD em camadas (inspirada no Google Maps)
+
+A partir de um print do Google Maps mobile, reorganização puramente espacial
+do HUD do mapa — planejada formalmente (plan mode + `AskUserQuestion` pra 3
+decisões em aberto) antes de codar, sem perder nenhuma função nem mudar
+tokens de design. Detalhes completos no `SPRINTS.md`, resumo aqui:
+
+- **Topo:** `hud-header.tsx` reduzido de 5 elementos soltos (logo, busca,
+  tema, sino, avatar) pra 2 pills (logo + busca). Avatar (`user-avatar-badge.tsx`,
+  sem rótulo de nome) e sino (`notification-bell.tsx`, encolhido) agora
+  sobrepostos na borda direita da pill de busca, que ganhou padding extra
+  (`pr-11`/`pr-12`) pra reservar esse espaço.
+- **Coluna lateral do mapa:** `theme-switcher.tsx` saiu do header e virou o
+  botão "camadas" (ícone `Layers`) dentro do `map-controls.tsx`, abrindo um
+  popover com os temas (novo `components/ui/popover.tsx`, mesmo primitivo
+  `@base-ui/react/popover` de `tooltip.tsx`/`dialog.tsx`) — junto com
+  locate/zoom, formando 1 coluna vertical só na borda direita do mapa.
+- **Rodapé:** cluster de 5 ícones soltos virou uma barra (`app-shell.tsx`) de
+  4 slots fixos com ícone+rótulo (`tab-bar-item.tsx`, novo) — `FollowersPanel`/
+  `GroupsPanel`/`RouteHistoryPanel` não retornam mais `null` deslogado, ficam
+  desabilitados com tooltip em vez de sumir (barra não muda de tamanho). O
+  botão de criar POI saiu da fileira, virou um FAB elevado sobrepondo a borda
+  superior da barra. Nova CSS var `--hud-footer-height` (`app-shell.tsx`)
+  consumida por `route-panel.tsx`/`map-view.tsx` pra não ficarem escondidos
+  atrás do rodapé mais alto.
+- Validado com `type-check`/`lint`/`build` limpos a cada camada. **Ainda não
+  commitada nesta sessão** — sem navegador aqui, QA visual fica 100% a cargo
+  do dono do projeto antes de qualquer commit/push.
+- **Correção pós-QA visual:** o dono do projeto testou de verdade e pediu 3
+  ajustes — barra cheia do rodapé só no mobile (desktop volta ao cluster
+  compacto de antes), avatar+sino voltam a ser elementos separados no
+  cabeçalho (não mais sobrepostos na pill de busca), e a pill de busca no
+  mobile volta a mostrar o texto "Buscar POIs ou endereços..." (não colapsa
+  pra um ícone sozinho) — só muda a aparência em repouso, o toque continua
+  abrindo o painel de tela cheia. Pro rodapé responsivo sem duplicar
+  `Sheet`s, novo `components/layout/panel-trigger.tsx` (usado pelos 4
+  painéis) decide a casca do botão via CSS puro com `useMediaQuery` — nunca
+  monta dois gatilhos ao mesmo tempo.
+
 Dados de teste no banco local (não sobem pro git, só documentando pra não
 confundir numa sessão futura): existe um usuário fake **"Ana Teste"**
 (`teste.ana@mappin.local.test`, sem login real possível — é só pra exercitar

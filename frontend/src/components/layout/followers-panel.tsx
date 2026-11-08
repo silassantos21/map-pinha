@@ -2,20 +2,12 @@
 
 import { Users as UsersIcon, UserRound } from "lucide-react";
 
+import { PanelTrigger } from "@/components/layout/panel-trigger";
 import { FollowToggleButton, UserSearchPanel } from "@/components/layout/user-search-panel";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MotionListItem } from "@/components/ui/motion-list-item";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMyFollowers, useMyFollowing } from "@/hooks/use-my-follows";
 import { useMapStore } from "@/stores/map-store";
 import type { UserPublic } from "@/types/poi";
@@ -67,27 +59,9 @@ export function FollowersPanel({ isAuthenticated }: FollowersPanelProps) {
   const { data: followers } = useMyFollowers(isAuthenticated);
   const { data: following } = useMyFollowing(isAuthenticated);
 
-  if (!isAuthenticated) return null;
-
   return (
     <Sheet>
-      <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <UsersIcon />
-            <span className="sr-only">Social</span>
-          </SheetTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Social</TooltipContent>
-      </Tooltip>
+      <PanelTrigger icon={UsersIcon} label="Social" disabled={!isAuthenticated} />
 
       <SheetContent className="flex flex-col gap-0">
         <SheetHeader className="flex-row items-center justify-between">

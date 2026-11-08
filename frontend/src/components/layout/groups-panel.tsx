@@ -27,20 +27,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PanelTrigger } from "@/components/layout/panel-trigger";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MotionListItem } from "@/components/ui/motion-list-item";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCategories } from "@/hooks/use-categories";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useGroupDetail, useGroupPois, useMyGroups, usePendingInvites } from "@/hooks/use-groups";
@@ -613,27 +605,9 @@ export function GroupsPanel({ isAuthenticated, currentUserId }: GroupsPanelProps
   const groupsPanelOpen = useMapStore((s) => s.groupsPanelOpen);
   const setGroupsPanelOpen = useMapStore((s) => s.setGroupsPanelOpen);
 
-  if (!isAuthenticated) return null;
-
   return (
     <Sheet open={groupsPanelOpen} onOpenChange={setGroupsPanelOpen}>
-      <Tooltip>
-        <TooltipTrigger render={<span className="pointer-events-auto inline-flex" />}>
-          <SheetTrigger
-            render={
-              <Button
-                size="icon-lg"
-                variant="secondary"
-                className="pointer-events-auto rounded-full shadow-lg"
-              />
-            }
-          >
-            <UsersRound />
-            <span className="sr-only">Grupos</span>
-          </SheetTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Grupos</TooltipContent>
-      </Tooltip>
+      <PanelTrigger icon={UsersRound} label="Grupos" disabled={!isAuthenticated} />
 
       <SheetContent className="flex flex-col gap-0">
         <SheetHeader>
