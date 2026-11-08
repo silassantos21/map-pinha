@@ -10,11 +10,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Loader2,
   MapPin,
+  MessageCircle,
   Navigation,
   Pause,
   Pencil,
   Play,
+  Send,
   Share2,
   SmilePlus,
   Star,
@@ -36,14 +39,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { MotionListItem } from "@/components/ui/motion-list-item";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCategories } from "@/hooks/use-categories";
+import { useComments } from "@/hooks/use-comments";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePois } from "@/hooks/use-pois";
-import { acceptAiSuggestion, dismissAiSuggestion } from "@/lib/api-client";
+import { acceptAiSuggestion, createComment, deleteComment, dismissAiSuggestion } from "@/lib/api-client";
 import { getPoiIcon, resolveIconName } from "@/lib/poi-icons";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
@@ -507,6 +512,7 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
       <div className="popup-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
         {body}
         {addressSection}
+        <CommentsSection poi={poi} currentUserId={currentUserId} />
       </div>
 
       <div className="p-4 pt-0">{footer}</div>
@@ -872,6 +878,212 @@ function ReactionsBar({ poi, currentUserId, onReacted }: ReactionsBarProps) {
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatCommentDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+interface CommentsSectionProps {
+  poi: Poi;
+  currentUserId?: string | null;
+}
+
+/** Seção de comentários (Fase 7 Parte 3) — mesmo padrão visual colapsável já
+ * usado pro `addressSection` acima (fechado por padrão, pode ocupar bastante
+ * espaço vertical). Busca roda independente do estado aberto/fechado pra já
+ * mostrar a contagem no cabeçalho. */
+function CommentsSection({ poi, currentUserId }: CommentsSectionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [limit, setLimit] = useState(20);
+  const [draft, setDraft] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useComments(poi.id, limit);
+  const comments = data?.items ?? [];
+  const total = data?.total ?? 0;
+
+  // Invalida todas as páginas (`limit` crescente) desse POI de uma vez —
+  // `queryKey` parcial casa com qualquer `limit` já cacheado.
+  const invalidateComments = () =>
+    queryClient.invalidateQueries({ queryKey: ["comments", poi.id], exact: false });
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (draft.trim().length === 0) return;
+    setIsSubmitting(true);
+    try {
+      await createComment(poi.id, draft.trim());
+      setDraft("");
+      await invalidateComments();
+    } catch (error) {
+      toast.add({
+        title: "Não foi possível publicar o comentário",
+        description: error instanceof Error ? error.message : undefined,
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (commentId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setDeletingId(commentId);
+    try {
+      await deleteComment(commentId);
+      await invalidateComments();
+    } catch (error) {
+      toast.add({
+        title: "Não foi possível excluir o comentário",
+        description: error instanceof Error ? error.message : undefined,
+        type: "error",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/20">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setIsOpen((open) => !open);
+        }}
+        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-xs text-muted-foreground"
+      >
+        <span className="flex items-center gap-1.5">
+          <MessageCircle className="size-3.5" />
+          Comentários{data ? ` (${total})` : ""}
+        </span>
+        <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", isOpen && "rotate-180")} />
+      </button>
+
+      {isOpen && (
+        <div
+          className="flex flex-col gap-2 border-t border-border/60 px-2.5 py-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {isLoading && <p className="text-xs text-muted-foreground">Carregando...</p>}
+
+          {!isLoading && comments.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Nenhum comentário ainda{currentUserId != null ? " — seja o primeiro!" : "."}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {comments.map((comment, index) => {
+              const canDelete =
+                currentUserId != null &&
+                (currentUserId === comment.user_id || currentUserId === poi.user_id);
+              return (
+                <MotionListItem key={comment.id} index={index}>
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-card px-2 py-1.5">
+                    {comment.user_avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- avatar dinâmico do R2/Google, sem next/image config
+                      <img
+                        src={comment.user_avatar_url}
+                        alt=""
+                        className="size-6 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserRound className="size-6 shrink-0 rounded-full border border-border p-1 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-xs font-medium text-foreground">
+                          {comment.user_name ?? "Alguém"}
+                        </p>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {formatCommentDate(comment.created_at)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs break-words whitespace-pre-wrap text-foreground">
+                        {comment.body}
+                      </p>
+                    </div>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={(event) => handleDelete(comment.id, event)}
+                        disabled={deletingId === comment.id}
+                        className="shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-50"
+                        aria-label="Excluir comentário"
+                      >
+                        {deletingId === comment.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </MotionListItem>
+              );
+            })}
+          </div>
+
+          {comments.length < total && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setLimit((l) => l + 20);
+              }}
+              className="self-center text-[11px] font-medium text-primary hover:text-primary/80"
+            >
+              Carregar mais
+            </button>
+          )}
+
+          {currentUserId != null && (
+            <form onSubmit={handleSubmit} className="flex items-end gap-1.5 pt-1">
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  // Enter envia, Shift+Enter quebra linha — comentário pode
+                  // ter várias linhas (até 1000 caracteres).
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder="Escreva um comentário... (Enter envia, Shift+Enter quebra linha)"
+                rows={1}
+                maxLength={1000}
+                className="min-w-0 flex-1 resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting || draft.trim().length === 0}
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-50"
+                aria-label="Enviar comentário"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+              </button>
+            </form>
           )}
         </div>
       )}

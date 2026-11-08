@@ -2,6 +2,8 @@ import type {
   AddressResult,
   AvatarPreset,
   Category,
+  Comment,
+  CommentListResult,
   CurrentUser,
   FollowListResult,
   Group,
@@ -379,4 +381,33 @@ export async function acceptGroupInvite(groupId: string): Promise<void> {
 export async function leaveOrRemoveFromGroup(groupId: string, userId: string): Promise<void> {
   const res = await fetch(`/api/groups/${groupId}/members/${userId}`, { method: "DELETE" });
   if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível completar a ação"));
+}
+
+export async function fetchGroupPois(groupId: string): Promise<Poi[]> {
+  const res = await fetch(`/api/groups/${groupId}/pois`);
+  if (!res.ok) throw new Error("Falha ao carregar os POIs do grupo");
+  return res.json();
+}
+
+// --- Fase 7 Parte 3: Comentários ---------------------------------------------
+
+export async function fetchComments(poiId: string, limit = 20): Promise<CommentListResult> {
+  const res = await fetch(`/api/pois/${poiId}/comments?limit=${limit}`);
+  if (!res.ok) throw new Error("Falha ao carregar comentários");
+  return res.json();
+}
+
+export async function createComment(poiId: string, body: string): Promise<Comment> {
+  const res = await fetch(`/api/pois/${poiId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body }),
+  });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível publicar o comentário"));
+  return res.json();
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const res = await fetch(`/api/comments/${commentId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Não foi possível excluir o comentário"));
 }

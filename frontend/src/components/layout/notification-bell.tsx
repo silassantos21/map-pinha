@@ -36,6 +36,10 @@ function formatNotificationText(n: AppNotification): string {
       return `${actor} cadastrou um novo POI: ${n.payload.poi_name ?? ""}`;
     case "group_invite":
       return `${actor} te convidou pro grupo ${n.group_name ?? ""}`;
+    case "poi_comment":
+      return `${actor} comentou no seu POI ${n.payload.poi_name ?? ""}: "${n.payload.body_preview ?? ""}"`;
+    case "group_invite_accepted":
+      return `${actor} aceitou seu convite pro grupo ${n.group_name ?? ""}`;
     default:
       return actor;
   }
@@ -84,7 +88,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       return;
     }
 
-    if (notification.type === "group_invite") {
+    if (notification.type === "group_invite" || notification.type === "group_invite_accepted") {
       openGroupInvites();
       return;
     }

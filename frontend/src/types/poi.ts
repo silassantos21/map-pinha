@@ -176,7 +176,9 @@ export type NotificationType =
   | "new_follower"
   | "poi_reaction"
   | "new_poi_from_followed"
-  | "group_invite";
+  | "group_invite"
+  | "poi_comment"
+  | "group_invite_accepted";
 
 /** Notificação in-app (Fase 7). Nome `AppNotification` em vez de
  * `Notification` pra não colidir com o tipo global `Notification` do DOM. */
@@ -234,4 +236,21 @@ export interface GroupMember {
 
 export interface GroupDetail extends Group {
   members: GroupMember[];
+}
+
+// --- Fase 7 Parte 3: Comentários ---------------------------------------------
+
+export interface Comment {
+  id: string;
+  poi_id: string;
+  user_id: string;
+  user_name: string | null;
+  user_avatar_url: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface CommentListResult {
+  items: Comment[];
+  total: number;
 }

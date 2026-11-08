@@ -1,6 +1,6 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 06/11/2026. Isso aqui é só o que **não** está documentado em
+> Atualizado em 08/11/2026. Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -26,10 +26,11 @@
 
 ## Estado atual (branch main)
 
-Concluído: Fases 1-6, 8 e 9 do roadmap inteiras, e a **Fase 7 Partes 1 e 2**
-(Sistema Social — seguir, notificações, visibilidade de POI, grupos). Única
-coisa que falta do roadmap original é a **Parte 3** (comentários em POIs — ver
-seção abaixo).
+Concluído: Fases 1-6, 8 e 9 do roadmap inteiras, e a **Fase 7 completa**
+(Partes 1, 2 e 3 — Sistema Social: seguir, notificações, visibilidade de POI,
+grupos, comentários). **Roadmap original 100% implementado** — o que vier
+depois é v2+ (ver `docs/00_OVERVIEW.md`/`SPRINTS.md`), não precisa mais
+perguntar "o que falta do roadmap".
 
 ### Fase 7 Parte 1 + sessão de ajustes de UX (commit `d6756a2`)
 
@@ -46,7 +47,7 @@ reprocessamento server-side, limpeza do arquivo antigo no R2 — ver
 (paginação do sininho presa numa página vazia; trocar avatar não invalidava
 as queries de POI que guardam uma cópia dele). Tudo commitado e no push.
 
-### Fase 7 Parte 2 — Grupos + rodada de ajustes de UX (commitada nesta sessão)
+### Fase 7 Parte 2 — Grupos + rodada de ajustes de UX (commit `bcac9e3`)
 
 - Schema: `groups`/`group_members` (convite precisa de aceite/recusa — não é
   automático como seguir), `pois.group_id`, `notifications.group_id`,
@@ -93,6 +94,54 @@ as queries de POI que guardam uma cópia dele). Tudo commitado e no push.
   sai do próprio grupo, POI sobrevive à exclusão do grupo com `group_id=NULL`)
   e `type-check`/`lint`/`build` limpos no frontend em cada rodada de ajuste.
 
+### Fase 7 Parte 3 — Comentários em POIs
+
+- Schema: `comments` (`id`, `poi_id`, `user_id`, `body`, `created_at`,
+  `deleted_at` nullable — **soft delete**, diferente das reações que são
+  hard-delete) + `notification_type` ganha `'poi_comment'` (migration
+  `53496d41a521`, mesma limitação de sempre com `ALTER TYPE ... ADD VALUE`).
+- Backend: novo `app/api/v1/comments.py` (arquivo próprio, mesmo padrão de
+  `favorites.py`) — `GET/POST /pois/{id}/comments`, `DELETE /comments/{id}`.
+  Comentários **não** entram em `POIRead` (diferente das reações) — endpoint
+  buscado sob demanda só quando o card de detalhe abre. Reaproveita
+  `_poi_visible_to` de `pois.py` pra checar quem pode ver/criar comentário.
+  Exclusão: autor OU dono do POI. Paginação por `limit` crescente (mesma
+  lição já corrigida no sininho), `ORDER BY created_at DESC, id DESC`.
+- Frontend: nova seção "Comentários" colapsável (fechada por padrão, mesmo
+  estilo do `addressSection`) dentro do `PoiDetailSheet`, com lista + textarea
+  de novo comentário (Enter envia, Shift+Enter quebra linha). Exclusão sem
+  `AlertDialog` (precedente de `removeExistingMedia`). Sininho ganha o caso
+  `poi_comment` em `formatNotificationText` (clique já cai no branch genérico
+  existente).
+- Validado de ponta a ponta no backend (via `TestClient`, não só curl) e
+  `type-check`/`lint`/`build` limpos no frontend.
+
+### Refinamentos pós-roadmap no painel de Grupos
+
+Pedidos pontuais do dono do projeto depois do roadmap original já fechado:
+
+- Novo `GET /groups/{id}/pois` + seção "POIs desse grupo" no detalhe do grupo
+  (`groups-panel.tsx`), card mostrando categoria + **quem criou** cada POI
+  (`por {nome}`) — posicionada abaixo da seção de membros.
+- `MemberAvatarStack`: pilha de avatares sobrepostos (só `accepted`) com
+  contador, clicável pra expandir a lista completa de membros (que ficou
+  inalterada) — visão "econômica" por padrão.
+- Avatar à esquerda do nome na busca de convite (`AddMemberSearch`), mesmo
+  padrão já usado em `user-search-panel.tsx`.
+- `AddMemberSearch` agora recebe os membros do grupo e troca "Convidar" por
+  um texto de status ("Já é membro"/"Convite pendente") pra quem já está na
+  lista — evita a tentativa de reconvite (o backend já rejeitava com 400,
+  só que depois do clique).
+- **Notificação nova `group_invite_accepted`** (migration `eda7c0156ff4`):
+  faltava avisar o dono do grupo quando alguém aceita o convite — o roadmap
+  original só previa notificar o convidado no envio (`group_invite`).
+  Confirmado com o dono do projeto antes de implementar. `accept_invite`
+  (`groups.py`) cria a notificação pro `group.owner_id`; sininho ganha o
+  caso em `formatNotificationText`/`handleItemClick`.
+- Validado via `TestClient` (POIs do grupo só visíveis a membros aceitos,
+  fluxo convite→aceite completo gerando a notificação nova) e
+  `type-check`/`lint`/`build` limpos no frontend.
+
 Dados de teste no banco local (não sobem pro git, só documentando pra não
 confundir numa sessão futura): existe um usuário fake **"Ana Teste"**
 (`teste.ana@mappin.local.test`, sem login real possível — é só pra exercitar
@@ -125,14 +174,11 @@ Padrões/bugs de sessões anteriores que vale lembrar pra não reintroduzir:
    (`{detail: "..."}`) no erro precisam repassar esse corpo, não só o status —
    ver `forwardJsonOr204` em `api-server.ts`, criado exatamente pra isso.
 
-## Único item do roadmap que falta
+## Roadmap original — completo
 
-Fase 7 — **Parte 3** (comentários em POIs, estendendo o padrão já existente
-das reações: `POST/GET /pois/{id}/comments`, `DELETE /comments/{id}`, UI na
-`PoiDetailSheet`).
-
-**Não começar sem o dono do projeto pedir explicitamente** — só perguntar
-quais são os próximos passos, ou aguardar instrução.
+Nada mais falta do roadmap original (`docs/04_TIMELINE.md`). Qualquer coisa
+nova a partir daqui é v2+ ou pedido explícito do dono do projeto — não
+presumir próximos passos, só perguntar ou aguardar instrução.
 
 ## O que fazer agora
 

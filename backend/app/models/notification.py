@@ -18,8 +18,8 @@ class NotificationType(str, enum.Enum):
     poi_reaction = "poi_reaction"
     new_poi_from_followed = "new_poi_from_followed"
     group_invite = "group_invite"
-    # `poi_comment` (Fase 7 Parte 3) entra depois via `ALTER TYPE
-    # notification_type ADD VALUE` numa migration própria.
+    poi_comment = "poi_comment"
+    group_invite_accepted = "group_invite_accepted"
 
 
 class Notification(Base):

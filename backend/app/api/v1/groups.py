@@ -6,9 +6,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from app.api.v1.auth import verify_internal_secret
+from app.api.v1.pois import _to_read, _with_relations
 from app.db.session import get_db
 from app.models.group import Group, GroupMember, GroupMemberRole, GroupMemberStatus
 from app.models.notification import Notification, NotificationType
+from app.models.poi import POI
 from app.models.user import User
 from app.schemas.group import (
     GroupCreate,
@@ -19,6 +21,7 @@ from app.schemas.group import (
     GroupRead,
     GroupUpdate,
 )
+from app.schemas.poi import POIRead
 
 router = APIRouter(dependencies=[Depends(verify_internal_secret)])
 
@@ -146,6 +149,24 @@ def get_group_detail(group_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depe
     return GroupDetailRead(**base.model_dump(), members=members)
 
 
+@router.get("/groups/{group_id}/pois", response_model=list[POIRead])
+def list_group_pois(group_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_db)):
+    """POIs marcados como `visibility=group` pra este grupo especificamente —
+    mesmo cuidado de grupo "fechado" de `get_group_detail`: quem não é
+    membro aceito recebe 404, nem confirma que o grupo existe."""
+    group = db.get(Group, group_id)
+    if group is None or _my_role(db, group_id, user_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+    stmt = (
+        _with_relations(select(POI))
+        .where(POI.group_id == group_id)
+        .order_by(POI.created_at.desc(), POI.id)
+    )
+    pois = db.scalars(stmt).unique().all()
+    return [_to_read(p) for p in pois]
+
+
 @router.put("/groups/{group_id}", response_model=GroupRead)
 def update_group(group_id: uuid.UUID, payload: GroupUpdate, db: Session = Depends(get_db)):
     group = db.get(Group, group_id)
@@ -238,8 +259,21 @@ def accept_invite(
     if member is None or member.status != GroupMemberStatus.pending:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No pending invite found")
 
+    group = db.get(Group, group_id)
     member.status = GroupMemberStatus.accepted
     member.responded_at = datetime.now(timezone.utc)
+    # Avisa o dono do grupo (sempre quem convidou — só ele pode convidar,
+    # ver `invite_member`) de que o convite foi aceito. Inverso de
+    # `group_invite`, que avisa o convidado na hora do convite.
+    db.add(
+        Notification(
+            user_id=group.owner_id,
+            type=NotificationType.group_invite_accepted,
+            actor_id=user_id,
+            group_id=group_id,
+            payload={"group_name": group.name},
+        )
+    )
     db.commit()
 
 

@@ -1,7 +1,19 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Crown, Plus, Trash2, UserPlus, UserRound, UsersRound, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Crown,
+  MapPinned,
+  Plus,
+  Trash2,
+  UserPlus,
+  UserRound,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -29,8 +41,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCategories } from "@/hooks/use-categories";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { useGroupDetail, useMyGroups, usePendingInvites } from "@/hooks/use-groups";
+import { useGroupDetail, useGroupPois, useMyGroups, usePendingInvites } from "@/hooks/use-groups";
 import { useUserSearch } from "@/hooks/use-user-search";
 import {
   acceptGroupInvite,
@@ -39,9 +52,11 @@ import {
   inviteToGroup,
   leaveOrRemoveFromGroup,
 } from "@/lib/api-client";
+import { getPoiIcon } from "@/lib/poi-icons";
+import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/toast";
 import { useMapStore } from "@/stores/map-store";
-import type { GroupInvite } from "@/types/poi";
+import type { Category, GroupInvite, GroupMember, Poi } from "@/types/poi";
 
 interface GroupsPanelProps {
   isAuthenticated: boolean;
@@ -163,12 +178,13 @@ function CreateGroupDialog() {
   );
 }
 
-function AddMemberSearch({ groupId }: { groupId: string }) {
+function AddMemberSearch({ groupId, members }: { groupId: string; members: GroupMember[] }) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 300);
   const { data: results = [] } = useUserSearch(debouncedQuery, true);
   const queryClient = useQueryClient();
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const memberByUserId = new Map(members.map((m) => [m.user_id, m]));
 
   const invite = async (userId: string) => {
     setPendingUserId(userId);
@@ -197,20 +213,131 @@ function AddMemberSearch({ groupId }: { groupId: string }) {
         placeholder="Buscar pessoa pra convidar..."
         className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
       />
-      {results.map((user) => (
-        <div key={user.id} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2">
-          <p className="min-w-0 flex-1 truncate text-sm text-foreground">{user.name ?? "Usuário"}</p>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => invite(user.id)}
-            disabled={pendingUserId === user.id}
-          >
-            Convidar
-          </Button>
-        </div>
-      ))}
+      {results.map((user) => {
+        const avatarUrl = user.avatar_choice_url ?? user.avatar_url;
+        const existingMember = memberByUserId.get(user.id);
+        return (
+          <div key={user.id} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
+              <img
+                src={avatarUrl}
+                alt=""
+                className="size-7 shrink-0 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                <UserRound className="size-3.5 text-muted-foreground" />
+              </span>
+            )}
+            <p className="min-w-0 flex-1 truncate text-sm text-foreground">{user.name ?? "Usuário"}</p>
+            {existingMember ? (
+              <span className="text-xs text-muted-foreground">
+                {existingMember.status === "pending" ? "Convite pendente" : "Já é membro"}
+              </span>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => invite(user.id)}
+                disabled={pendingUserId === user.id}
+              >
+                Convidar
+              </Button>
+            )}
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function GroupPoiListItem({
+  poi,
+  categoryById,
+  onClick,
+}: {
+  poi: Poi;
+  categoryById: Map<string, Category>;
+  onClick: () => void;
+}) {
+  const category = categoryById.get(poi.category_id);
+  const Icon = getPoiIcon(poi, category);
+  const categoryColor = category?.color_hex ?? "var(--border)";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded-lg border border-border border-l-4 bg-card p-2.5 text-left transition-colors hover:bg-muted"
+      style={{ borderLeftColor: categoryColor }}
+    >
+      {/* eslint-disable-next-line react-hooks/static-components -- Icon vem de um registro fixo (ICON_REGISTRY em poi-icons.ts), referência estável */}
+      <Icon className="size-4 shrink-0" style={{ color: categoryColor }} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{poi.name}</p>
+        <p className="truncate text-xs text-muted-foreground">por {poi.owner_name ?? "alguém"}</p>
+      </div>
+    </button>
+  );
+}
+
+/** Pilha de avatares sobrepostos — visão "econômica" dos membros (só os
+ * ACEITOS; convite pendente não é "membro" ainda, continua só na lista
+ * expandida). Clicar expande/recolhe a lista completa (papel, remover,
+ * status de convite), que fica inalterada abaixo. */
+function MemberAvatarStack({
+  members,
+  expanded,
+  onToggle,
+}: {
+  members: GroupMember[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const accepted = members.filter((m) => m.status === "accepted");
+  const visible = accepted.slice(0, 5);
+  const extra = accepted.length - visible.length;
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex items-center gap-2 self-start rounded-lg border border-border bg-card px-2 py-1.5 transition-colors hover:bg-muted"
+    >
+      <div className="flex -space-x-2">
+        {visible.map((member) =>
+          member.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
+            <img
+              key={member.user_id}
+              src={member.avatar_url}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="size-6 shrink-0 rounded-full border-2 border-card object-cover"
+            />
+          ) : (
+            <span
+              key={member.user_id}
+              className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-card bg-muted"
+            >
+              <UserRound className="size-3 text-muted-foreground" />
+            </span>
+          ),
+        )}
+        {extra > 0 && (
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-card bg-muted text-[10px] font-medium text-muted-foreground">
+            +{extra}
+          </span>
+        )}
+      </div>
+      <span className="text-xs text-muted-foreground">
+        {accepted.length} {accepted.length === 1 ? "membro" : "membros"}
+      </span>
+      <ChevronDown
+        className={cn("size-3.5 text-muted-foreground transition-transform", expanded && "rotate-180")}
+      />
+    </button>
   );
 }
 
@@ -226,9 +353,15 @@ function GroupDetailView({
   onDeleted: () => void;
 }) {
   const { data: group } = useGroupDetail(groupId);
+  const { data: groupPois = [] } = useGroupPois(groupId);
+  const { data: categories } = useCategories();
+  const flyToPoi = useMapStore((s) => s.flyToPoi);
   const queryClient = useQueryClient();
   const [isLeaving, setIsLeaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [membersExpanded, setMembersExpanded] = useState(false);
+
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   if (!group) return null;
 
@@ -305,46 +438,74 @@ function GroupDetailView({
 
         <p className="font-display text-base text-foreground">{group.name}</p>
 
-        {isOwner && <AddMemberSearch groupId={groupId} />}
+        {isOwner && <AddMemberSearch groupId={groupId} members={group.members} />}
 
-        <div className="flex flex-col gap-1.5">
-          {group.members.map((member) => (
-            <div
-              key={member.user_id}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5"
-            >
-              {member.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
-                <img
-                  src={member.avatar_url}
-                  alt=""
-                  className="size-7 shrink-0 rounded-full"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                  <UserRound className="size-3.5 text-muted-foreground" />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-foreground">{member.name ?? "Usuário"}</p>
-                {member.status === "pending" && (
-                  <p className="text-[10px] text-muted-foreground">Convite pendente</p>
+        <MemberAvatarStack
+          members={group.members}
+          expanded={membersExpanded}
+          onToggle={() => setMembersExpanded((e) => !e)}
+        />
+
+        {membersExpanded && (
+          <div className="flex flex-col gap-1.5">
+            {group.members.map((member) => (
+              <div
+                key={member.user_id}
+                className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5"
+              >
+                {member.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- avatar vem do Google ou do R2 (hosts externos)
+                  <img
+                    src={member.avatar_url}
+                    alt=""
+                    className="size-7 shrink-0 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <UserRound className="size-3.5 text-muted-foreground" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-foreground">{member.name ?? "Usuário"}</p>
+                  {member.status === "pending" && (
+                    <p className="text-[10px] text-muted-foreground">Convite pendente</p>
+                  )}
+                </div>
+                {member.role === "owner" && <Crown className="size-3.5 shrink-0 text-amber-400" />}
+                {isOwner && member.role !== "owner" && (
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => removeMember(member.user_id)}
+                    aria-label="Remover do grupo"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
                 )}
               </div>
-              {member.role === "owner" && <Crown className="size-3.5 shrink-0 text-amber-400" />}
-              {isOwner && member.role !== "owner" && (
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={() => removeMember(member.user_id)}
-                  aria-label="Remover do grupo"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <MapPinned className="size-3.5" />
+            POIs desse grupo{groupPois.length > 0 ? ` (${groupPois.length})` : ""}
+          </p>
+          {groupPois.length === 0 ? (
+            <EmptyState text="Nenhum POI marcado como deste grupo ainda." />
+          ) : (
+            groupPois.map((poi, index) => (
+              <MotionListItem key={poi.id} index={index}>
+                <GroupPoiListItem
+                  poi={poi}
+                  categoryById={categoryById}
+                  onClick={() => flyToPoi({ id: poi.id, lat: poi.lat, lng: poi.lng })}
+                />
+              </MotionListItem>
+            ))
+          )}
         </div>
       </div>
 

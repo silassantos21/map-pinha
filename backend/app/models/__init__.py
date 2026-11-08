@@ -1,6 +1,7 @@
 from app.db.base import Base
 from app.models.ai_feedback import AiFeedback
 from app.models.category import Category
+from app.models.comment import Comment
 from app.models.favorite import Favorite
 from app.models.follow import Follow
 from app.models.group import Group, GroupMember, GroupMemberRole, GroupMemberStatus
@@ -30,4 +31,5 @@ __all__ = [
     "GroupMember",
     "GroupMemberRole",
     "GroupMemberStatus",
+    "Comment",
 ]
