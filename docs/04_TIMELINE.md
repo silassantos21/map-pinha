@@ -13,7 +13,8 @@
 | 7 | Fase 7 — Sistema Social (Seguir, Grupos) e Notificações | 18 dias |
 | 8 | Fase 8 — Busca de Endereço no Mapa | 2 dias |
 | 9 | Fase 9 — Galeria de Avatares Pré-definidos | 2 dias |
-| | **Total** | **92 dias (13.1 semanas)** |
+| 10 | Fase 10 — App Nativo (React Native/Expo) *(v2+, sem prazo comprometido)* | ~24 dias (estimativa) |
+| | **Total (roadmap original, Fases 1-9)** | **92 dias (13.1 semanas)** |
 
 ---
 
@@ -235,6 +236,29 @@ Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (es
 
 - Usuário pode escolher um avatar entre 20 opções pré-geradas (sem upload de foto própria, sem chamada de IA em produção)
 - Escolha persistente entre logins, exibida em todos os lugares que hoje mostram o avatar do Google
+
+---
+
+### Fase 10: Fase 10 — App Nativo (React Native/Expo) (~24 dias, estimativa)
+
+> Planejada em 08/11/2026, a partir de um item já registrado como "v2+" em `docs/00_OVERVIEW.md` ("App nativo React Native com acesso ao GPS nativo e notificações push ao chegar perto de um POI cadastrado"). Diferente das Fases 1-9 (roadmap original do MVP, com compromisso de prazo), esta fase **não tem prazo comprometido** — é a formalização de um objetivo de longo prazo, faseada em partes que começam só quando o dono do projeto confirmar explicitamente cada uma (mesmo modelo usado pra Fase 7: planejada inteira, implementada em partes ao longo de várias sessões).
+>
+> **Achado que motivou a Parte 1 ser separada:** investigação no código mostrou que a autenticação atual (`backend/app/api/v1/auth.py`) depende de um segredo compartilhado fixo (`X-Internal-Secret`) que só o Next.js (BFF) conhece — o FastAPI confia no `user_id` recebido em cada chamada sem validar quem está de fato chamando. Um app nativo não pode usar esse mesmo segredo (ficaria embutido no binário, extraível). Por isso a Parte 1 é só a fundação de autenticação mobile (JWT de verdade), pré-requisito bloqueante de tudo mais.
+>
+> **Decisão de escopo (08/11/2026):** a notificação de proximidade (motivação original do item) usa geofence **nativo** do sistema operacional (iOS/Android monitoram os POIs favoritados/próprios do usuário, dentro do limite de cada plataforma — ~20 no iOS, ~100 no Android) com aviso **local**, não push via servidor — mais simples, sem gasto de bateria rastreando em segundo plano, sem pedir permissão de localização "sempre" nem construir infraestrutura de push (Expo Push Service, tabela de token por dispositivo) nesta primeira versão.
+
+#### Tarefas (alto nível — cada parte é detalhada de verdade só quando começar)
+
+- [x] **Parte 1 — Fundação de autenticação mobile no backend**: endpoints `POST /api/v1/mobile/auth/google` (troca ID token do Google por um JWT próprio) e `GET /api/v1/mobile/auth/me` (valida o JWT), sem tocar em nenhum endpoint existente
+- [ ] **Parte 2 — Scaffold Expo + login + mapa somente-leitura**: novo `mobile/` no monorepo, tela de login com Google Sign-In nativo, mapa mostrando POIs já cadastrados
+- [ ] **Parte 3 — Paridade de escrita**: criar/editar POI, favoritar, no app
+- [ ] **Parte 4 — Social no app**: seguir, grupos, comentários, notificações in-app
+- [ ] **Parte 5 — Geofence nativo + notificação local de proximidade**: o pedido original que motivou a fase — monitorar POIs favoritos/próprios e avisar ao chegar perto, sem servidor de push
+
+#### Entregáveis
+
+- App iOS/Android funcional via Expo, com login próprio (JWT, não a mesma sessão do NextAuth) e autenticação validada de verdade no backend por requisição
+- Notificação local ao entrar na área de um POI favoritado/próprio, sem precisar de infraestrutura de push no servidor
 
 ---
 

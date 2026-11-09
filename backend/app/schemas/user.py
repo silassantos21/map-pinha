@@ -22,6 +22,18 @@ class UserRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MobileGoogleAuthRequest(BaseModel):
+    """Fase 10 (app nativo) — ID token obtido no dispositivo via Google
+    Sign-In, verificado pelo backend antes de emitir o JWT próprio do app."""
+
+    id_token: str
+
+
+class MobileAuthResponse(BaseModel):
+    access_token: str
+    user: UserRead
+
+
 class UserAvatarUpdate(BaseModel):
     # Os três campos são mutuamente exclusivos — ver `_check_single_choice`.
     # Todos `None` = remove a escolha e volta a usar a foto do Google

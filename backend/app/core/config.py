@@ -27,5 +27,14 @@ class Settings(BaseSettings):
     # Sentry (rastreamento de erros) — sentry.io > projeto backend > Settings > Client Keys (DSN)
     sentry_dsn: str = ""
 
+    # Fase 10 (app nativo) — autenticação mobile própria (JWT), separada da
+    # sessão NextAuth do frontend web. `jwt_secret` assina/valida os tokens
+    # emitidos por `POST /mobile/auth/google`; `google_mobile_client_id` é o
+    # client ID OAuth do app nativo no Google Cloud (diferente do client ID
+    # web usado pelo NextAuth) — valida o campo `aud` do ID token recebido,
+    # pra garantir que o token veio de login no nosso app, não de outro.
+    jwt_secret: str = ""
+    google_mobile_client_id: str = ""
+
 
 settings = Settings()

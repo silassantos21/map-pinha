@@ -574,6 +574,14 @@ Relacionado ao item "modo colaborativo" já listado nas features v2+ do `docs/00
 
 **Status (23/10/2026): promovida para a Fase 7 formal do roadmap** (`docs/04_TIMELINE.md`), expandida com o pedido de seguir usuários individuais (não só grupos) e notificações in-app — ver item 17 abaixo.
 
+### Compartilhamento de localização em tempo real (registrada em 08/11/2026)
+
+Pedido do dono do projeto, adicionada à lista de `docs/00_OVERVIEW.md`: usuário compartilha sua localização ao vivo com um grupo ou com amigos específicos (estilo "live location" do WhatsApp/Google Maps), em vez de só marcar POIs estáticos.
+
+**Avaliação de dificuldade, dada antes de qualquer desenvolvimento:** média-alta, na mesma ordem de grandeza da Fase 7 inteira (~18 dias). O modelo de "quem pode ver" já existe pronto (grupos/seguidores, Fase 7), mas duas coisas são genuinamente novas: (1) uma camada de dado "ao vivo" (posição mudando a cada poucos segundos, sessão de compartilhamento com início/expiração/parar a qualquer momento — provável candidato a viver no Redis já existente, com TTL, em vez do Postgres) e (2) a escolha de transporte pra propagar isso aos espectadores: polling frequente (mais simples, reaproveita o padrão atual do projeto de "sem WebSocket ainda", usado pro sininho de notificações) vs. WebSocket de verdade (mais fluido, mas seria a primeira infraestrutura de tempo real do projeto). Maior risco não é técnico, é de produto/privacidade — precisa ser opt-in explícito, com expiração automática e botão de "parar agora" bem visível, já que é um dado bem mais sensível do que qualquer outro que o app guarda hoje.
+
+Não iniciar antes de decidirmos entrar nela de fato — fica registrada como ideia, sem compromisso de prazo.
+
 ---
 
 ## Sprint 6 — Compartilhamento, Polimento Visual e Deploy Final
@@ -1313,3 +1321,18 @@ Depois de ver a Camada 1 e 4 rodando de verdade, o dono do projeto trouxe 3 ajus
 - `--hud-footer-height` (CSS var em `app-shell.tsx`) ganhou um valor menor pro desktop (`sm:[--hud-footer-height:3.5rem]` vs `6rem` no mobile), já que o cluster compacto ocupa bem menos espaço vertical que a barra.
 - Os 4 slots continuam **sempre presentes mesmo deslogado** (decisão da Camada 4 mantida) nos dois tamanhos de tela — só muda a casca visual, não essa regra.
 - Validado com `type-check`/`lint`/`build` limpos.
+
+---
+
+## Fase 10 Parte 1 — Fundação de autenticação mobile (08/11/2026)
+
+Item novo de v2+ (`docs/00_OVERVIEW.md`): app nativo React Native com notificação push ao chegar perto de um POI. Antes de começar, investiguei (2 agentes de exploração) o que já existe de autenticação/infra pra não presumir nada — e achei um bloqueio real: o backend (`verify_internal_secret`) confia cegamente no `user_id` que vem em cada chamada, protegido só por um segredo compartilhado fixo que hoje só o Next.js (BFF) conhece. Um app nativo não pode carregar esse mesmo segredo (fica extraível do binário) — expor a API assim pra um app mobile deixaria qualquer um se passar por qualquer usuário. Resolver isso virou pré-requisito, confirmado com o dono do projeto antes de qualquer linha de app.
+
+Formalizada como **Fase 10** em `docs/04_TIMELINE.md` (sem prazo comprometido, diferente do roadmap original — é v2+), faseada em 5 partes; esta sessão implementou só a Parte 1. Decisões já tomadas pro resto da fase (registradas lá): geofence **nativo** do SO pros favoritos/POIs próprios (não push via servidor, evita bateria/permissão "sempre"/infra nova por ora), e escopo final amplo (portar boa parte da web pro app, não só mapa+notificação) — mas tudo faseado, com go-ahead explícito por parte.
+
+- **`backend/app/core/security.py` (novo):** `create_access_token`/`decode_access_token` — JWT HS256 próprio do app (`jwt_secret`, nova config), **sem refresh token** nesta versão (expira em 30 dias, usuário loga de novo com o Google — mesma filosofia de não adicionar complexidade sem necessidade comprovada já usada pra Celery/WebSocket no projeto). `pyjwt` adicionado ao `requirements.txt`.
+- **`backend/app/api/v1/auth.py`:** lógica de get-or-create do `sync_user` (NextAuth web) extraída pra `get_or_create_user()`, reaproveitada pelo novo endpoint mobile — zero mudança de comportamento no `/auth/sync` existente (validado com `TestClient`: criar, atualizar, 401 sem secret, idêntico a antes).
+- **`backend/app/api/v1/mobile_auth.py` (novo router):** `POST /mobile/auth/google` (recebe `id_token` do Google obtido no dispositivo, verifica contra `https://oauth2.googleapis.com/tokeninfo` via `httpx` — escolha pragmática em vez de validar assinatura localmente com a lib `google-auth`, mesma filosofia de evitar dependência nova; confere `aud` contra um client ID OAuth próprio do app nativo, `google_mobile_client_id`, diferente do client ID web do NextAuth — e `email_verified`; chama `get_or_create_user`; devolve o JWT + dados do usuário) e `GET /mobile/auth/me` (lê `Authorization: Bearer`, decodifica, devolve o usuário). **De propósito, sem `Depends(verify_internal_secret)`** — são os únicos 2 endpoints do backend alcançáveis sem o segredo interno; a proteção aqui é a verificação do ID token do Google, não o segredo.
+- **O resto da API continua exigindo `X-Internal-Secret` como sempre** — nenhum outro router aceita o JWT mobile ainda. Estender isso é trabalho da Parte 2+ (quando o app realmente for chamar esses endpoints), não desta etapa.
+- **Validado via `TestClient`** (não dá pra simular um ID token real do Google no terminal): ida-e-volta de `create_access_token`/`decode_access_token`; `/mobile/auth/me` com token forjado localmente devolvendo o usuário certo (200), token inválido (401), sem header (401), usuário inexistente (404); `/auth/sync` revalidado ponta a ponta pra confirmar que o refactor não mudou nada (criar, atualizar, 401 sem secret). A validação com login Google de verdade só é possível quando o app Expo existir (Parte 2).
+- `backend/.env.example` documenta `JWT_SECRET`/`GOOGLE_MOBILE_CLIENT_ID` novos; sem migration (JWT é stateless, sem tabela nova).

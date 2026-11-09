@@ -63,6 +63,7 @@ Desenvolvedores que buscam um projeto de portfólio impressionante, criadores de
 - Exportar mapa como imagem PNG em estilo pôster (estética de mapa vintage para impressão)
 - Analytics de POIs: criador vê quantas pessoas visualizaram, calcularam rota e abriram no Google Maps
 - Modo offline completo: baixar tiles e POIs de uma região para uso sem internet
+- Compartilhamento de localização em tempo real para grupos ou amigos específicos (estilo "live location" do WhatsApp/Google Maps) — pedido em 08/11/2026
 
 ## Riscos Identificados
 

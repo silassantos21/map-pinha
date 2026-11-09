@@ -11,6 +11,7 @@ from app.api.v1.follows import router as follows_router
 from app.api.v1.groups import router as groups_router
 from app.api.v1.health import router as health_router
 from app.api.v1.media import router as media_router
+from app.api.v1.mobile_auth import router as mobile_auth_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.pois import router as pois_router
 from app.api.v1.routes import router as routes_router
@@ -53,3 +54,4 @@ app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(groups_router, prefix="/api/v1")
 app.include_router(comments_router, prefix="/api/v1")
+app.include_router(mobile_auth_router, prefix="/api/v1")

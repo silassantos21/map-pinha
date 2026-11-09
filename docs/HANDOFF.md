@@ -28,9 +28,13 @@
 
 Concluído: Fases 1-6, 8 e 9 do roadmap inteiras, e a **Fase 7 completa**
 (Partes 1, 2 e 3 — Sistema Social: seguir, notificações, visibilidade de POI,
-grupos, comentários). **Roadmap original 100% implementado** — o que vier
-depois é v2+ (ver `docs/00_OVERVIEW.md`/`SPRINTS.md`), não precisa mais
-perguntar "o que falta do roadmap".
+grupos, comentários). **Roadmap original (Fases 1-9) 100% implementado.**
+
+Em andamento, **sem prazo comprometido** (v2+): **Fase 10 — App Nativo
+(React Native/Expo)**, formalizada em `docs/04_TIMELINE.md`, faseada em 5
+partes. Só a **Parte 1** (fundação de autenticação mobile no backend) foi
+implementada até agora — ver seção própria abaixo. Nada do resto do roadmap
+original fica pendente; "o que falta" só se aplica à Fase 10 em si.
 
 ### Fase 7 Parte 1 + sessão de ajustes de UX (commit `d6756a2`)
 
@@ -149,11 +153,11 @@ do HUD do mapa — planejada formalmente (plan mode + `AskUserQuestion` pra 3
 decisões em aberto) antes de codar, sem perder nenhuma função nem mudar
 tokens de design. Detalhes completos no `SPRINTS.md`, resumo aqui:
 
-- **Topo:** `hud-header.tsx` reduzido de 5 elementos soltos (logo, busca,
-  tema, sino, avatar) pra 2 pills (logo + busca). Avatar (`user-avatar-badge.tsx`,
-  sem rótulo de nome) e sino (`notification-bell.tsx`, encolhido) agora
-  sobrepostos na borda direita da pill de busca, que ganhou padding extra
-  (`pr-11`/`pr-12`) pra reservar esse espaço.
+- **Topo:** `theme-switcher.tsx` saiu do `hud-header.tsx` (foi pra coluna
+  lateral do mapa, ver abaixo) — sobram logo, busca, sino e avatar, cada um
+  com seu próprio espaço, igual sempre foi (uma rodada tentou sobrepor
+  sino+avatar na borda da busca, o dono do projeto não gostou, revertido —
+  ver "Correção pós-QA visual" abaixo).
 - **Coluna lateral do mapa:** `theme-switcher.tsx` saiu do header e virou o
   botão "camadas" (ícone `Layers`) dentro do `map-controls.tsx`, abrindo um
   popover com os temas (novo `components/ui/popover.tsx`, mesmo primitivo
@@ -167,9 +171,8 @@ tokens de design. Detalhes completos no `SPRINTS.md`, resumo aqui:
   superior da barra. Nova CSS var `--hud-footer-height` (`app-shell.tsx`)
   consumida por `route-panel.tsx`/`map-view.tsx` pra não ficarem escondidos
   atrás do rodapé mais alto.
-- Validado com `type-check`/`lint`/`build` limpos a cada camada. **Ainda não
-  commitada nesta sessão** — sem navegador aqui, QA visual fica 100% a cargo
-  do dono do projeto antes de qualquer commit/push.
+- Validado com `type-check`/`lint`/`build` limpos a cada camada. Commitada e
+  no push (`3f6202d`, já incluindo a correção pós-QA abaixo).
 - **Correção pós-QA visual:** o dono do projeto testou de verdade e pediu 3
   ajustes — barra cheia do rodapé só no mobile (desktop volta ao cluster
   compacto de antes), avatar+sino voltam a ser elementos separados no
@@ -212,6 +215,39 @@ Padrões/bugs de sessões anteriores que vale lembrar pra não reintroduzir:
 6. Rotas BFF que devolvem 204 no sucesso mas 400/403/404 **com corpo**
    (`{detail: "..."}`) no erro precisam repassar esse corpo, não só o status —
    ver `forwardJsonOr204` em `api-server.ts`, criado exatamente pra isso.
+
+### Fase 10 Parte 1 — Fundação de autenticação mobile
+
+App nativo (React Native/Expo) com notificação de proximidade, item novo de
+v2+ (`docs/00_OVERVIEW.md`), formalizado como **Fase 10** em
+`docs/04_TIMELINE.md` (5 partes, **sem prazo comprometido** — diferente do
+roadmap original). Só a Parte 1 foi feita até aqui.
+
+- **Achado que bloqueava tudo:** o backend (`verify_internal_secret`) confia
+  cegamente no `user_id` recebido em cada chamada, protegido só por um
+  segredo fixo que hoje só o Next.js (BFF) conhece — um app nativo não pode
+  carregar esse mesmo segredo (extraível do binário). Resolvido antes de
+  qualquer tela de app.
+- Novo `backend/app/core/security.py` (`create_access_token`/
+  `decode_access_token`, JWT HS256, `pyjwt`, sem refresh token — expira em 30
+  dias) e novo router `backend/app/api/v1/mobile_auth.py`: `POST
+  /mobile/auth/google` (troca um ID token do Google, verificado contra
+  `tokeninfo`, por um JWT próprio) e `GET /mobile/auth/me` (valida o JWT).
+  **De propósito, sem o `X-Internal-Secret`** — são os únicos 2 endpoints
+  públicos sem o segredo interno, protegidos pela verificação do Google.
+- `backend/app/api/v1/auth.py`: lógica de get-or-create extraída pra
+  `get_or_create_user()`, reaproveitada pelos dois caminhos (web e mobile) —
+  `/auth/sync` revalidado sem mudança de comportamento.
+- **Resto da API intocado** — continua só `X-Internal-Secret`, nenhum outro
+  endpoint aceita o JWT mobile ainda (trabalho da Parte 2+).
+- Validado via `TestClient` (não dá pra simular ID token real do Google no
+  terminal): round-trip do token, `/mobile/auth/me` com token válido/
+  inválido/ausente/usuário inexistente, `/auth/sync` revalidado ponta a
+  ponta. `JWT_SECRET`/`GOOGLE_MOBILE_CLIENT_ID` novos no `.env.example`, sem
+  migration (JWT stateless).
+- **Próximo passo (não começar sem pedido explícito):** Parte 2 — criar o
+  projeto Expo (`mobile/`), tela de login com Google Sign-In nativo chamando
+  `/mobile/auth/google`, primeira tela de mapa somente-leitura.
 
 ## Roadmap original — completo
 
