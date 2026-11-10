@@ -2,19 +2,51 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redirecionando...</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+        text-align: center;
+        gap: 16px;
+      }
+      a.button {
+        display: inline-block;
+        padding: 14px 28px;
+        background: #2563eb;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    </style>
   </head>
   <body>
     <p>Redirecionando de volta para o app MaPinha...</p>
+    <a id="open-app" class="button" href="#">Abrir o app MaPinha</a>
     <script>
       // Página-ponte: o Google OAuth só aceita redirect URIs https (não
       // aceita mais esquemas customizados tipo "mapinha://" diretamente,
       // nem para o client tipo "Web"). Então o Google volta pra cá, e esta
       // página repassa o resultado (id_token etc, vem no fragmento #) pro
-      // app via deep link. Na prática, o expo-auth-session/WebBrowser já
-      // costuma interceptar essa navegação antes mesmo da página carregar
-      // de verdade — isso aqui é só um fallback.
-      window.location.replace("mapinha://" + window.location.hash);
+      // app via deep link. O expo-auth-session/WebBrowser às vezes intercepta
+      // essa navegação antes mesmo da página carregar de verdade — mas
+      // quando isso não acontece, o Chrome bloqueia redirect automático via
+      // JS (location.replace) pra esquema customizado por não ter sido
+      // disparado por um toque do usuário (ver issues do fórum Expo/SO sobre
+      // "Navigation is blocked" nesse cenário). Por isso o link visível
+      // abaixo: um clique de verdade do usuário sempre funciona.
+      var deepLink = "mapinha://" + window.location.hash;
+      document.getElementById("open-app").href = deepLink;
+      window.location.replace(deepLink);
     </script>
   </body>
 </html>
