@@ -1,8 +1,8 @@
 import * as AuthSession from "expo-auth-session";
 import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
-import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Button, Linking, StyleSheet, Text, View } from "react-native";
 
 import { mobileGoogleLogin } from "../lib/api";
 
@@ -32,6 +32,10 @@ export function LoginScreen({ onLoggedIn }: LoginScreenProps) {
   // (o backend já valida `aud` e `email_verified` via tokeninfo do Google).
   const nonce = useMemo(() => Crypto.randomUUID(), []);
   const discovery = AuthSession.useAutoDiscovery("https://accounts.google.com");
+  // Evita processar o id_token duas vezes: o `promptAsync()` abaixo e o
+  // listener de deep link (handleIncomingUrl) são dois caminhos
+  // independentes que podem, em teoria, resolver o mesmo login.
+  const handledRef = useRef(false);
 
   const [request, , promptAsync] = AuthSession.useAuthRequest(
     {
@@ -45,20 +49,58 @@ export function LoginScreen({ onLoggedIn }: LoginScreenProps) {
     discovery,
   );
 
+  const completeLogin = async (idToken: string) => {
+    if (handledRef.current) return;
+    handledRef.current = true;
+    setIsSigningIn(true);
+    try {
+      const { access_token } = await mobileGoogleLogin(idToken);
+      await onLoggedIn(access_token);
+    } catch (error) {
+      console.error(error);
+      handledRef.current = false;
+      Alert.alert(
+        "Não foi possível entrar",
+        error instanceof Error ? error.message : "Tente de novo em instantes.",
+      );
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  // No Android, o Custom Tab aberto pelo `promptAsync()` só fecha sozinho
+  // quando o retorno bate com um esquema registrado do próprio app — como o
+  // Google não aceita mais `mapinha://` como redirect URI (só https), o
+  // retorno de verdade vem da página-ponte (`mobile-auth-redirect.html`),
+  // que repassa pro app via deep link manualmente. Esse listener é quem
+  // conclui o login nesse caminho — o `promptAsync()` abaixo normalmente só
+  // abre o navegador e nunca resolve sozinho nesse fluxo.
+  useEffect(() => {
+    function handleIncomingUrl(url: string) {
+      const idToken = new URL(url).searchParams.get("id_token");
+      if (idToken) {
+        completeLogin(idToken);
+      }
+    }
+
+    const subscription = Linking.addEventListener("url", ({ url }) => handleIncomingUrl(url));
+    Linking.getInitialURL().then((url) => {
+      if (url) handleIncomingUrl(url);
+    });
+    return () => subscription.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSignIn = async () => {
     setIsSigningIn(true);
     try {
       const result = await promptAsync();
-      if (result.type !== "success") {
-        // Usuário cancelou o fluxo — não é erro.
-        return;
+      if (result.type === "success" && result.params.id_token) {
+        await completeLogin(result.params.id_token);
       }
-
-      const idToken = result.params.id_token;
-      if (!idToken) throw new Error("O Google não devolveu um idToken.");
-
-      const { access_token } = await mobileGoogleLogin(idToken);
-      await onLoggedIn(access_token);
+      // Qualquer outro resultado (cancel/dismiss/sem id_token): o listener
+      // de deep link acima é quem deve concluir o login, se o Google de
+      // fato autenticou — não é necessariamente um erro aqui.
     } catch (error) {
       console.error(error);
       Alert.alert(

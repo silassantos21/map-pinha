@@ -51,13 +51,30 @@
       // aceita mais esquemas customizados tipo "mapinha://" diretamente,
       // nem para o client tipo "Web"). Então o Google volta pra cá, e esta
       // página repassa o resultado (id_token etc, vem no fragmento #) pro
-      // app via deep link. O expo-auth-session/WebBrowser às vezes intercepta
-      // essa navegação antes mesmo da página carregar de verdade — mas
-      // quando isso não acontece, o Chrome bloqueia redirect automático via
-      // JS (location.replace) pra esquema customizado por não ter sido
-      // disparado por um toque do usuário (ver issues do fórum Expo/SO sobre
-      // "Navigation is blocked" nesse cenário). Por isso o link visível
-      // abaixo: um clique de verdade do usuário sempre funciona.
+      // app via deep link.
+      //
+      // Achado real (10/11/2026, testando num Android físico): o Chrome
+      // ignora silenciosamente um <a href="mapinha://...">/location.replace
+      // com esquema customizado "cru" — nem erro, nem diálogo, nem log (ver
+      // issues do fórum Expo/SO sobre isso). O formato que o Chrome de fato
+      // honra é a sintaxe própria dele, "intent://...#Intent;...;end", que
+      // força a resolução via Intent do Android mesmo sem ser um link
+      // http(s) verificado. Por isso usamos esse formato no Android (Chrome
+      // e a maioria dos browsers baseados nele) e o esquema puro como
+      // fallback nos demais (ex: Safari no iOS, que não entende
+      // "intent://"). O payload vai como query string (não fragmento) nos
+      // dois casos — mais simples de recuperar os parâmetros no app
+      // (`new URL(url).searchParams`) e a sintaxe "intent://" não convive
+      // bem com um "#" literal no meio (ela já usa "#Intent;...;end").
+      var payload = window.location.hash.slice(1); // remove o "#" inicial
+      var isAndroid = /Android/.test(navigator.userAgent);
+      var deepLink = isAndroid
+        ? "intent://auth?" +
+          payload +
+          "#Intent;scheme=mapinha;package=com.mapinha.mobile;S.browser_fallback_url=" +
+          encodeURIComponent(window.location.href) +
+          ";end"
+        : "mapinha://auth?" + payload;
 
       // Caixa de debug visível na própria página (temporária, só pra
       // diagnosticar o botão não funcionando — sem acesso a devtools no
@@ -72,8 +89,6 @@
       log("user-agent: " + navigator.userAgent);
       log("href completa: " + window.location.href);
       log("hash bruto (" + window.location.hash.length + " chars): " + window.location.hash);
-
-      var deepLink = "mapinha://" + window.location.hash;
       log("deepLink calculado: " + deepLink);
 
       try {
