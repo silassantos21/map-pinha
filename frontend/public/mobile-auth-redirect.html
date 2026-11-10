@@ -27,11 +27,25 @@
         font-size: 16px;
         font-weight: 600;
       }
+      #debug {
+        width: 100%;
+        max-width: 600px;
+        text-align: left;
+        font-size: 11px;
+        line-height: 1.5;
+        background: #111;
+        color: #0f0;
+        padding: 12px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
     </style>
   </head>
   <body>
     <p>Redirecionando de volta para o app MaPinha...</p>
     <a id="open-app" class="button" href="#">Abrir o app MaPinha</a>
+    <pre id="debug">(carregando...)</pre>
     <script>
       // Página-ponte: o Google OAuth só aceita redirect URIs https (não
       // aceita mais esquemas customizados tipo "mapinha://" diretamente,
@@ -44,9 +58,47 @@
       // disparado por um toque do usuário (ver issues do fórum Expo/SO sobre
       // "Navigation is blocked" nesse cenário). Por isso o link visível
       // abaixo: um clique de verdade do usuário sempre funciona.
+
+      // Caixa de debug visível na própria página (temporária, só pra
+      // diagnosticar o botão não funcionando — sem acesso a devtools no
+      // celular, não tem como ver console.log de outro jeito).
+      var debugEl = document.getElementById("debug");
+      var logLines = [];
+      function log(line) {
+        logLines.push(new Date().toISOString().slice(11, 19) + " " + line);
+        debugEl.textContent = logLines.join("\n");
+      }
+
+      log("user-agent: " + navigator.userAgent);
+      log("href completa: " + window.location.href);
+      log("hash bruto (" + window.location.hash.length + " chars): " + window.location.hash);
+
       var deepLink = "mapinha://" + window.location.hash;
-      document.getElementById("open-app").href = deepLink;
-      window.location.replace(deepLink);
+      log("deepLink calculado: " + deepLink);
+
+      try {
+        document.getElementById("open-app").href = deepLink;
+        log("href do botão setado com sucesso");
+      } catch (e) {
+        log("ERRO ao setar href: " + e);
+      }
+
+      document.getElementById("open-app").addEventListener("click", function (ev) {
+        log("clique detectado no botão");
+        try {
+          window.location.href = deepLink;
+          log("window.location.href chamado sem lançar erro");
+        } catch (e) {
+          log("ERRO ao navegar: " + e);
+        }
+      });
+
+      try {
+        window.location.replace(deepLink);
+        log("tentativa automática (location.replace) chamada sem lançar erro");
+      } catch (e) {
+        log("ERRO na tentativa automática: " + e);
+      }
     </script>
   </body>
 </html>
