@@ -19,4 +19,9 @@ COPY . .
 # fixa). Sem a env var (ex: build local fora do docker-compose), cai em 8000.
 # Sem --reload aqui — é o comando de produção; o docker-compose.yml sobrescreve
 # com --reload pro ambiente de desenvolvimento local (ver `command:` lá).
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# `alembic upgrade head` roda antes do uvicorn: o plano Free da Render não dá
+# Shell (precisa upgrade pago) pra rodar migração manual, e já aconteceu de
+# migração nova ficar pendente em produção depois de um deploy (achado em
+# 10/11/2026 — `pois.visibility`/`pois.group_id` inexistentes lá, 500 em
+# qualquer listagem de POI). Idempotente quando já está tudo migrado.
+CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
