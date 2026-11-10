@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecionando...</title>
+  </head>
+  <body>
+    <p>Redirecionando de volta para o app MaPinha...</p>
+    <script>
+      // Página-ponte: o Google OAuth só aceita redirect URIs https (não
+      // aceita mais esquemas customizados tipo "mapinha://" diretamente,
+      // nem para o client tipo "Web"). Então o Google volta pra cá, e esta
+      // página repassa o resultado (id_token etc, vem no fragmento #) pro
+      // app via deep link. Na prática, o expo-auth-session/WebBrowser já
+      // costuma interceptar essa navegação antes mesmo da página carregar
+      // de verdade — isso aqui é só um fallback.
+      window.location.replace("mapinha://" + window.location.hash);
+    </script>
+  </body>
+</html>

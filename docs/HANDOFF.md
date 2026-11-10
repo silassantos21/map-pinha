@@ -1,6 +1,6 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 08/11/2026. Isso aqui é só o que **não** está documentado em
+> Atualizado em 10/11/2026. Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -32,9 +32,18 @@ grupos, comentários). **Roadmap original (Fases 1-9) 100% implementado.**
 
 Em andamento, **sem prazo comprometido** (v2+): **Fase 10 — App Nativo
 (React Native/Expo)**, formalizada em `docs/04_TIMELINE.md`, faseada em 5
-partes. Só a **Parte 1** (fundação de autenticação mobile no backend) foi
-implementada até agora — ver seção própria abaixo. Nada do resto do roadmap
-original fica pendente; "o que falta" só se aplica à Fase 10 em si.
+partes. **Partes 1 e 2** implementadas (auth mobile no backend + projeto
+Expo com login/mapa somente-leitura) — ver seções próprias abaixo. Nada do
+resto do roadmap original fica pendente; "o que falta" só se aplica à Fase
+10 em si.
+
+**Novo sub-projeto `mobile/`** (Expo/React Native) — tooling próprio, não
+confundir com os comandos de `frontend/`/`backend/`: `cd mobile && npx expo
+start` (dev), `npx tsc --noEmit` (type-check), `npx expo-doctor`
+(diagnóstico de config). **Sem emulador Android nem Mac neste ambiente** —
+só dá pra validar por código aqui; teste de verdade (login, mapa com dados
+reais) é sempre no celular físico do dono do projeto, via development build
+(não Expo Go — ver `mobile/README.md`).
 
 ### Fase 7 Parte 1 + sessão de ajustes de UX (commit `d6756a2`)
 
@@ -238,16 +247,58 @@ roadmap original). Só a Parte 1 foi feita até aqui.
 - `backend/app/api/v1/auth.py`: lógica de get-or-create extraída pra
   `get_or_create_user()`, reaproveitada pelos dois caminhos (web e mobile) —
   `/auth/sync` revalidado sem mudança de comportamento.
-- **Resto da API intocado** — continua só `X-Internal-Secret`, nenhum outro
-  endpoint aceita o JWT mobile ainda (trabalho da Parte 2+).
+- **Resto da API intocado nesta parte** — continuou só `X-Internal-Secret`;
+  `GET /pois` ganhou o JWT mobile na Parte 2 (ver abaixo), o restante segue
+  igual.
 - Validado via `TestClient` (não dá pra simular ID token real do Google no
   terminal): round-trip do token, `/mobile/auth/me` com token válido/
   inválido/ausente/usuário inexistente, `/auth/sync` revalidado ponta a
   ponta. `JWT_SECRET`/`GOOGLE_MOBILE_CLIENT_ID` novos no `.env.example`, sem
   migration (JWT stateless).
-- **Próximo passo (não começar sem pedido explícito):** Parte 2 — criar o
-  projeto Expo (`mobile/`), tela de login com Google Sign-In nativo chamando
-  `/mobile/auth/google`, primeira tela de mapa somente-leitura.
+
+### Fase 10 Parte 2 — App Expo: login + mapa somente-leitura
+
+- **2 premissas derrubadas por doc oficial da Expo antes de codar** (seguindo
+  o próprio `mobile/AGENTS.md` gerado pelo template: "Expo muda toda release,
+  não confiar na memória"): login via navegador (`expo-auth-session`) não
+  funciona de forma confiável no Expo Go — precisa de **development build**
+  (EAS Build); e `react-native-maps` no Android exige API key do Google Maps
+  mesmo só com tiles customizados. As duas mudaram a abordagem combinada
+  antes, confirmadas com o dono do projeto via pergunta direta antes de
+  prosseguir (login virou SDK nativo `@react-native-google-signin/
+  google-signin` em vez de navegador; mapa continuou `react-native-maps`,
+  aceitando a API key extra).
+- **Backend:** `GET /pois` (`pois.py`) ganhou `require_internal_secret_or_
+  mobile_user()` (`security.py`) — aceita `Authorization: Bearer` (JWT
+  mobile, `user_id` resolvido do token, **sobrescreve** qualquer `user_id` da
+  query) OU `X-Internal-Secret` (comportamento de sempre do BFF). Único
+  endpoint tocado nesta parte.
+- **Mobile:** novo `mobile/` (Expo SDK 58, TypeScript, sem Expo Router — só
+  2 telas, troca por `useState` simples). Mapa com `react-native-maps`/
+  `UrlTile` no tema "cartoon" (único portado por agora) + marcadores com os
+  mesmos ~37 ícones (`lucide-react-native`, mesmas chaves kebab-case da
+  web).
+- **Login — trocado de SDK nativo pra navegador (10/11/2026), depois do
+  primeiro teste num Android físico:** `@react-native-google-signin/
+  google-signin` falha de forma intermitente (`TurboModuleRegistry... could
+  not be found`, mesmo build funcionando numa abertura e falhando na
+  próxima) — bug confirmado e sem correção nas issues oficiais do pacote
+  (#1350, #1330, #1362). Trocado por `expo-auth-session` + `expo-web-
+  browser` (`LoginScreen.tsx`). O Google não aceita mais esquema
+  customizado (`mapinha://`) como redirect URI — por isso existe
+  `frontend/public/mobile-auth-redirect.html`, página-ponte estática
+  publicada no site (`mapinha-iota.vercel.app`) que recebe o retorno do
+  Google (https) e repassa pro app via `mapinha://`. Esse URL precisa estar
+  cadastrado em "Authorized redirect URIs" do client Web no Google Cloud
+  Console (mesmo client de sempre, sem cadastro adicional tipo "Android").
+- Validado só por código (`tsc --noEmit`, `expo-doctor` 20/20) — falta
+  confirmar o login de ponta a ponta com a página-ponte publicada.
+  **`mobile/README.md` documenta o setup completo** (conta Expo/EAS, 2
+  cadastros no Google Cloud Console, gerar/instalar o build, rodar o dev
+  server).
+- **Próximo passo (não começar sem pedido explícito):** confirmar o teste
+  de login em dispositivo físico; depois, Parte 3 — paridade de escrita
+  (criar/editar POI, favoritar) no app.
 
 ## Roadmap original — completo
 

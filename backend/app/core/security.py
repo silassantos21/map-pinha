@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import HTTPException, status
+from fastapi import Header, HTTPException, status
 
 from app.core.config import settings
 
@@ -34,3 +34,25 @@ def decode_access_token(token: str) -> uuid.UUID:
         return uuid.UUID(payload["sub"])
     except (KeyError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+
+def require_internal_secret_or_mobile_user(
+    x_internal_secret: str = Header(default=""),
+    authorization: str = Header(default=""),
+) -> uuid.UUID | None:
+    """Autenticação dupla (Fase 10 Parte 2) pra endpoints chamados tanto pelo
+    BFF do Next.js (segredo interno, `user_id` confiado via query/body — ver
+    `verify_internal_secret` em `app/api/v1/auth.py`) quanto pelo app mobile
+    (JWT Bearer, sem acesso ao segredo interno). Devolve o `user_id`
+    resolvido do JWT quando presente — o endpoint deve IGNORAR qualquer
+    `user_id` vindo de fora e usar este, senão um app mobile autenticado
+    poderia pedir o `user_id` de outra pessoa via query. Devolve `None`
+    quando a chamada veio do BFF (comportamento de sempre: endpoint confia no
+    `user_id` que já recebe)."""
+    if authorization.startswith("Bearer "):
+        return decode_access_token(authorization.removeprefix("Bearer ").strip())
+
+    if settings.internal_api_secret and x_internal_secret == settings.internal_api_secret:
+        return None
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")

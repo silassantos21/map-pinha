@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.v1.auth import verify_internal_secret
 from app.core.media_processing import generate_image_thumbnail
 from app.core.rate_limit import enforce_ai_rate_limit
+from app.core.security import require_internal_secret_or_mobile_user
 from app.core.storage import build_public_url, delete_object_by_public_url
 from app.db.session import SessionLocal, get_db
 from app.models.category import Category
@@ -138,10 +139,10 @@ def _poi_visible_to(poi: POI, user_id: uuid.UUID | None, db: Session) -> bool:
 @router.get(
     "/pois",
     response_model=list[POIRead],
-    dependencies=[Depends(verify_internal_secret)],
 )
 def list_pois(
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
     min_lat: float | None = Query(default=None, ge=-90, le=90),
     min_lng: float | None = Query(default=None, ge=-180, le=180),
     max_lat: float | None = Query(default=None, ge=-90, le=90),
@@ -157,12 +158,18 @@ def list_pois(
     Com `mine_only=true`, ignora os públicos de outros usuários e devolve só
     os POIs do próprio `user_id` (usado pelo painel "Meus POIs").
 
-    Atrás do segredo interno (`verify_internal_secret`): só o BFF do Next.js
-    pode chamar este endpoint, e é ele quem resolve `user_id` a partir da
-    sessão autenticada — o parâmetro nunca deve vir direto do navegador,
-    senão qualquer um poderia passar o UUID de outra pessoa e ver POIs
-    privados que não são dela.
+    Autenticação dupla (`require_internal_secret_or_mobile_user`, Fase 10
+    Parte 2): atrás do segredo interno, só o BFF do Next.js pode chamar
+    assim, e é ele quem resolve `user_id` a partir da sessão autenticada — o
+    parâmetro nunca deve vir direto do navegador, senão qualquer um poderia
+    passar o UUID de outra pessoa e ver POIs privados que não são dela. Atrás
+    de um JWT do app mobile, `mobile_user_id` vem resolvido do próprio token
+    e **sobrescreve** qualquer `user_id` da query — mesma proteção, só que
+    pro cliente que não tem acesso ao segredo interno.
     """
+    if mobile_user_id is not None:
+        user_id = mobile_user_id
+
     stmt = _with_relations(select(POI))
 
     if None not in (min_lat, min_lng, max_lat, max_lng):

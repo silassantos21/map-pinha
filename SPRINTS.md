@@ -1336,3 +1336,40 @@ Formalizada como **Fase 10** em `docs/04_TIMELINE.md` (sem prazo comprometido, d
 - **O resto da API continua exigindo `X-Internal-Secret` como sempre** — nenhum outro router aceita o JWT mobile ainda. Estender isso é trabalho da Parte 2+ (quando o app realmente for chamar esses endpoints), não desta etapa.
 - **Validado via `TestClient`** (não dá pra simular um ID token real do Google no terminal): ida-e-volta de `create_access_token`/`decode_access_token`; `/mobile/auth/me` com token forjado localmente devolvendo o usuário certo (200), token inválido (401), sem header (401), usuário inexistente (404); `/auth/sync` revalidado ponta a ponta pra confirmar que o refactor não mudou nada (criar, atualizar, 401 sem secret). A validação com login Google de verdade só é possível quando o app Expo existir (Parte 2).
 - `backend/.env.example` documenta `JWT_SECRET`/`GOOGLE_MOBILE_CLIENT_ID` novos; sem migration (JWT é stateless, sem tabela nova).
+
+---
+
+## Fase 10 Parte 2 — App Expo: login + mapa somente-leitura (09/11/2026)
+
+Sequência da Parte 1. Antes de codar, investigação (via doc oficial da Expo, seguindo a própria instrução do `AGENTS.md` que o template gera — "Expo muda a cada release, nunca confiar na memória") derrubou 2 premissas da conversa anterior:
+
+- **`expo-auth-session` (login via navegador) não funciona de forma confiável no Expo Go** — a doc oficial diz isso explicitamente ("cannot be used for local development and testing of OAuth-enabled apps"), recomenda **development build** (EAS Build). Troquei de abordagem: `@react-native-google-signin/google-signin` (SDK nativo do Google, oficialmente recomendado pela própria Expo) em vez da `expo-auth-session` — já que um development build ia ser necessário de qualquer jeito, o motivo original pra evitar o SDK nativo (não funcionar no Expo Go) deixou de existir.
+- **`react-native-maps` no Android exige uma API key do Google Maps mesmo usando só tiles customizados** (Stadia, como na web) — confirmado via doc oficial. Apresentei a alternativa (WebView+Leaflet, sem essa exigência) antes de prosseguir; decisão do dono do projeto: manter `react-native-maps` (é só mais um cadastro na mesma sessão do Google Cloud Console que já ia ser feita pro login).
+
+### Backend — autenticação dupla em `GET /pois`
+
+- Nova `require_internal_secret_or_mobile_user()` (`backend/app/core/security.py`): aceita `Authorization: Bearer <jwt>` (devolve o `user_id` do token) OU `X-Internal-Secret` (devolve `None`, comportamento de sempre do BFF) — 401 se nenhum dos dois.
+- `list_pois` (`backend/app/api/v1/pois.py`): troca a dependency sem retorno por essa nova, que agora é usada de verdade — `user_id` da query é **sobrescrito** pelo `user_id` do JWT quando presente, fechando a brecha identificada na Parte 1 (um app mobile nunca consegue pedir dados de outro `user_id` via query). Nenhum outro endpoint de `pois.py` mudou.
+- `GET /categories` já não tinha proteção nenhuma — sem mudança, o app mobile chama direto.
+- Validado via `TestClient`: comportamento do BFF sem regressão (mesmo `user_id`/mesma lista de sempre), JWT devolvendo exatamente os mesmos POIs que o BFF pediria pelo `user_id` real do token, tentativa de passar `user_id` de outra pessoa via query com um JWT válido (ignorada, usa o do token), sem credencial (401), segredo errado (401). Revalidei também os testes da Parte 1 (sem regressão).
+
+### Mobile — novo `mobile/` (Expo, SDK 58, TypeScript)
+
+- `npx create-expo-app@latest mobile --template blank-typescript` — **sem Expo Router**: só 2 telas com fluxo linear (login → mapa), troca de tela por `useState` simples no `App.tsx` é menos boilerplate que configurar uma lib de rotas pra isso.
+- `app.config.ts` (não `app.json` — precisa ler env vars em build-time): `android.package` = `com.mapinha.mobile`, plugins `@react-native-google-signin/google-signin`, `expo-secure-store`, `react-native-maps` (com `androidGoogleMapsApiKey`).
+- `eas.json`: profile `development` (`developmentClient: true`, build Android tipo `apk`, instalável direto no celular sem Play Store).
+- **Login** (`src/screens/LoginScreen.tsx`): `GoogleSignin.signIn()` → `GoogleSignin.getTokens()` (pega o `idToken`) → `POST /mobile/auth/google` (já existe, Parte 1) → token salvo via `expo-secure-store` (`src/lib/auth-storage.ts`). `webClientId` do `GoogleSignin.configure()` reaproveita o **mesmo** Client ID OAuth tipo "Web" que o NextAuth já usa na web — não precisou criar um novo, só um Client ID tipo "Android" adicional (exigido pelo SDK nativo no Android, com SHA-1 do keystore gerenciado pela EAS).
+- **Mapa** (`src/screens/MapScreen.tsx`): `react-native-maps` com `UrlTile` apontando pro mesmo tile do tema "cartoon" da web (`src/constants/map-theme.ts` — só esse tema portado por agora, trocar de tema fica pra depois) + um `Marker` por POI, ícone resolvido via `src/constants/poi-icons.ts` (porta de `lucide-react-native`, mesmas ~37 chaves kebab-case do `poi-icons.ts` da web, zero remapeamento) com a cor da categoria.
+- `@tanstack/react-query` pra buscar `/pois`/`/categories` — mesma lib/mental model da web.
+- **Validado só por código** (sem emulador nem Mac neste ambiente): `npx tsc --noEmit` limpo, `npx expo-doctor` 20/20 checks. **A validação de ponta a ponta (login Google de verdade, ver POIs reais no mapa) depende do dono do projeto rodar num celular Android físico** — `mobile/README.md` novo documenta o passo a passo completo (conta Expo/EAS, os 3 cadastros no Google Cloud Console, gerar e instalar o development build, rodar `expo start --dev-client`).
+- Fora de escopo nesta parte, de propósito: criar/editar POI, social, troca de tema, geofence (Parte 5 — motivo original da Fase 10).
+
+### Teste em dispositivo físico (10/11/2026) — troca de abordagem de login
+
+Primeiro teste de ponta a ponta num Android físico revelou 3 problemas reais, todos corrigidos:
+
+- **`EXPO_PUBLIC_API_URL` desatualizado:** apontava pra um IP de uma rede Wi-Fi anterior (variável só é injetada no bundle JS pelo Metro, não lida ao vivo do `.env` — corrigido editando o `.env` e reiniciando o `expo start --dev-client`, **sem precisar de build nova**, já que é uma env var usada só em JS, não em config nativa).
+- **`@react-native-google-signin/google-signin` falha de forma intermitente** com `Invariant Violation: TurboModuleRegistry.getEnforcing(...): 'RNGoogleSignin' could not be found` — confirmado via issues oficiais do próprio pacote no GitHub (#1350, #1330, #1362): o mesmo build funciona numa abertura do app e falha na próxima, sem correção publicada pelos mantenedores, relacionado à New Architecture (hoje obrigatória no Expo/RN, não dá mais pra desativar). Decisão, com o dono do projeto: trocar o SDK nativo por login via navegador (`expo-auth-session` + `expo-web-browser`) — a limitação original que tinha feito evitar `expo-auth-session` (não funcionar no Expo Go) não se aplica aqui, já que já estávamos num development build.
+- **Google não aceita mais esquema customizado (`mapinha://`) como redirect URI**, nem pro client tipo "Web" ("Custom URI schemes are no longer supported... no longer supported on Android and Chrome apps", documentação oficial do Google) — por isso o SDK nativo existe (ele não depende de redirect URI, fala direto com o Play Services). Solução: página-ponte estática (`frontend/public/mobile-auth-redirect.html`, publicada no mesmo site `mapinha-iota.vercel.app`) que recebe o retorno do Google (https, aceito normalmente) e repassa pro app via `mapinha://`. Cadastrada em "Authorized redirect URIs" do client Web no Google Cloud Console, mantendo o mesmo Client ID de sempre (sem precisar de client tipo "Android"/SHA-1).
+- `LoginScreen.tsx` reescrito com `AuthSession.useAuthRequest` (discovery automático do Google, `responseType: IdToken`, nonce via `expo-crypto`) + `promptAsync()`. `app.config.ts` perdeu o plugin do Google Sign-In nativo e ganhou `expo-web-browser`. `npx tsc --noEmit` e `npx expo-doctor` (20/20) revalidados após a troca.
+- Ainda pendente: confirmar login de ponta a ponta com a página-ponte publicada (depende do dono do projeto testar no celular depois do deploy do frontend).
