@@ -291,14 +291,28 @@ roadmap original). Só a Parte 1 foi feita até aqui.
   Google (https) e repassa pro app via `mapinha://`. Esse URL precisa estar
   cadastrado em "Authorized redirect URIs" do client Web no Google Cloud
   Console (mesmo client de sempre, sem cadastro adicional tipo "Android").
-- Validado só por código (`tsc --noEmit`, `expo-doctor` 20/20) — falta
-  confirmar o login de ponta a ponta com a página-ponte publicada.
-  **`mobile/README.md` documenta o setup completo** (conta Expo/EAS, 2
-  cadastros no Google Cloud Console, gerar/instalar o build, rodar o dev
-  server).
-- **Próximo passo (não começar sem pedido explícito):** confirmar o teste
-  de login em dispositivo físico; depois, Parte 3 — paridade de escrita
-  (criar/editar POI, favoritar) no app.
+- **Confirmado de ponta a ponta num Android físico (10/11/2026)** — mais 3
+  bugs reais encontrados e corrigidos nesse teste, nenhum de rede:
+  - Produção inteira (site) com 500 em qualquer listagem de POI — migrações
+    do Alembic desatualizadas no banco (Supabase) desde 01/11. Fix: `backend/
+    Dockerfile` roda `alembic upgrade head` antes do `uvicorn` a cada deploy
+    (Render Free não dá Shell pra migração manual); junto, `alembic/env.py`
+    corrigido pra escapar `%` na `DATABASE_URL` antes do `ConfigParser` (senha
+    do Supabase tem `%40`).
+  - Botão da página-ponte não abria o app — Chrome ignora silenciosamente um
+    link cru pra esquema customizado. Fix: página-ponte monta um link
+    `intent://...#Intent;...;end` (sintaxe própria do Chrome) no Android;
+    `LoginScreen.tsx` ganhou um listener de deep link (`Linking.
+    addEventListener`), já que o retorno real (https) nunca fecha o Custom
+    Tab sozinho.
+  - Mapa crashava com "API key not found" — `EXPO_PUBLIC_GOOGLE_MAPS_
+    ANDROID_API_KEY` só existia no `.env` local (gitignored), nunca chegou
+    na build da nuvem da EAS. Fix: `eas env:create` + nova build.
+  - **`mobile/README.md` documenta o setup completo** (conta Expo/EAS, 2
+    cadastros no Google Cloud Console, gerar/instalar o build, rodar o dev
+    server).
+- **Próximo passo (não começar sem pedido explícito):** Parte 3 — paridade
+  de escrita (criar/editar POI, favoritar) no app.
 
 ## Roadmap original — completo
 
