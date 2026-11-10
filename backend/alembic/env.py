@@ -12,7 +12,13 @@ from app.models import Base
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# `%%`, não `%`: o ConfigParser por trás do Config trata `%` como início de
+# interpolação (`%(nome)s`) e lança ValueError em qualquer URL com `%`
+# literal (ex: senha com "%40" no lugar de "@", como a do Supabase em
+# produção) — escapar aqui faz o valor voltar certo (`%40`) quando o
+# Alembic/SQLAlchemy relerem a URL mais adiante, e evita ter que escapar
+# manualmente toda vez que essa URL for passada por variável de ambiente.
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
