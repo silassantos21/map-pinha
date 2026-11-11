@@ -47,6 +47,24 @@ const config: ExpoConfig = {
         androidGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? "",
       },
     ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          // Crash real achado via emulador + logcat (11/11/2026) só na
+          // build "preview" (com minificação R8 ligada — o perfil
+          // "development" usa variante debug, sem R8, por isso nunca
+          // reproduziu): "Failed to create an instance of class
+          // androidx.work.impl.WorkDatabase" ao iniciar o app, antes de
+          // qualquer código nosso rodar. É um problema conhecido de R8
+          // removendo/renomeando a classe gerada pelo Room que o
+          // WorkManager usa por baixo dos panos — as regras padrão da
+          // própria lib não bastam nesse combo de versões. Mantém as
+          // classes do androidx.work intactas no R8.
+          extraProguardRules: "-keep class androidx.work.** { *; }\n-dontwarn androidx.work.**",
+        },
+      },
+    ],
   ],
   extra: {
     eas: {
