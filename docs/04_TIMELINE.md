@@ -251,9 +251,9 @@ Para não cair no "risco de negócio 1" já listado em `docs/00_OVERVIEW.md` (es
 
 - [x] **Parte 1 — Fundação de autenticação mobile no backend**: endpoints `POST /api/v1/mobile/auth/google` (troca ID token do Google por um JWT próprio) e `GET /api/v1/mobile/auth/me` (valida o JWT), sem tocar em nenhum endpoint existente
 - [x] **Parte 2 — Scaffold Expo + login + mapa somente-leitura**: novo `mobile/` no monorepo, mapa mostrando POIs já cadastrados. Login trocado de SDK nativo do Google pra `expo-auth-session` (navegador) depois de um bug intermitente confirmado no SDK nativo em teste real num Android físico. Confirmado de ponta a ponta num Android físico (10/11/2026, ver `SPRINTS.md`): login com Google via página-ponte + deep link, mapa com POIs reais
-- [ ] **Parte 3 — Paridade de escrita**: criar/editar POI, favoritar, no app
-- [ ] **Parte 4 — Social no app**: seguir, grupos, comentários, notificações in-app
-- [ ] **Parte 5 — Geofence nativo + notificação local de proximidade**: o pedido original que motivou a fase — monitorar POIs favoritos/próprios e avisar ao chegar perto, sem servidor de push
+- [x] **Parte 3 — Paridade de escrita**: criar/editar POI, favoritar, no app
+- [x] **Parte 4 — Social no app**: seguir, grupos, comentários, notificações in-app
+- [x] **Parte 5 — Geofence nativo + notificação local de proximidade**: o pedido original que motivou a fase — monitorar POIs favoritos/próprios e avisar ao chegar perto, sem servidor de push. Implementada e com o fluxo de permissões validado no emulador (11/11/2026, ver `SPRINTS.md`); o disparo real da notificação de proximidade depende de confirmação num celular físico (limitação do emulador, não do código)
 
 #### Entregáveis
 

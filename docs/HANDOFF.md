@@ -1,6 +1,6 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 11/11/2026. Isso aqui é só o que **não** está documentado em
+> Atualizado em 11/11/2026 (sessão Fase 10 Partes 3/4/5). Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -32,18 +32,27 @@ grupos, comentários). **Roadmap original (Fases 1-9) 100% implementado.**
 
 Em andamento, **sem prazo comprometido** (v2+): **Fase 10 — App Nativo
 (React Native/Expo)**, formalizada em `docs/04_TIMELINE.md`, faseada em 5
-partes. **Partes 1 e 2** implementadas (auth mobile no backend + projeto
-Expo com login/mapa somente-leitura) — ver seções próprias abaixo. Nada do
-resto do roadmap original fica pendente; "o que falta" só se aplica à Fase
-10 em si.
+partes. **Partes 1 a 4 implementadas e a Parte 5 (geofence) implementada
+com a ressalva abaixo** — ver seções próprias abaixo. Nada do resto do
+roadmap original fica pendente; "o que falta" só se aplica à Fase 10 em si.
 
 **Novo sub-projeto `mobile/`** (Expo/React Native) — tooling próprio, não
 confundir com os comandos de `frontend/`/`backend/`: `cd mobile && npx expo
 start` (dev), `npx tsc --noEmit` (type-check), `npx expo-doctor`
-(diagnóstico de config). **Sem emulador Android nem Mac neste ambiente** —
-só dá pra validar por código aqui; teste de verdade (login, mapa com dados
-reais) é sempre no celular físico do dono do projeto, via development build
-(não Expo Go — ver `mobile/README.md`).
+(diagnóstico de config). **Há um emulador Android configurado nesta máquina**
+(AVD `Medium_Phone_API_37.0`, SDK em
+`C:\Users\jende\AppData\Local\Android\Sdk`, Google Play habilitado) — dá pra
+instalar builds e usar `adb logcat` pra investigar crashes nativos sem
+depender do celular físico do dono do projeto, como já foi feito nesta sessão
+e na anterior. Duas ressalvas reais desse emulador específico, não do app:
+conectar o dev-client ao Metro só funciona pelo IP real da máquina na rede
+Wi-Fi (`192.168.0.x:8081`, via `adb reverse` ou direto) — `localhost`/
+`10.0.2.2` falham silenciosamente; e o Fused Location Provider do Google Play
+Services falha com `DEVELOPER_ERROR` nesse AVD (afeta `expo-location` e o
+registro de geofence), então localização/geofence só se confirma de verdade
+num celular físico. Teste de ponta a ponta com dados reais (login Google,
+upload de mídia) ainda depende do celular físico do dono do projeto, já que
+o login usa OAuth de verdade.
 
 ### Fase 7 Parte 1 + sessão de ajustes de UX (commit `d6756a2`)
 
@@ -324,8 +333,51 @@ roadmap original). Só a Parte 1 foi feita até aqui.
   mantendo essas classes intactas. Validado reinstalando no emulador via
   `adb` — sem crash. Perfil `preview-debug` (variante release + dev client
   junto) ficou no `eas.json` como ferramenta de debug pra próximas vezes.
-- **Próximo passo (não começar sem pedido explícito):** Parte 3 — paridade
-  de escrita (criar/editar POI, favoritar) no app.
+- Dois fixes da rodada de testes anterior, documentados só agora:
+  `GOOGLE_MOBILE_CLIENT_ID` nunca tinha sido cadastrado nas env vars do Render
+  em produção (só existia localmente) — causava "Token not issued for this
+  app" no login; e o mapa mostrava o tema padrão do Google por baixo do tema
+  "cartoon" por falta de `mapType="none"` em `MapView` (`react-native-maps`
+  sempre desenha o mapa base do Google por baixo de qualquer `UrlTile`, a
+  menos que isso seja setado).
+
+### Fase 10 Partes 3, 4 e 5 — paridade de escrita, social e geofence (11/11/2026)
+
+Pedido explícito do dono do projeto: desenvolver tudo que falta da Fase 10 de
+uma vez, gerando **uma única build nova** no final (não uma por
+funcionalidade). Detalhes completos em `SPRINTS.md`; resumo aqui:
+
+- **Backend:** JWT mobile estendido do único endpoint da Parte 2
+  (`list_pois`) pros ~20 restantes que endpoints de escrita/social precisam
+  (`pois.py`, `favorites.py`, `follows.py`, `users.py`, `groups.py`,
+  `comments.py`, `notifications.py`, `media.py`) — mesmo padrão
+  (`require_internal_secret_or_mobile_user`, já existente desde a Parte 2),
+  sem mudança no helper em si. Validado com um script `TestClient` ad-hoc (24
+  asserções, nenhum arquivo de teste commitado — mesmo padrão já usado neste
+  projeto).
+- **Mobile:** navegação trocada de `useState` simples pra
+  `@react-navigation` (stack + bottom-tabs) pra sustentar ~10 telas novas;
+  criar/editar POI com foto (`expo-image-picker`), favoritar, seguir
+  usuários, grupos, comentários, notificações (polling 30s, igual a web), e
+  geofence nativo + notificação local (`expo-location` +
+  `expo-task-manager` + `expo-notifications`) com um botão "Ativar avisos de
+  proximidade".
+- **Limitações assumidas:** mídia do POI só imagem no app (web continua
+  aceitando GIF/áudio); sem editor de avatar no app (Fase 9, fora de escopo).
+- **Validado no emulador Android** (ver nota sobre o AVD acima): todas as
+  telas e fluxos de escrita confirmados criando dados reais e consultando o
+  banco diretamente depois de cada ação (não só pela UI) — criar POI com
+  upload real pro R2, favoritar, seguir, criar/excluir grupo. Um bug real
+  encontrado e corrigido: `useCurrentLocation` (`PoiFormScreen.tsx`) não
+  tratava erro de localização, deixando o botão "usar minha localização
+  atual" sem nenhum feedback quando falhava. Geofence: fluxo de permissão
+  (3 passos) confirmado; o disparo real da notificação ao entrar na área só
+  pode ser confirmado pelo dono do projeto no celular físico (ver ressalva
+  do emulador acima).
+- **Próximo passo:** gerar o build `preview` final (único desta rodada,
+  cobrindo Partes 3/4/5 juntas) depois de confirmação do dono do projeto
+  pra commitar/pushar — não começar nada novo da Fase 10 sem pedido
+  explícito (a fase inteira já está implementada agora).
 
 ## Roadmap original — completo
 
