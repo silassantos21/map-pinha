@@ -34,7 +34,10 @@ export function MapScreen({ token }: MapScreenProps) {
 
   return (
     <View style={styles.container}>
-      <MapView style={StyleSheet.absoluteFill} initialRegion={INITIAL_REGION}>
+      {/* mapType="none": sem isso, o MapView sempre mostra o mapa padrão do
+      Google por baixo de qualquer UrlTile — a Stadia não "substitui" nada
+      sozinha, só sobrepõe. */}
+      <MapView style={StyleSheet.absoluteFill} initialRegion={INITIAL_REGION} mapType="none">
         <UrlTile urlTemplate={CARTOON_TILE_URL} maximumZ={CARTOON_MAX_ZOOM} flipY={false} />
         {pois?.map((poi) => {
           const category = categoryById.get(poi.category_id);
