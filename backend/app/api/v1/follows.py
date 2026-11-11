@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.v1.auth import verify_internal_secret
+from app.core.security import require_internal_secret_or_mobile_user
 from app.db.session import get_db
 from app.models.follow import Follow
 from app.models.notification import Notification, NotificationType
@@ -12,7 +12,7 @@ from app.models.user import User
 from app.schemas.follow import FollowListRead
 from app.schemas.user import UserPublicRead
 
-router = APIRouter(dependencies=[Depends(verify_internal_secret)])
+router = APIRouter()
 
 
 def _to_public(user: User, viewer_id: uuid.UUID | None, db: Session) -> UserPublicRead:
@@ -31,7 +31,13 @@ def _to_public(user: User, viewer_id: uuid.UUID | None, db: Session) -> UserPubl
 
 
 @router.post("/users/{user_id}/follow", status_code=status.HTTP_204_NO_CONTENT)
-def follow_user(user_id: uuid.UUID, follower_id: uuid.UUID, db: Session = Depends(get_db)):
+def follow_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    follower_id: uuid.UUID | None = None,
+):
+    follower_id = mobile_user_id if mobile_user_id is not None else follower_id
     if follower_id == user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot follow yourself")
     if db.get(User, user_id) is None:
@@ -54,7 +60,13 @@ def follow_user(user_id: uuid.UUID, follower_id: uuid.UUID, db: Session = Depend
 
 
 @router.delete("/users/{user_id}/follow", status_code=status.HTTP_204_NO_CONTENT)
-def unfollow_user(user_id: uuid.UUID, follower_id: uuid.UUID, db: Session = Depends(get_db)):
+def unfollow_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    follower_id: uuid.UUID | None = None,
+):
+    follower_id = mobile_user_id if mobile_user_id is not None else follower_id
     existing = db.scalar(
         select(Follow).where(Follow.follower_id == follower_id, Follow.followed_id == user_id)
     )
@@ -70,7 +82,10 @@ def list_followers(
     offset: int = Query(default=0, ge=0),
     viewer_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     stmt = (
         select(User)
         .join(Follow, Follow.follower_id == User.id)
@@ -91,7 +106,10 @@ def list_following(
     offset: int = Query(default=0, ge=0),
     viewer_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     stmt = (
         select(User)
         .join(Follow, Follow.followed_id == User.id)
@@ -111,9 +129,12 @@ def search_users(
     viewer_id: uuid.UUID | None = None,
     limit: int = Query(default=20, ge=1, le=50),
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
     """Busca/descoberta de usuários (Fase 7) — nunca seleciona `User.email`,
     só nome/avatar/id. Exclui o próprio `viewer_id` dos resultados."""
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     stmt = select(User).where(User.name.ilike(f"%{q}%")).order_by(User.id).limit(limit)
     if viewer_id is not None:
         stmt = stmt.where(User.id != viewer_id)

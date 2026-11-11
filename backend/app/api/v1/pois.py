@@ -271,9 +271,16 @@ def get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
 @router.get(
     "/pois/{poi_id}",
     response_model=POIRead,
-    dependencies=[Depends(verify_internal_secret)],
 )
-def get_poi(poi_id: uuid.UUID, user_id: uuid.UUID | None = None, db: Session = Depends(get_db)):
+def get_poi(
+    poi_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
+):
+    if mobile_user_id is not None:
+        user_id = mobile_user_id
+
     poi = db.scalar(_with_relations(select(POI)).where(POI.id == poi_id))
     if poi is None or not _poi_visible_to(poi, user_id, db):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
@@ -309,9 +316,17 @@ def _validate_group_membership(group_id: uuid.UUID | None, user_id: uuid.UUID, d
     "/pois",
     response_model=POIRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_internal_secret)],
 )
-def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def create_poi(
+    payload: POICreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+):
+    # Dono real do POI: o JWT mobile manda quando presente — nunca o
+    # `user_id` do payload (mesma proteção de `list_pois`).
+    owner_id = mobile_user_id if mobile_user_id is not None else payload.user_id
+
     if db.get(Category, payload.category_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category_id")
 
@@ -319,13 +334,13 @@ def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Sessio
     # mandado um (ex: trocou de "grupo" pra "público" no formulário sem
     # limpar o campo) — nunca confia nisso sem revalidar.
     group_id = (
-        _validate_group_membership(payload.group_id, payload.user_id, db)
+        _validate_group_membership(payload.group_id, owner_id, db)
         if payload.visibility == POIVisibility.group
         else None
     )
 
     poi = POI(
-        user_id=payload.user_id,
+        user_id=owner_id,
         category_id=payload.category_id,
         name=payload.name,
         slug=slugify_unique(db, payload.name),
@@ -372,13 +387,19 @@ def create_poi(payload: POICreate, background_tasks: BackgroundTasks, db: Sessio
 @router.put(
     "/pois/{poi_id}",
     response_model=POIRead,
-    dependencies=[Depends(verify_internal_secret)],
 )
-def update_poi(poi_id: uuid.UUID, payload: POIUpdate, db: Session = Depends(get_db)):
+def update_poi(
+    poi_id: uuid.UUID,
+    payload: POIUpdate,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+):
+    actor_id = mobile_user_id if mobile_user_id is not None else payload.user_id
+
     poi = db.scalar(_with_relations(select(POI)).where(POI.id == poi_id))
     if poi is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
-    if poi.user_id != payload.user_id:
+    if poi.user_id != actor_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner of this POI")
 
     data = payload.model_dump(exclude={"user_id", "lat", "lng"}, exclude_unset=True)
@@ -399,7 +420,7 @@ def update_poi(poi_id: uuid.UUID, payload: POIUpdate, db: Session = Depends(get_
     new_visibility = data.get("visibility", poi.visibility)
     if new_visibility == POIVisibility.group:
         requested_group_id = data.get("group_id", poi.group_id)
-        data["group_id"] = _validate_group_membership(requested_group_id, payload.user_id, db)
+        data["group_id"] = _validate_group_membership(requested_group_id, actor_id, db)
     else:
         data["group_id"] = None
 
@@ -414,13 +435,18 @@ def update_poi(poi_id: uuid.UUID, payload: POIUpdate, db: Session = Depends(get_
 @router.delete(
     "/pois/{poi_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(verify_internal_secret)],
 )
-def delete_poi(poi_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_poi(
+    poi_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
+):
+    actor_id = mobile_user_id if mobile_user_id is not None else user_id
     poi = db.get(POI, poi_id)
     if poi is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
-    if poi.user_id != user_id:
+    if poi.user_id != actor_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner of this POI")
 
     db.delete(poi)
@@ -431,13 +457,18 @@ def delete_poi(poi_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_
     "/pois/{poi_id}/media",
     response_model=POIMediaRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_internal_secret)],
 )
-def attach_poi_media(poi_id: uuid.UUID, payload: POIMediaCreate, db: Session = Depends(get_db)):
+def attach_poi_media(
+    poi_id: uuid.UUID,
+    payload: POIMediaCreate,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+):
+    actor_id = mobile_user_id if mobile_user_id is not None else payload.user_id
     poi = db.get(POI, poi_id)
     if poi is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
-    if poi.user_id != payload.user_id:
+    if poi.user_id != actor_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner of this POI")
 
     thumbnail_url = None
@@ -459,15 +490,19 @@ def attach_poi_media(poi_id: uuid.UUID, payload: POIMediaCreate, db: Session = D
 @router.delete(
     "/pois/{poi_id}/media/{media_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(verify_internal_secret)],
 )
 def delete_poi_media(
-    poi_id: uuid.UUID, media_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_db)
+    poi_id: uuid.UUID,
+    media_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
 ):
+    actor_id = mobile_user_id if mobile_user_id is not None else user_id
     poi = db.get(POI, poi_id)
     if poi is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
-    if poi.user_id != user_id:
+    if poi.user_id != actor_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner of this POI")
 
     media = db.get(POIMedia, media_id)

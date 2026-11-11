@@ -5,21 +5,23 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.v1.auth import verify_internal_secret
+from app.core.security import require_internal_secret_or_mobile_user
 from app.db.session import get_db
 from app.models.notification import Notification
 from app.schemas.notification import NotificationListRead, NotificationRead
 
-router = APIRouter(dependencies=[Depends(verify_internal_secret)])
+router = APIRouter()
 
 
 @router.get("/notifications", response_model=NotificationListRead)
 def list_notifications(
-    user_id: uuid.UUID,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
 ):
+    user_id = mobile_user_id if mobile_user_id is not None else user_id
     # `ORDER BY created_at DESC, id DESC`: tiebreak determinístico — sem ele,
     # notificações criadas no mesmo instante (ex: fan-out em lote de "novo
     # POI de quem você segue") podem mudar de ordem entre páginas.
@@ -62,8 +64,12 @@ def list_notifications(
 
 @router.post("/notifications/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)
 def mark_notification_read(
-    notification_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_db)
+    notification_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
 ):
+    user_id = mobile_user_id if mobile_user_id is not None else user_id
     notification = db.get(Notification, notification_id)
     if notification is None or notification.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
@@ -74,7 +80,12 @@ def mark_notification_read(
 
 
 @router.post("/notifications/read-all", status_code=status.HTTP_204_NO_CONTENT)
-def mark_all_notifications_read(user_id: uuid.UUID, db: Session = Depends(get_db)):
+def mark_all_notifications_read(
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
+):
+    user_id = mobile_user_id if mobile_user_id is not None else user_id
     db.execute(
         update(Notification)
         .where(Notification.user_id == user_id, Notification.read_at.is_(None))

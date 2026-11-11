@@ -17,6 +17,7 @@ from app.core.avatar_presets import (
 )
 from app.core.media_processing import InvalidAvatarUpload, process_avatar_upload
 from app.core.rate_limit import enforce_ai_rate_limit
+from app.core.security import require_internal_secret_or_mobile_user
 from app.core.storage import create_presigned_upload_url, delete_object_by_public_url
 from app.db.session import get_db
 from app.models.category import Category
@@ -63,13 +64,17 @@ def get_user_stats(user_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.get(
     "/users/{user_id}/profile",
     response_model=UserProfileRead,
-    dependencies=[Depends(verify_internal_secret)],
 )
 def get_user_profile(
-    user_id: uuid.UUID, viewer_id: uuid.UUID | None = None, db: Session = Depends(get_db)
+    user_id: uuid.UUID,
+    viewer_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
     """Perfil público de outro usuário (Fase 7) — nome/avatar/contagens, nunca
     `email`. Reaproveita a mesma query de `total_pois` de `get_user_stats`."""
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -103,10 +108,12 @@ def get_user_profile(
 @router.get(
     "/users/{user_id}/pois",
     response_model=list[POIPublicRead],
-    dependencies=[Depends(verify_internal_secret)],
 )
 def list_user_pois(
-    user_id: uuid.UUID, viewer_id: uuid.UUID | None = None, db: Session = Depends(get_db)
+    user_id: uuid.UUID,
+    viewer_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
     """POIs de um usuário pra exibir no perfil dele (Fase 7) — mesma regra de
     visibilidade de `_poi_visible_to` em `pois.py`, só que restrita a um
@@ -115,6 +122,8 @@ def list_user_pois(
     vendo o perfil dele mesmo por essa rota — essa tela não existe hoje, mas
     se existir um dia, é só passar `viewer_id == user_id` que já funciona:
     ver o `if` abaixo)."""
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     stmt = (
         select(POI, Category)
         .join(Category, POI.category_id == Category.id)

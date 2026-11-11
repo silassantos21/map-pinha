@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.v1.auth import verify_internal_secret
 from app.api.v1.pois import _poi_visible_to
+from app.core.security import require_internal_secret_or_mobile_user
 from app.db.session import get_db
 from app.models.comment import Comment
 from app.models.notification import Notification, NotificationType
 from app.models.poi import POI
 from app.schemas.comment import CommentCreate, CommentListRead, CommentRead
 
-router = APIRouter(dependencies=[Depends(verify_internal_secret)])
+router = APIRouter()
 
 
 def _to_read(comment: Comment) -> CommentRead:
@@ -34,7 +34,10 @@ def list_comments(
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
 ):
+    if mobile_user_id is not None:
+        viewer_id = mobile_user_id
     poi = db.get(POI, poi_id)
     if poi is None or not _poi_visible_to(poi, viewer_id, db):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
@@ -59,22 +62,28 @@ def list_comments(
 
 
 @router.post("/pois/{poi_id}/comments", response_model=CommentRead)
-def create_comment(poi_id: uuid.UUID, payload: CommentCreate, db: Session = Depends(get_db)):
+def create_comment(
+    poi_id: uuid.UUID,
+    payload: CommentCreate,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+):
+    actor_id = mobile_user_id if mobile_user_id is not None else payload.user_id
     poi = db.get(POI, poi_id)
-    if poi is None or not _poi_visible_to(poi, payload.user_id, db):
+    if poi is None or not _poi_visible_to(poi, actor_id, db):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
 
-    comment = Comment(poi_id=poi_id, user_id=payload.user_id, body=payload.body)
+    comment = Comment(poi_id=poi_id, user_id=actor_id, body=payload.body)
     db.add(comment)
 
     # Notifica o dono do POI só se não for autocomentário — mesmo padrão de
     # `toggle_reaction` em `pois.py`.
-    if poi.user_id != payload.user_id:
+    if poi.user_id != actor_id:
         db.add(
             Notification(
                 user_id=poi.user_id,
                 type=NotificationType.poi_comment,
-                actor_id=payload.user_id,
+                actor_id=actor_id,
                 poi_id=poi.id,
                 payload={"poi_name": poi.name, "body_preview": payload.body[:140]},
             )
@@ -86,7 +95,13 @@ def create_comment(poi_id: uuid.UUID, payload: CommentCreate, db: Session = Depe
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_comment(comment_id: uuid.UUID, user_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_comment(
+    comment_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    mobile_user_id: uuid.UUID | None = Depends(require_internal_secret_or_mobile_user),
+    user_id: uuid.UUID | None = None,
+):
+    user_id = mobile_user_id if mobile_user_id is not None else user_id
     comment = db.get(Comment, comment_id)
     if comment is None or comment.deleted_at is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
