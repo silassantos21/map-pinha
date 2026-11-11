@@ -24,6 +24,11 @@ const config: ExpoConfig = {
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    // Geofence nativo (Parte 5) precisa da localização mesmo com o app em
+    // segundo plano/fechado — é por isso que existem 2 permissões Android
+    // separadas (fine + background), pedidas em 2 passos na UI (ver
+    // src/lib/geofence.ts), nunca as duas de uma vez.
+    permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
   },
   web: {
     favicon: "./assets/favicon.png",
@@ -36,8 +41,25 @@ const config: ExpoConfig = {
     // forma intermitente em builds Expo com a New Architecture (mesmo
     // build funcionando às vezes e falhando outras) — sem correção
     // publicada. expo-web-browser não tem esse tipo de problema.
+    "expo-status-bar",
     "expo-web-browser",
     "expo-secure-store",
+    "expo-image-picker",
+    "expo-task-manager",
+    [
+      "expo-location",
+      {
+        locationAlwaysAndWhenInUsePermission:
+          "O MaPinha usa sua localização pra avisar quando você chegar perto de um ponto favoritado ou seu.",
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/android-icon-foreground.png",
+        color: "#E6F4FE",
+      },
+    ],
     [
       "react-native-maps",
       {
