@@ -1,6 +1,6 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 10/11/2026. Isso aqui é só o que **não** está documentado em
+> Atualizado em 11/11/2026. Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -311,6 +311,19 @@ roadmap original). Só a Parte 1 foi feita até aqui.
   - **`mobile/README.md` documenta o setup completo** (conta Expo/EAS, 2
     cadastros no Google Cloud Console, gerar/instalar o build, rodar o dev
     server).
+- **Novo perfil `preview` (11/11/2026)** no `eas.json` — `developmentClient:
+  false` (bundle embutido, sem Metro) + env vars próprias na EAS apontando
+  pro backend de produção, pra outras pessoas testarem o app sem estar na
+  minha rede. Crashava na hora de abrir, só nessa build (nunca na
+  `development`) — causa real só achada com `adb logcat` num emulador
+  Android (dono do projeto já tinha o SDK instalado): `FATAL EXCEPTION:
+  Failed to create an instance of class androidx.work.impl.WorkDatabase`,
+  R8 (minificação, só ativa em release) removendo uma classe interna que o
+  `androidx.work`/Room usa via reflection — bug conhecido dessa combinação
+  de versões. Fix: `expo-build-properties` com `extraProguardRules`
+  mantendo essas classes intactas. Validado reinstalando no emulador via
+  `adb` — sem crash. Perfil `preview-debug` (variante release + dev client
+  junto) ficou no `eas.json` como ferramenta de debug pra próximas vezes.
 - **Próximo passo (não começar sem pedido explícito):** Parte 3 — paridade
   de escrita (criar/editar POI, favoritar) no app.
 
