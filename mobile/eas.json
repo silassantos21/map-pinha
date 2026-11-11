@@ -17,6 +17,15 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "preview-debug": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
     }
   }
 }
