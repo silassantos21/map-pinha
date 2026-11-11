@@ -6,6 +6,7 @@ from app.api.v1.ai import router as ai_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.categories import router as categories_router
 from app.api.v1.comments import router as comments_router
+from app.api.v1.debug import router as debug_router
 from app.api.v1.favorites import router as favorites_router
 from app.api.v1.follows import router as follows_router
 from app.api.v1.groups import router as groups_router
@@ -55,3 +56,4 @@ app.include_router(users_router, prefix="/api/v1")
 app.include_router(groups_router, prefix="/api/v1")
 app.include_router(comments_router, prefix="/api/v1")
 app.include_router(mobile_auth_router, prefix="/api/v1")
+app.include_router(debug_router, prefix="/api/v1")
