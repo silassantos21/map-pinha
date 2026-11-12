@@ -1538,3 +1538,14 @@ pra não remover nada compartilhado por engano:
   confirmei a app FastAPI importando sem erro, com `generate-bio` e
   `ai-suggestion/accept`/`dismiss` ainda registrados e
   `/ai/recommendations`/`/ai/feedback` de fato fora das rotas.
+
+## Feedback loop do categorizador — confirmado como pendência, sem mexer (12/11/2026)
+
+Revisitado o item já registrado acima (linha ~541): o dono do projeto
+confirmou que não é pra construir o loop de verdade agora — continua
+sendo tratado como um projeto próprio (pesar histórico por
+usuário/categoria, redesenhar prompt, validar com dados reais), não um
+ajuste pequeno. `ai_feedback` segue só coletando dado do
+POICategorizerAgent (via `accept`/`dismiss`, ver limpeza do recommender
+acima), pronto pra usar quando/se essa sprint acontecer. Não iniciar sem
+pedido explícito.
