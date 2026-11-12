@@ -1477,3 +1477,24 @@ Achados reais, nenhum deles exigiu mudar código:
   (mapa embutido no formulário), não feita nesta rodada.
 - **Zoom inicial do mapa muito distante** — ajuste cosmético pendente,
   não feito nesta rodada.
+
+### Resolvidos os dois pontos de UX pendentes (12/11/2026)
+
+- **Zoom:** `MapScreen.tsx` ganhou um `useEffect` que ajusta a câmera aos
+  POIs reais assim que `GET /pois` responde — `fitToCoordinates` com 2+
+  POIs, `animateToRegion` com zoom de bairro fixo (`delta 0.02`) quando só
+  há 1 (limitação conhecida do Android: `fitToCoordinates` com 1 ponto só
+  não muda o zoom sozinho). Região inicial (antes dos POIs chegarem, ou
+  sem nenhum POI) também reduzida de `delta 20` (país inteiro) pra `0.5`.
+- **Mapa dentro do formulário:** `PoiFormScreen.tsx` ganhou um `MapView`
+  de verdade na seção "Localização" (mesmo tema cartoon/tile do mapa
+  principal) — toque define o ponto (`onPress`), marcador arrastável
+  ajusta fino (`onDragEnd`), e a câmera recentraliza sozinha via
+  `animateToRegion` sempre que a posição muda por outro caminho (botão
+  "usar minha localização atual", ou abrir um POI existente pra editar).
+  O toque longo no mapa principal continua funcionando do mesmo jeito
+  (preenche o formulário já aberto nesse ponto).
+- `npx tsc --noEmit` e `npx expo-doctor` (20/20) limpos. Validação visual
+  real (tocar/arrastar no mapa do formulário, conferir o zoom automático
+  com os POIs de verdade) depende de uma build nova — mudança de código
+  do app, não do backend.

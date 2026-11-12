@@ -2,7 +2,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import MapView, { MapPressEvent, Marker, UrlTile } from "react-native-maps";
 
+import { CARTOON_MAX_ZOOM, CARTOON_TILE_URL } from "../constants/map-theme";
 import {
   attachPoiMedia,
   createPoi,
@@ -39,6 +41,11 @@ const VISIBILITY_OPTIONS: { value: PoiVisibility; label: string }[] = [
   { value: "private", label: "Só eu" },
 ];
 
+// Mesmo centro aproximado do Brasil usado como fallback no MapScreen,
+// mas já com zoom de bairro — aqui não há lista de POIs pra enquadrar
+// enquanto nenhuma posição foi escolhida ainda.
+const DEFAULT_REGION = { latitude: -15.793889, longitude: -47.882778, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+
 export function PoiFormScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<{ key: string; name: "PoiForm"; params: RootStackParamList["PoiForm"] }>();
@@ -61,6 +68,20 @@ export function PoiFormScreen() {
   const [lat, setLat] = useState<number | null>(route.params?.initialLat ?? null);
   const [lng, setLng] = useState<number | null>(route.params?.initialLng ?? null);
   const [pendingImageUri, setPendingImageUri] = useState<string | null>(null);
+  const mapRef = useRef<MapView>(null);
+
+  // Mantém o mapa embutido centralizado sempre que a posição muda por um
+  // caminho que não foi tocar nele mesmo (botão "usar minha localização
+  // atual", ou carregar um POI existente pra editar) — tocar/arrastar no
+  // próprio mapa já move a câmera sozinho, então reanimar aqui não atrapalha.
+  useEffect(() => {
+    if (lat !== null && lng !== null) {
+      mapRef.current?.animateToRegion(
+        { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        300,
+      );
+    }
+  }, [lat, lng]);
 
   useEffect(() => {
     (async () => {
@@ -125,6 +146,12 @@ export function PoiFormScreen() {
         "Verifique se o GPS está ativado ou toque no mapa pra escolher o ponto manualmente.",
       );
     }
+  };
+
+  const handleMapPress = (event: MapPressEvent) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLat(latitude);
+    setLng(longitude);
   };
 
   const hasExistingMedia = (existingPoi?.media.length ?? 0) > 0;
@@ -267,8 +294,36 @@ export function PoiFormScreen() {
 
       <Text style={styles.label}>Localização</Text>
       <Text style={styles.hint}>
-        {lat !== null && lng !== null ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Nenhuma selecionada"}
+        {lat !== null && lng !== null
+          ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+          : "Toque no mapa abaixo pra escolher o ponto"}
       </Text>
+      <View style={styles.mapPicker}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          initialRegion={
+            lat !== null && lng !== null
+              ? { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+              : DEFAULT_REGION
+          }
+          mapType="none"
+          onPress={handleMapPress}
+        >
+          <UrlTile urlTemplate={CARTOON_TILE_URL} maximumZ={CARTOON_MAX_ZOOM} flipY={false} />
+          {lat !== null && lng !== null && (
+            <Marker
+              coordinate={{ latitude: lat, longitude: lng }}
+              draggable
+              onDragEnd={(event) => {
+                const { latitude, longitude } = event.nativeEvent.coordinate;
+                setLat(latitude);
+                setLng(longitude);
+              }}
+            />
+          )}
+        </MapView>
+      </View>
       <TouchableOpacity style={styles.secondaryButton} onPress={useCurrentLocation}>
         <Text style={styles.secondaryButtonText}>Usar minha localização atual</Text>
       </TouchableOpacity>
@@ -328,6 +383,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: { color: "#d1d5db" },
+  mapPicker: { height: 220, borderRadius: 8, overflow: "hidden", marginVertical: 8 },
   preview: { width: "100%", height: 180, borderRadius: 8, marginBottom: 8 },
   primaryButton: {
     backgroundColor: "#3b82f6",
