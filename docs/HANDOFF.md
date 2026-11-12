@@ -1,6 +1,8 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 11/11/2026 (sessão Fase 10 Partes 3/4/5). Isso aqui é só o que **não** está documentado em
+> Atualizado em 12/11/2026 (sessão de pendências fora do app nativo + fix de
+> 2 pontos do app nativo — ver seção "Rodada de 12/11/2026" abaixo). Isso
+> aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -401,6 +403,62 @@ funcionalidade). Detalhes completos em `SPRINTS.md`; resumo aqui:
   nativo fica de prioridade mais baixa a partir de agora, por pedido
   explícito — não investir mais tempo nele sem pedido novo.
 
+### Rodada de 12/11/2026 — fix de 2 pontos do app nativo + 5 pendências fora dele
+
+Depois do teste físico da build `preview` (ver seção anterior), o dono do
+projeto pediu pra resolver 2 dos pontos levantados (zoom e mapa não-tocável
+no formulário) e depois **deixar o app nativo de prioridade baixa**,
+focando numa lista de 5 pendências que vinham sendo registradas ao longo
+das sessões (nenhuma delas do app nativo). Resumo — detalhes completos de
+cada uma no `SPRINTS.md`:
+
+- **App nativo (2 fixes, build nova gerada):** `MapScreen.tsx` ganhou
+  ajuste automático de zoom aos POIs reais (`fitToCoordinates`/
+  `animateToRegion`, em vez da visão de país inteiro); `PoiFormScreen.tsx`
+  ganhou um mapa de verdade embutido (toque pra marcar ponto, arrastar o
+  marcador pra ajustar fino). Build `preview` nova gerada e concluída
+  (`e0a0b8b9-d174-4ba7-8cd3-c673e6d51c39`):
+  https://expo.dev/artifacts/eas/84tn-cMv1G_cZl3BdLp32hArbXw9lEyt-MLr1pU7VFw.apk
+  — ainda sem confirmação do dono do projeto no físico.
+- **1) Código morto do `NearbyRecommenderAgent` removido do backend**
+  (endpoints `/ai/recommendations`/`/ai/feedback`, lógica do agente,
+  schemas) — a UI já tinha sido removida na Sprint 6, o backend ficou sem
+  nenhum chamador desde então. `AiFeedback` (tabela/modelo) e os outros 2
+  agentes (categorizer, bio writer) intocados.
+- **2) Feedback loop do categorizador** — revisitado, dono do projeto
+  confirmou deixar só documentado como pendência (projeto próprio futuro),
+  sem mexer em código.
+- **3) Upload de mídia de POI validado de verdade** — antes aceitava
+  qualquer `content_type` sem checagem nenhuma de tipo real nem tamanho.
+  Agora: whitelist de `content_type` por `media_type` já no pedido do
+  presigned URL, e no `attach` (único momento com o arquivo já no R2)
+  confere tamanho máximo + conteúdo real (Pillow p/ imagem/gif com
+  fallback de assinatura pra HEIC, magic bytes p/ áudio) — apaga do R2 e
+  rejeita se falhar. Testado de ponta a ponta com o R2 de verdade (não
+  mock).
+- **4) `docs/06_PRICING.md` recalculado** incluindo as Fases 7-9 (a
+  ferramenta externa que gerou os números originais não existe neste
+  repo — recalculado à mão por proporção de horas/dia). Preço sugerido:
+  R$ 22.932–29.302 → **R$ 30.139,20–38.511,20**. Também corrigidas 2
+  referências que já estavam stale (dias totais, contagem de agentes).
+- **5) Bottom-sheet mobile estendido pros 7 painéis que nunca tiveram** —
+  pedido era só conferir Favoritos/Histórico de rotas em viewport mobile
+  real; achado de quebra: **nenhum** painel secundário (Social, Grupos,
+  Perfil, Busca de pessoas, Perfil de outro usuário) tinha o tratamento
+  "sobe como bottom-sheet no mobile" documentado desde a Sprint 1 — só
+  existia em 2 componentes (form e detalhe de POI). Aplicado o mesmo
+  padrão (`side="bottom"` + `max-h-[65vh]` + `flex-1` no container de
+  lista onde faltava) nos 7. Validado rodando a app de verdade (Playwright
+  + sessão forjada, viewport 390×844, com até 8 itens pra forçar scroll) —
+  screenshots confirmam o painel travando em 65vh e rolando por dentro,
+  sem vazar.
+- **Push feito e confirmado em produção** (`6fbdfb7..9c719e7`) — Render já
+  reimplantou (`/ai/recommendations` responde 404 na produção agora,
+  confirmando o deploy novo).
+- Nota registrada, não corrigida: botão de fechar (X) de qualquer Sheet
+  mede 28×28px, abaixo do mínimo recomendado de toque (44×44px) — afeta o
+  app inteiro, não é específico de nenhuma tela dessas.
+
 ## Roadmap original — completo
 
 Nada mais falta do roadmap original (`docs/04_TIMELINE.md`). Qualquer coisa
@@ -409,4 +467,9 @@ presumir próximos passos, só perguntar ou aguardar instrução.
 
 ## O que fazer agora
 
-[Preencher aqui o que o dono do projeto quer fazer nesta sessão]
+Nenhuma pendência conhecida no momento. As 5 pendências "fora do app
+nativo" que vinham sendo registradas foram todas resolvidas em 12/11/2026
+(ver seção acima). App nativo tem 2 fixes aguardando confirmação do dono
+do projeto no celular físico (zoom + mapa no formulário da build nova) —
+de resto, fica de prioridade baixa por pedido explícito, não investir mais
+tempo nele sem pedido novo.
