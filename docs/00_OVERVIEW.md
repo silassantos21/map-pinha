@@ -54,7 +54,6 @@ Desenvolvedores que buscam um projeto de portfólio impressionante, criadores de
 ## Funcionalidades Futuras (v2+)
 
 - App nativo React Native (iOS/Android) com acesso ao GPS nativo e notificações push ao chegar perto de um POI cadastrado
-- Upload direto de GIFs animados (armazenamento no R2, não apenas URL externa)
 - Modo colaborativo: múltiplos usuários editando o mesmo mapa compartilhado em tempo real (WebSockets + CRDTs)
 - Sistema de 'Expedições': criar rotas com múltiplos POIs em sequência (tour guiado gamificado)
 - Temas de mapa customizáveis pelo usuário: editor visual para criar próprio tileset/paleta
