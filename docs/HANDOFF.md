@@ -374,10 +374,32 @@ funcionalidade). Detalhes completos em `SPRINTS.md`; resumo aqui:
   (3 passos) confirmado; o disparo real da notificação ao entrar na área só
   pode ser confirmado pelo dono do projeto no celular físico (ver ressalva
   do emulador acima).
-- **Próximo passo:** gerar o build `preview` final (único desta rodada,
-  cobrindo Partes 3/4/5 juntas) depois de confirmação do dono do projeto
-  pra commitar/pushar — não começar nada novo da Fase 10 sem pedido
-  explícito (a fase inteira já está implementada agora).
+- **Build `preview` final gerada e concluída** (11/11/2026, build
+  `b4789557-1b6e-4917-bdc7-c26dba6a5b76`, commit `178d065`), cobrindo
+  Partes 3/4/5 juntas num único `.apk`:
+  https://expo.dev/artifacts/eas/ZBx0mRVJn3rL9rSwsqgKshcfD5Lb6gJMYADGddBZp7k.apk
+  (link pode expirar — gerar um novo com
+  `npx eas build:view b4789557-1b6e-4917-bdc7-c26dba6a5b76` ou no dashboard
+  da EAS se precisar).
+- **Commits enviados ao remoto em 12/11/2026** (`git push`, `3bcd8fe..178d065`),
+  depois que o primeiro teste no físico revelou que a build `preview`
+  estava contra o backend **antigo** em produção (Render implanta do
+  `origin/main`, que estava 3 commits atrás) — causa de "Invalid internal
+  secret" ao criar POI e loading infinito ao abrir detalhe de POI. Sem
+  mudança de código, só publicar o que já estava pronto e testado.
+- **Outros achados do teste físico, anotados mas não corrigidos ainda**
+  (dono do projeto decidiu deixar tudo de app nativo por último por
+  agora): login lento/múltiplas tentativas (suspeita: cold start do Render
+  Free), impossível tocar no mapa dentro do formulário de criar POI
+  (esperado — sem mapa embutido nessa tela, só toque longo no mapa
+  principal antes de abrir o form), zoom inicial do mapa muito distante.
+  Ver "Primeiro teste no físico com a build preview" em `SPRINTS.md`.
+- **Próximo passo:** aguardar o Render reimplantar (automático após o
+  push) e o dono do projeto testar de novo — criar POI e abrir detalhe
+  devem funcionar agora; confirmar também o disparo real da notificação
+  de geofence (único ponto que o emulador não conseguiu validar). App
+  nativo fica de prioridade mais baixa a partir de agora, por pedido
+  explícito — não investir mais tempo nele sem pedido novo.
 
 ## Roadmap original — completo
 

@@ -1434,3 +1434,46 @@ Mesmo emulador já usado na Parte 2 (SDK do dono do projeto). Dependências nati
 - **Bug real encontrado e corrigido durante o teste:** `useCurrentLocation` (`PoiFormScreen.tsx`) não tinha tratamento de erro — se a localização falhasse por qualquer motivo (GPS desligado, sem sinal, erro do provedor), o botão "usar minha localização atual" simplesmente não fazia nada, sem nenhum feedback. Ganhou `try/catch` com um alerta orientando a tocar no mapa como alternativa.
 - Testado com um usuário de teste local dedicado (`dev.tester@mappin.local.test`) e um botão temporário "(dev) login direto" em `LoginScreen.tsx` (gated por `__DEV__`, nunca existe fora de um build de desenvolvimento) pra contornar o fluxo OAuth real, inviável de automatizar — removido junto com a variável de ambiente que carregava o token, e todos os dados de teste (usuário, POI, favorito, follow, grupo) limpos do banco ao final.
 - `npx tsc --noEmit` limpo e `npx expo-doctor` 20/20 ao final de toda a rodada.
+
+### Build "preview" final gerada (11/11/2026)
+
+Build única pedida pelo dono do projeto, cobrindo Partes 3/4/5 juntas num
+só `.apk` (sem ciclo de build por funcionalidade) — gerada só depois de
+tudo acima validado no emulador. `b4789557-1b6e-4917-bdc7-c26dba6a5b76`,
+commit `178d065`, finalizada em ~24min sem erro:
+https://expo.dev/artifacts/eas/ZBx0mRVJn3rL9rSwsqgKshcfD5Lb6gJMYADGddBZp7k.apk
+
+Pendente: confirmação do dono do projeto no celular físico, em especial
+do disparo real da notificação de geofence (único item que o emulador não
+conseguiu validar, por um bug do Google Play Services nesse AVD — ver
+nota na Parte 5 acima).
+
+### Primeiro teste no físico com a build "preview" (12/11/2026)
+
+Achados reais, nenhum deles exigiu mudar código:
+
+- **"Invalid internal secret" ao criar POI, e loading infinito ao abrir o
+  detalhe de um POI** — causa raiz: os 3 commits desta rodada (backend com
+  JWT estendido + mobile Partes 3/4/5 + docs) só existiam localmente,
+  nunca tinham sido enviados ao `origin/main` (push só acontece com
+  confirmação explícita, e ainda não tinha sido pedido). O Render (backend
+  de produção, pro qual a build `preview` aponta) implanta a partir do
+  `origin/main` — por isso a build nova estava rodando contra o backend
+  **antigo**, que ainda exigia `X-Internal-Secret` em `POST /pois` e
+  `GET /pois/{id}` (o app manda só o Bearer JWT, feito pro backend novo).
+  Só apareceu agora porque o emulador sempre testou contra o backend local
+  (já com o código novo) — nunca contra produção. **Fix:** `git push`
+  (commit `178d065`, sem mudança de código) — Render reimplanta sozinho a
+  partir disso.
+- **Login demorando e exigindo várias tentativas** — suspeita de "cold
+  start" do plano Free do Render (hiberna sem tráfego, demora a acordar na
+  primeira requisição) — limitação de infraestrutura, não investigado a
+  fundo ainda.
+- **Não dá pra tocar no mapa pra escolher local dentro do formulário de
+  criar POI** — esperado do jeito que foi implementado: `PoiFormScreen`
+  não tem mapa embutido, só o botão "usar minha localização atual"; a
+  única forma de escolher local por toque é um toque longo no mapa
+  principal *antes* de abrir o formulário. Possível melhoria futura
+  (mapa embutido no formulário), não feita nesta rodada.
+- **Zoom inicial do mapa muito distante** — ajuste cosmético pendente,
+  não feito nesta rodada.
