@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/sheet";
 import { useCategories } from "@/hooks/use-categories";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useMyPois } from "@/hooks/use-my-pois";
 import { useUserStats } from "@/hooks/use-user-stats";
 import { signOutAction } from "@/lib/auth-actions";
 import { getPoiIcon } from "@/lib/poi-icons";
+import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 
 interface ProfilePanelProps {
@@ -56,6 +58,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
   const setProfilePanelOpen = useMapStore((s) => s.setProfilePanelOpen);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
   const displayedAvatarUrl = currentUser?.avatar_choice_url ?? userAvatarUrl;
@@ -74,7 +77,10 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
   // (seguidores/seguindo), que não tinha lugar nenhum até agora.
   return (
     <Sheet open={profilePanelOpen} onOpenChange={setProfilePanelOpen}>
-      <SheetContent>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">Perfil</SheetTitle>
           <SheetDescription className="sr-only">
@@ -170,7 +176,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 overflow-y-auto px-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
           {myPois.map((poi, index) => {
             const category = categoryById.get(poi.category_id);
             const Icon = getPoiIcon(poi, category);

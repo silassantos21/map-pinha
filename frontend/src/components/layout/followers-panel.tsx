@@ -8,7 +8,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MotionListItem } from "@/components/ui/motion-list-item";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useMyFollowers, useMyFollowing } from "@/hooks/use-my-follows";
+import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 import type { UserPublic } from "@/types/poi";
 
@@ -58,12 +60,16 @@ function UserRow({ user }: { user: UserPublic }) {
 export function FollowersPanel({ isAuthenticated }: FollowersPanelProps) {
   const { data: followers } = useMyFollowers(isAuthenticated);
   const { data: following } = useMyFollowing(isAuthenticated);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   return (
     <Sheet>
       <PanelTrigger icon={UsersIcon} label="Social" disabled={!isAuthenticated} />
 
-      <SheetContent className="flex flex-col gap-0">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader className="flex-row items-center justify-between">
           <div>
             <SheetTitle className="font-display">Social</SheetTitle>

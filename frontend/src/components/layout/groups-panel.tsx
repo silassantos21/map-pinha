@@ -36,6 +36,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { useCategories } from "@/hooks/use-categories";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useGroupDetail, useGroupPois, useMyGroups, usePendingInvites } from "@/hooks/use-groups";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserSearch } from "@/hooks/use-user-search";
 import {
   acceptGroupInvite,
@@ -604,12 +605,16 @@ function GroupsPanelBody({ currentUserId }: { currentUserId?: string | null }) {
 export function GroupsPanel({ isAuthenticated, currentUserId }: GroupsPanelProps) {
   const groupsPanelOpen = useMapStore((s) => s.groupsPanelOpen);
   const setGroupsPanelOpen = useMapStore((s) => s.setGroupsPanelOpen);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   return (
     <Sheet open={groupsPanelOpen} onOpenChange={setGroupsPanelOpen}>
       <PanelTrigger icon={UsersRound} label="Grupos" disabled={!isAuthenticated} />
 
-      <SheetContent className="flex flex-col gap-0">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">Grupos</SheetTitle>
           <SheetDescription className="sr-only">

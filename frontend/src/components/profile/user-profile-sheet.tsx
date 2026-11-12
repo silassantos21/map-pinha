@@ -14,10 +14,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/toast";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserPois } from "@/hooks/use-user-pois";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { followUser, unfollowUser } from "@/lib/api-client";
 import { resolveIconName } from "@/lib/poi-icons";
+import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 
 interface UserProfileSheetProps {
@@ -40,6 +42,7 @@ export function UserProfileSheet({ currentUserId }: UserProfileSheetProps) {
   const { data: pois = [] } = useUserPois(viewedUserId);
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   const isOwnProfile = viewedUserId !== null && viewedUserId === currentUserId;
   const avatarUrl = profile ? profile.avatar_choice_url ?? profile.avatar_url : null;
@@ -73,7 +76,10 @@ export function UserProfileSheet({ currentUserId }: UserProfileSheetProps) {
 
   return (
     <Sheet open={viewedUserId !== null} onOpenChange={(open) => !open && closeUserProfile()}>
-      <SheetContent>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">Perfil</SheetTitle>
           <SheetDescription className="sr-only">
@@ -150,7 +156,7 @@ export function UserProfileSheet({ currentUserId }: UserProfileSheetProps) {
         )}
 
         {pois.length > 0 && (
-          <div className="flex flex-col gap-2 overflow-y-auto px-4">
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
             {pois.map((poi, index) => {
               const Icon = resolveIconName(poi.icon_name ?? poi.category_icon_name);
               return (

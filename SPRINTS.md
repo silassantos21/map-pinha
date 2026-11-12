@@ -1607,3 +1607,43 @@ ficado stale antes desta sessão: `CLAUDE.md`/`docs/00_OVERVIEW.md`
 diziam "86 dias" citando só a Fase 7 (correto: 92 dias, Fases 7-9), e
 `docs/05_COST_ANALYSIS.md` ainda citava "3 agentes" (hoje são 2, depois
 da limpeza do recommender nesta mesma sessão).
+
+## Bottom-sheet no mobile estendido pra todos os painéis (12/11/2026)
+
+Checagem visual pedida (Favoritos e Histórico de Rotas em viewport
+mobile real, nunca conferida de propósito desde a Sprint 1) — rodei a
+app de verdade (`next dev` + Playwright, sessão forjada, viewport
+390×844 como as screenshots de portfólio da Sprint 6) e achei um
+problema real, maior do que o esperado.
+
+- **Achado:** essas 2 telas (e mais 5 descobertas de quebra — Social,
+  Grupos, Perfil, Busca de pessoas, Perfil de outro usuário) abriam como
+  painel lateral direito (`w-3/4`, altura cheia) em qualquer viewport,
+  mesmo no mobile. A decisão original do projeto (Sprint 1: "Sheet
+  desliza da lateral no desktop, sobe como bottom-sheet no mobile") só
+  tinha sido aplicada em 2 componentes (`poi-form-sheet.tsx`,
+  `poi-detail-sheet.tsx`) — os outros 7 nunca receberam o tratamento
+  (`side={isMobile ? "bottom" : "right"}` + `max-h-[65vh]`, hook
+  `useMediaQuery` já existente). Confirmado com screenshot real: no
+  mobile, o mapa ficava espremido numa tira de 97px (25% da tela),
+  sobrava ~400px de espaço vazio com poucos itens, e a barra de
+  navegação inferior ficava coberta pelo painel.
+- **Fix:** mesmo padrão já validado, aplicado nos 7 arquivos
+  (`poi-panel.tsx`, `route-history-panel.tsx`, `followers-panel.tsx`,
+  `groups-panel.tsx`, `profile-panel.tsx`, `user-search-panel.tsx`,
+  `user-profile-sheet.tsx`). **Cuidado extra que fazia diferença:** só
+  copiar `side`/`max-h` não bastava — sem `flex-1` no contêiner rolável
+  interno, uma lista longa vazaria pra fora do `max-h-[65vh]` em vez de
+  rolar (3 de 7 arquivos — `poi-panel.tsx`, `followers-panel.tsx`,
+  `groups-panel.tsx` — já tinham essa estrutura certa via `Tabs`/divs
+  existentes; os outros 4 ganharam `flex-1` no container de lista).
+  Validado de verdade com 8 itens favoritados: o painel trava
+  exatamente em 65vh (548.6px de 844px) e a lista rola por dentro, sem
+  vazar — confirmado por medição de bounding box via Playwright, não só
+  visualmente.
+- **Nota à parte, não corrigida:** o botão de fechar (X) de qualquer
+  Sheet mede 28×28px, abaixo do mínimo recomendado de 44×44px pra toque
+  (WCAG/Apple/Google) — é do componente base (`sheet.tsx`), afeta o app
+  inteiro, não só essas telas; registrado, não mexido nesta rodada por
+  estar fora do pedido.
+- `npx tsc --noEmit` e `npx eslint` limpos nos 7 arquivos.

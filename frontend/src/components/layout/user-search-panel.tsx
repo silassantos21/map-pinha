@@ -17,8 +17,10 @@ import {
 import { toast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserSearch } from "@/hooks/use-user-search";
 import { followUser, unfollowUser } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import { useMapStore } from "@/stores/map-store";
 import type { UserPublic } from "@/types/poi";
 
@@ -78,6 +80,7 @@ export function UserSearchPanel() {
   const debouncedQuery = useDebouncedValue(query, 300);
   const { data: results = [] } = useUserSearch(debouncedQuery, true);
   const viewUserProfile = useMapStore((s) => s.viewUserProfile);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   return (
     <Sheet>
@@ -91,7 +94,10 @@ export function UserSearchPanel() {
         <TooltipContent>Buscar pessoas</TooltipContent>
       </Tooltip>
 
-      <SheetContent>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">Buscar pessoas</SheetTitle>
           <SheetDescription className="sr-only">
@@ -112,7 +118,7 @@ export function UserSearchPanel() {
           )}
         </div>
 
-        <div className="flex flex-col gap-2 overflow-y-auto px-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
           {results.map((user, index) => {
             const avatarUrl = user.avatar_choice_url ?? user.avatar_url;
             return (

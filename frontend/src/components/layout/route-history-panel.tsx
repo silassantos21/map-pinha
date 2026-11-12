@@ -6,7 +6,9 @@ import { PanelTrigger } from "@/components/layout/panel-trigger";
 import { MotionListItem } from "@/components/ui/motion-list-item";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCategories } from "@/hooks/use-categories";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useRouteHistory } from "@/hooks/use-route-history";
+import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/poi-icons";
 import { useMapStore } from "@/stores/map-store";
 
@@ -18,6 +20,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
   const { data: history = [] } = useRouteHistory(isAuthenticated);
   const { data: categories } = useCategories();
   const startRouteTo = useMapStore((s) => s.startRouteTo);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
@@ -25,7 +28,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
     <Sheet>
       <PanelTrigger icon={History} label="Rotas" disabled={!isAuthenticated} />
 
-      <SheetContent>
+      <SheetContent side={isMobile ? "bottom" : "right"} className={cn(isMobile && "max-h-[65vh]")}>
         <SheetHeader>
           <SheetTitle className="font-display">Minhas rotas</SheetTitle>
           <SheetDescription>
@@ -34,7 +37,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
               : 'Nenhuma rota ainda. Toque em "Como chegar" num POI pra calcular uma.'}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex flex-col gap-2 overflow-y-auto px-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
           {history.map((entry, index) => {
             const category = categoryById.get(entry.poi_category_id);
             const Icon = getCategoryIcon(category);

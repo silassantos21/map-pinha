@@ -8,7 +8,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { useCategories } from "@/hooks/use-categories";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePois } from "@/hooks/use-pois";
+import { cn } from "@/lib/utils";
 import { getPoiIcon } from "@/lib/poi-icons";
 import { useMapStore } from "@/stores/map-store";
 import type { Category, Poi } from "@/types/poi";
@@ -55,6 +57,7 @@ export function PoiPanel({ userId }: PoiPanelProps) {
   const { data: favorites = [] } = useFavorites(userId != null);
   const { data: categories } = useCategories();
   const flyToPoi = useMapStore((s) => s.flyToPoi);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
@@ -62,7 +65,10 @@ export function PoiPanel({ userId }: PoiPanelProps) {
     <Sheet>
       <PanelTrigger icon={List} label="Ver POIs" />
 
-      <SheetContent className="flex flex-col gap-0">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+      >
         <SheetHeader>
           <SheetTitle className="font-display">POIs</SheetTitle>
           <SheetDescription className="sr-only">
