@@ -2,18 +2,18 @@
 
 > ⚠️ **Documento de uso interno** — apoia a decisão de quanto cobrar do cliente. Não confundir com [05_COST_ANALYSIS.md](05_COST_ANALYSIS.md), que trata do custo *operacional* (infra/APIs) do projeto já pronto.
 >
-> ⚠️ **Pendente:** os valores abaixo ainda refletem só as Fases 1–6 (70h→245h). A Fase 7 (Sistema Social e Notificações, 16 dias, ver `docs/04_TIMELINE.md`) foi planejada em 23/10/2026 e ainda não entrou nesse cálculo — recalcular horas/preço quando for cobrar por ela.
+> **Atualizado em 12/11/2026:** recalculado incluindo as Fases 7, 8 e 9 (todas pedidas e entregues depois das Fases 1–6 originais — ver `docs/04_TIMELINE.md`), que faltavam desde que a Fase 7 foi planejada em 23/10/2026. Sem uma ferramenta de recálculo automático disponível neste repositório (os números originais vieram de um gerador externo, citado em "Como Ajustar Este Valor" abaixo, que não faz parte deste projeto), as horas das 3 fases novas foram estimadas à mão por proporção direta aos dias de cada uma, usando a mesma razão horas/dia média das Fases 1–6 já calculadas (245.0h ÷ 70 dias = 3.5h/dia) — mesmo método implícito, não uma reavaliação de complexidade individual de cada tarefa nova. **Fase 10 (App Nativo) continua de fora de propósito** — é v2+ sem prazo comprometido (`docs/04_TIMELINE.md`), não faz parte do escopo fechado que este documento precifica.
 
 ## Resumo
 
 | Item | Valor |
 |------|-------|
-| Horas totais estimadas | **245.0h** |
+| Horas totais estimadas | **322.0h** |
 | Complexidade do projeto | **alta** (multiplicador 1.30x) |
 | Valor/hora aplicado | R$ 80.00 (USD 14.04) |
-| **Preço sugerido** | **R$ 22932.00 – R$ 29302.00** |
+| **Preço sugerido** | **R$ 30139.20 – R$ 38511.20** |
 
-**Justificativa da complexidade:** O projeto combina múltiplas camadas de complexidade técnica simultaneamente: (1) Dados geoespaciais reais com PostGIS exigem conhecimento especializado em queries espaciais e indexação GiST; (2) Sistema de upload de mídia mista (imagem, GIF, áudio) com presigned URLs, processamento server-side e CDN requer orquestração cuidadosa; (3) Customização visual profunda do Leaflet com sistema de temas troca-em-tempo-real vai além do uso padrão da biblioteca; (4) 3 agentes de IA distintos com LangChain e orquestração assíncrona via Celery adicionam complexidade de infraestrutura; (5) Sistema de rotas com OSRM + cache Redis + deep-link multiplataforma (Google/Apple Maps) envolve múltiplas integrações externas; (6) PWA com geolocalização em tempo real (watchPosition) e modo de navegação ativo. A stack é moderna e pouco comum (FastAPI + PostGIS + Leaflet customizado + R2 + Claude), elevando o risco técnico de integração entre componentes.
+**Justificativa da complexidade:** O projeto combina múltiplas camadas de complexidade técnica simultaneamente: (1) Dados geoespaciais reais com PostGIS exigem conhecimento especializado em queries espaciais e indexação GiST; (2) Sistema de upload de mídia mista (imagem, GIF, áudio) com presigned URLs, processamento server-side e CDN requer orquestração cuidadosa; (3) Customização visual profunda do Leaflet com sistema de temas troca-em-tempo-real vai além do uso padrão da biblioteca; (4) 2 agentes de IA distintos (categorização automática e geração de descrição) adicionam complexidade de infraestrutura — um 3º agente (recomendação) chegou a ser implementado e foi removido por completo em 12/11/2026, sem custo operacional nem de precificação; (5) Sistema de rotas com OSRM + cache Redis + deep-link multiplataforma (Google/Apple Maps) envolve múltiplas integrações externas; (6) PWA com geolocalização em tempo real (watchPosition) e modo de navegação ativo; (7) Sistema social completo (seguir, grupos fechados, notificações in-app, comentários) com novo modelo de visibilidade de POI. A stack é moderna e pouco comum (FastAPI + PostGIS + Leaflet customizado + R2 + Claude), elevando o risco técnico de integração entre componentes.
 
 ---
 
@@ -27,7 +27,10 @@
 | 4 | Fase 4 — Sistema de Rotas e Integração Google Maps | 10 | 35.0h |
 | 5 | Fase 5 — Agentes de IA e Features Inteligentes | 10 | 38.0h |
 | 6 | Fase 6 — Compartilhamento, Polimento Visual e Deploy Final | 10 | 32.0h |
-| | **Total** | **70** | **245.0h** |
+| 7 | Fase 7 — Sistema Social (Seguir, Grupos) e Notificações | 18 | 63.0h *(estimado por proporção, ver nota acima)* |
+| 8 | Fase 8 — Busca de Endereço no Mapa | 2 | 7.0h *(estimado por proporção, ver nota acima)* |
+| 9 | Fase 9 — Galeria de Avatares Pré-definidos | 2 | 7.0h *(estimado por proporção, ver nota acima)* |
+| | **Total** | **92** | **322.0h** |
 
 ---
 
@@ -35,10 +38,10 @@
 
 | Etapa | Valor (BRL) | Valor (USD) |
 |-------|-------------|-------------|
-| Subtotal (245.0h × R$ 80.00/h) | R$ 19600.00 | USD 3438.60 |
-| Buffer de complexidade/risco (1.30x) | R$ 5880.00 | USD 1031.58 |
-| **Preço recomendado** | **R$ 25480.00** | **USD 4470.18** |
-| Faixa sugerida (−10% / +15%) | R$ 22932.00 – R$ 29302.00 | — |
+| Subtotal (322.0h × R$ 80.00/h) | R$ 25760.00 | USD 4519.30 |
+| Buffer de complexidade/risco (1.30x) | R$ 7728.00 | USD 1355.79 |
+| **Preço recomendado** | **R$ 33488.00** | **USD 5875.09** |
+| Faixa sugerida (−10% / +15%) | R$ 30139.20 – R$ 38511.20 | — |
 
 ---
 
@@ -46,7 +49,7 @@
 
 - 40% na assinatura (antes de iniciar Fase 1 — Setup, Design System e Infraestrutura Base)
 - 30% na entrega de Fase 4 — Sistema de Rotas e Integração Google Maps
-- 30% na entrega final (Fase 6 — Compartilhamento, Polimento Visual e Deploy Final)
+- 30% na entrega final (Fase 9 — Galeria de Avatares Pré-definidos, última fase do escopo fechado original + extensões 7/8/9)
 
 ---
 

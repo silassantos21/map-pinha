@@ -1587,3 +1587,23 @@ Resolvido com duas camadas (`backend/app/core/storage.py`):
   objeto removido do bucket depois — confirmado consultando o R2 direto.
   Script de teste e os objetos reais criados durante o teste, limpos ao
   final.
+
+## Precificação atualizada com as Fases 7, 8 e 9 (12/11/2026)
+
+`docs/06_PRICING.md` estava pendente desde 23/10/2026, quando a Fase 7
+foi planejada (nota já registrada no próprio arquivo). Sem a ferramenta
+externa que gerou os números originais disponível neste repositório
+(citada no próprio doc, em "Como Ajustar Este Valor" — não faz parte
+deste projeto), recalculei à mão por proporção: mesma razão horas/dia
+média das Fases 1-6 (245.0h ÷ 70 dias = 3.5h/dia) aplicada aos dias das
+Fases 7/8/9 (18+2+2=22 dias → 77h), chegando a 322h totais. Preço
+sugerido foi de R$ 22932–29302 pra **R$ 30139,20–38511,20** (mesma taxa
+R$80/h e multiplicador de complexidade 1.30x de antes — não reavaliados,
+só a base de horas). **Fase 10 (App Nativo) continua fora**, por ser v2+
+sem prazo comprometido, igual já era antes da Fase 7 entrar. Marco de
+pagamento final atualizado de "Fase 6" pra "Fase 9" (última fase do
+escopo fechado hoje). De quebra, corrigidas 2 referências que já tinham
+ficado stale antes desta sessão: `CLAUDE.md`/`docs/00_OVERVIEW.md`
+diziam "86 dias" citando só a Fase 7 (correto: 92 dias, Fases 7-9), e
+`docs/05_COST_ANALYSIS.md` ainda citava "3 agentes" (hoje são 2, depois
+da limpeza do recommender nesta mesma sessão).

@@ -52,9 +52,9 @@ Prompts completos em [docs/03_AI_AGENTS.md](docs/03_AI_AGENTS.md).
 
 ## Estimativa
 
-- **Total:** 86 dias (12.3 semanas) — inclui a Fase 7 (Sistema Social e Notificações, 16 dias, planejada em 23/10/2026)
+- **Total:** 92 dias (13.1 semanas) — inclui as Fases 7-9 (Sistema Social e Notificações, Busca de Endereço no Mapa, Galeria de Avatares), todas planejadas após o MVP original das Fases 1-6
 - **Custo Mensal:** USD 15.00 / BRL 85.50
-- **Preço Sugerido:** R$ 22932.00 – R$ 29302.00 (ver [docs/06_PRICING.md](docs/06_PRICING.md)) — valores ainda não recalculados pra Fase 7, ver nota em `docs/06_PRICING.md`
+- **Preço Sugerido:** R$ 30139.20 – R$ 38511.20 (ver [docs/06_PRICING.md](docs/06_PRICING.md)) — já inclui as Fases 7-9, recalculado em 12/11/2026
 
 ## Arquitetura
 

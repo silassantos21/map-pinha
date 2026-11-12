@@ -29,7 +29,7 @@
 | Serviço/Item | Mensal (USD) | Setup (USD) | Free Tier | Observações |
 |--------------|-------------|------------|-----------|-------------|
 | OSRM API (rotas e direções — open-source) | $0.00 | $0.00 | ✅ Sim | API pública gratuita (router.project-osrm.org) para uso não-comercial. Alternativa: GraphHopper free tier (500 req/dia). Para produção com tráfego alto, self-host OSRM no Railway (~$5/mês extra). |
-| Claude API — Anthropic (agentes de IA) | $5.00 | $5.00 | ❌ Não | Claude claude-sonnet-4-6: $3/1M input tokens, $15/1M output tokens. Estimativa para portfólio: ~500 chamadas/mês aos 3 agentes = ~$3-7/mês. Setup: crédito inicial de $5 para testes. Rate limiting implementado para controle de custo. |
+| Claude API — Anthropic (agentes de IA) | $5.00 | $5.00 | ❌ Não | Claude claude-sonnet-4-6: $3/1M input tokens, $15/1M output tokens. Estimativa para portfólio: ~500 chamadas/mês aos 2 agentes ativos (categorização automática e geração de descrição — um 3º agente de recomendação foi removido em 12/11/2026, ver `SPRINTS.md`) = ~$3-7/mês. Setup: crédito inicial de $5 para testes. Rate limiting implementado para controle de custo. |
 | Google Maps Deep-link (redirecionamento externo) | $0.00 | $0.00 | ✅ Sim | Deep-links para google.com/maps/dir/ são URLs comuns — não requerem API key nem têm custo. Apenas a abertura em nova aba. Sem cobrança da Google para este caso de uso. |
 | Giphy API (busca e embed de GIFs nos POIs) | $0.00 | $0.00 | ✅ Sim | Giphy Developer API gratuita: 100 req/hora, acesso a todo o catálogo. Usuário busca GIF no app e salva apenas a URL — sem armazenar binários. Suficiente para portfólio. |
 

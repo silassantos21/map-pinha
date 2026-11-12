@@ -4,7 +4,7 @@
 
 **Tipo de Projeto:** `fullstack_web`
 **Gerado em:** 21/10/2026 20:59
-**Estimativa Total:** 86 dias (12.3 semanas) — inclui a Fase 7 (Sistema Social e Notificações), planejada em 23/10/2026
+**Estimativa Total:** 92 dias (13.1 semanas) — inclui as Fases 7-9 (Sistema Social e Notificações, Busca de Endereço no Mapa, Galeria de Avatares Pré-definidos), todas planejadas após o MVP original das Fases 1-6
 **Custo Mensal Estimado:** USD 15.00 / BRL 85.50
 
 ---
