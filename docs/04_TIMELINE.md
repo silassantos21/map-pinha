@@ -125,9 +125,9 @@
 - [ ] Setup Celery worker no Railway com broker Redis para tarefas assíncronas
 - [ ] Implementar POICategorizerAgent: integração Claude API, lógica de mapeamento de categoria para ícone do sistema
 - [ ] Implementar POIBioWriterAgent: endpoint /pois/generate-bio, integração com formulário de criação via botão
-- [ ] Implementar NearbyRecommenderAgent: endpoint /pois/recommendations com contexto de localização e histórico
-- [ ] ~~Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões~~ — implementado na Sprint 5, **removido na Sprint 6 em 29/10/2026** a pedido do dono do projeto (não gostou da mecânica/funcionalidade); endpoint do agente (`NearbyRecommenderAgent`) segue no backend, só sem UI que o acione — ver `SPRINTS.md`
-- [ ] ~~Implementar feedback loop: usuário avalia sugestão (útil/não útil) para melhorar recomendações futuras~~ — removido junto com a UI acima (Sprint 6)
+- [x] ~~Implementar NearbyRecommenderAgent: endpoint /pois/recommendations com contexto de localização e histórico~~ — implementado na Sprint 5, UI removida na Sprint 6 (29/10/2026) a pedido do dono do projeto, e **backend removido por completo em 12/11/2026** (código morto sem nenhum chamador) — ver `SPRINTS.md`
+- [ ] ~~Criar UI para recomendações: painel lateral 'Explorar' com cards animados de sugestões~~ — implementado na Sprint 5, **removido na Sprint 6 em 29/10/2026** a pedido do dono do projeto (não gostou da mecânica/funcionalidade)
+- [ ] ~~Implementar feedback loop: usuário avalia sugestão (útil/não útil) para melhorar recomendações futuras~~ — removido junto com a UI acima (Sprint 6); o endpoint genérico `/ai/feedback` que recebia essa avaliação também foi removido em 12/11/2026 (sem nenhum chamador vivo — a avaliação do categorizador usa um caminho próprio, `accept`/`dismiss`)
 - [ ] Adicionar indicador visual quando IA está processando (skeleton loader gamificado)
 - [ ] Implementar rate limiting nas chamadas à Claude API para controle de custos
 

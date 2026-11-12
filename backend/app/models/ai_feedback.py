@@ -9,8 +9,8 @@ from app.db.base import Base
 
 
 class AiFeedback(Base):
-    """Avaliação do usuário (útil/não útil) sobre uma sugestão de um agente de
-    IA — categorização automática ou recomendação de POI próximo. Sprint 5."""
+    """Avaliação do usuário (útil/não útil) sobre uma sugestão de categoria
+    automática do POICategorizerAgent (aceitar/dispensar). Sprint 5."""
 
     __tablename__ = "ai_feedback"
 

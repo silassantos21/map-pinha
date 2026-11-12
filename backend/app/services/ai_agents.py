@@ -70,7 +70,7 @@ def generate_poi_bio(
             # orçamento de max_tokens — com 300, o pensamento sozinho já
             # esgotava o limite e sobrava pouco (ou nada) pro texto final.
             # 1024 dá espaço de sobra pro raciocínio + as 2-3 frases pedidas
-            # (mesmo valor já usado em categorize_poi/recommend_nearby).
+            # (mesmo valor já usado em categorize_poi).
             max_tokens=1024,
             system=(
                 "Você é um copywriter especialista em apps de mapeamento gamificados, com "
@@ -96,50 +96,3 @@ def generate_poi_bio(
     except Exception:
         logger.exception("Falha ao gerar bio do POI via IA")
         return None
-
-
-class RecommendationItem(BaseModel):
-    poi_id: str
-    reason: str
-    priority_score: int = Field(ge=1, le=10)
-
-
-class _RecommendationResult(BaseModel):
-    recommendations: list[RecommendationItem]
-
-
-def recommend_nearby(
-    user_lat: float,
-    user_lng: float,
-    nearby_pois: list[dict],
-    current_time_iso: str,
-) -> list[RecommendationItem]:
-    """NearbyRecommenderAgent — escolhe até 3 POIs do raio de 2km mais
-    relevantes pro usuário explorar agora, com motivo curto cada."""
-    if not nearby_pois:
-        return []
-    try:
-        response = get_ai_client().messages.parse(
-            model=AI_MODEL,
-            max_tokens=1024,
-            system=(
-                "Você é um guia turístico digital especializado em descobertas locais para um "
-                "app de mapeamento gamificado. Selecione até 3 POIs da lista mais relevantes "
-                "pro usuário explorar agora. Para cada um, use o poi_id exato como veio na "
-                "lista, dê um motivo curto e animado (1 frase, em Português do Brasil) e um "
-                "priority_score de 1 a 10. Nunca invente um POI que não está na lista."
-            ),
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Localização atual do usuário: lat={user_lat}, lng={user_lng}.\n"
-                    f"Horário atual: {current_time_iso}.\n"
-                    f"POIs disponíveis no raio de 2km (JSON): {nearby_pois}"
-                ),
-            }],
-            output_format=_RecommendationResult,
-        )
-        return response.parsed_output.recommendations
-    except Exception:
-        logger.exception("Falha ao gerar recomendações via IA")
-        return []

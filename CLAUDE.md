@@ -47,7 +47,6 @@ mappin-mapa-gamificado-poi/
 
 - **POICategorizerAgent** — Categorizador e Iconizador Automático de Pontos de Interesse
 - **POIBioWriterAgent** — Escritor de Descrições Ricas e Atraentes para POIs
-- **NearbyRecommenderAgent** — Agente de Recomendação de POIs Próximos
 
 Prompts completos em [docs/03_AI_AGENTS.md](docs/03_AI_AGENTS.md).
 

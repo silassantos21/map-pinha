@@ -1,6 +1,8 @@
 # Agentes de IA — MapPin — Mapa Interativo Gamificado com Pontos de Interesse Personalizados
 
-Este projeto utiliza **3 agente(s) de IA** especializados para auxiliar no desenvolvimento e operação.
+Este projeto utiliza **2 agente(s) de IA** especializados para auxiliar no desenvolvimento e operação.
+
+> Um terceiro agente (`NearbyRecommenderAgent`, recomendação de POIs próximos via painel "Explorar") chegou a ser implementado na Sprint 5, mas teve a UI removida a pedido do dono do projeto na Sprint 6 (29/10/2026) e o backend removido por completo em 12/11/2026 — ver `SPRINTS.md`.
 
 ---
 
@@ -42,27 +44,6 @@ Quando o usuário preenche apenas nome e endereço do POI (sem escrever uma desc
 
 ```
 Você é um copywriter especialista em apps de mapeamento gamificados, com linguagem jovem, extrovertida e divertida — como se estivesse descrevendo um local em um RPG do mundo real. Sua função é criar descrições de pontos de interesse que sejam informativas e ao mesmo tempo encantadoras. Dado: Nome do local: '{poi_name}', Categoria: '{poi_category}', Endereço: '{poi_address}', Informações extras do usuário: '{user_notes}'. Escreva uma descrição de 2-3 frases em Português do Brasil, tom informal e animado, que descreva o local como se fosse um ponto especial em um mapa de aventura. Não use emojis. Seja criativo e específico. Nunca invente informações que o usuário não forneceu.
-```
-
----
-
-## Agente 3: NearbyRecommenderAgent
-
-**Papel:** Agente de Recomendação de POIs Próximos  
-**Modelo:** `claude-sonnet-4-6`
-
-### Propósito
-
-Analisa o histórico de POIs visitados/criados pelo usuário e os POIs existentes num raio de 2km da localização atual para gerar recomendações personalizadas de 'o que explorar por aqui'. É acionado quando o usuário abre o painel lateral 'Explorar' e fornece cards de sugestão ranqueados por relevância. Considera categoria preferida do usuário, horário do dia e distância para priorizar sugestões.
-
-### Ferramentas Disponíveis
-
-- `web_search`
-
-### System Prompt Template
-
-```
-Você é um guia turístico digital especializado em descobertas locais para um app de mapeamento gamificado. Sua função é recomendar os pontos de interesse mais relevantes para o usuário explorar agora. Contexto: Localização atual do usuário: lat={user_lat}, lng={user_lng}. Histórico de categorias preferidas: {preferred_categories}. POIs disponíveis no raio de 2km: {nearby_pois_json}. Horário atual: {current_time}. Selecione os 3 POIs mais relevantes e para cada um forneça: poi_id, reason (frase curta e animada explicando por que visitar agora), priority_score (1-10). Responda em JSON. Sempre considere horário de funcionamento se disponível.
 ```
 
 ---

@@ -1498,3 +1498,43 @@ Achados reais, nenhum deles exigiu mudar código:
   real (tocar/arrastar no mapa do formulário, conferir o zoom automático
   com os POIs de verdade) depende de uma build nova — mudança de código
   do app, não do backend.
+
+## Limpeza do código morto do NearbyRecommenderAgent (12/11/2026)
+
+A pedido do dono do projeto, removido por completo o 3º agente de IA
+(`NearbyRecommenderAgent`) do backend — a UI ("Explorar") já tinha sido
+removida na Sprint 6 (29/10/2026), mas a lógica/endpoints continuavam lá
+sem nenhum chamador. Investigado antes com um agente de busca dedicado
+pra não remover nada compartilhado por engano:
+
+- `backend/app/services/ai_agents.py`: removida `recommend_nearby` +
+  schemas internos `RecommendationItem`/`_RecommendationResult`.
+- `backend/app/api/v1/ai.py`: removido `GET /ai/recommendations` e as
+  constantes de cache/raio associadas. Imports órfãos limpos (`json`,
+  `datetime`/`timezone`, `geoalchemy2`, `cache_get`/`cache_set`,
+  `POIVisibility`, `cast`/`func`).
+- **Achado durante a limpeza:** `POST /ai/feedback` (avaliação útil/não
+  útil) não era exclusivo do recommender — o schema aceitava
+  `agent: "categorizer" | "recommender"` — mas na prática **nenhum lugar
+  do frontend chama esse endpoint** (confirmado por grep; a avaliação do
+  categorizador é gravada direto pelos endpoints `accept`/`dismiss` da
+  sugestão, não por essa rota). Removido também, por ser código morto
+  pros dois agentes, não só pro recommender.
+- `backend/app/schemas/ai.py`: removidos `RecommendationRead` e
+  `AiFeedbackCreate` (este último só existia pro endpoint acima).
+- **Mantido intocado, por ser compartilhado ou de outro agente:** a
+  tabela/modelo `AiFeedback` inteira (usada pelo `accept`/`dismiss` do
+  categorizador), a migration `9b3f2a6d7c41` (cria `ai_feedback` + as
+  colunas `ai_*` de `pois`, nenhuma delas exclusiva do recommender), e os
+  endpoints `generate-bio`/`ai-suggestion/accept`/`ai-suggestion/dismiss`.
+- `docs/03_AI_AGENTS.md` (removida a seção do Agente 3, contagem
+  "3 agentes" → "2"), `CLAUDE.md` (removida a linha do
+  `NearbyRecommenderAgent` na lista de agentes disponíveis) e
+  `docs/04_TIMELINE.md` (tarefa marcada como concluída/removida de
+  verdade, não só a UI) atualizados.
+- Validado de verdade: nenhuma referência restante a
+  `RecommendationRead`/`AiFeedbackCreate`/`recommend_nearby`/etc. em todo
+  o `backend/` (grep); subi o container (`docker compose up backend`) e
+  confirmei a app FastAPI importando sem erro, com `generate-bio` e
+  `ai-suggestion/accept`/`dismiss` ainda registrados e
+  `/ai/recommendations`/`/ai/feedback` de fato fora das rotas.
