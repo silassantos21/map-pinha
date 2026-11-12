@@ -459,6 +459,43 @@ cada uma no `SPRINTS.md`:
   mede 28×28px, abaixo do mínimo recomendado de toque (44×44px) — afeta o
   app inteiro, não é específico de nenhuma tela dessas.
 
+### App publicado no Google (saiu do modo "Testing") — 12/11/2026
+
+O dono do projeto perguntou se dava pra várias contas Google diferentes
+testarem o site ao mesmo tempo — resposta: a arquitetura já suporta isso
+tranquilamente (sessões independentes, nada compartilhado entre usuários
+além do que é intencional), mas o app OAuth no Google Cloud Console ainda
+estava em modo **"Testing"**, que só deixa logar quem está numa lista
+manual de até 100 "usuários de teste". Resolvido:
+
+- **`frontend/src/app/privacidade/page.tsx`** (novo): página estática de
+  Política de Privacidade, exigida pelo Google pra liberar o botão
+  "Publicar app" (junto com nome do app, e-mail de suporte e URL da
+  página inicial, preenchidos manualmente pelo dono do projeto no Google
+  Cloud Console). Publicada em produção:
+  https://mapinha-iota.vercel.app/privacidade — e-mail de contato nela é
+  o pessoal do dono do projeto, publicado com confirmação explícita dele
+  (perguntei antes, não assumi).
+- **Logotipo do app e Termos de Serviço deixados em branco de propósito**
+  — nenhum dos dois é exigido pra publicar, e subir um logotipo
+  obrigaria o app a passar por verificação do Google (processo de
+  dias/semanas) antes de poder sair do modo Teste, o que era
+  contraproducente pro pedido.
+- **Status mudado para "Em produção"** pelo dono do projeto no Google
+  Cloud Console (Google Auth Platform → Público-alvo → "Publicar app"),
+  confirmado por print — qualquer conta Google já consegue logar, sem
+  limite de usuários de teste.
+- Removido também, de quebra, um item obsoleto da lista "Funcionalidades
+  Futuras (v2+)" em `docs/00_OVERVIEW.md`: "upload direto de GIFs" — já
+  implementado de verdade desde a Sprint 3 (R2, não só URL externa).
+- **Decisão tomada, sem mudança de código:** o dono do projeto sugeriu um
+  dialog de login obrigatório antes do mapa pra quem não está logado.
+  Recomendei não fazer — o mapa público navegável sem login é
+  intencional (deixa visitantes/recrutadores verem o projeto sem precisar
+  de conta Google), e um dialog bloqueando atrapalharia isso. O botão
+  "Entrar" já existe, sempre visível no header (`auth-button.tsx`). Dono
+  do projeto concordou em deixar como está.
+
 ## Roadmap original — completo
 
 Nada mais falta do roadmap original (`docs/04_TIMELINE.md`). Qualquer coisa
@@ -468,8 +505,9 @@ presumir próximos passos, só perguntar ou aguardar instrução.
 ## O que fazer agora
 
 Nenhuma pendência conhecida no momento. As 5 pendências "fora do app
-nativo" que vinham sendo registradas foram todas resolvidas em 12/11/2026
-(ver seção acima). App nativo tem 2 fixes aguardando confirmação do dono
+nativo" que vinham sendo registradas foram todas resolvidas em 12/11/2026,
+e o app já está publicado no Google (qualquer conta consegue logar) — ver
+seções acima. App nativo tem 2 fixes aguardando confirmação do dono
 do projeto no celular físico (zoom + mapa no formulário da build nova) —
 de resto, fica de prioridade baixa por pedido explícito, não investir mais
 tempo nele sem pedido novo.

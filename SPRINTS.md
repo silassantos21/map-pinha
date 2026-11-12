@@ -1647,3 +1647,48 @@ problema real, maior do que o esperado.
   inteiro, não só essas telas; registrado, não mexido nesta rodada por
   estar fora do pedido.
 - `npx tsc --noEmit` e `npx eslint` limpos nos 7 arquivos.
+
+## App publicado no Google — saiu do modo "Testing" (12/11/2026)
+
+Pergunta do dono do projeto: dava pra várias contas Google testarem o
+site ao mesmo tempo? Arquitetura já suporta (sessões independentes,
+nada compartilhado entre usuários além do intencional), mas o app OAuth
+ainda estava em **"Testing"** no Google Cloud Console — só logam contas
+cadastradas manualmente como "usuário de teste" (limite de 100).
+
+- **Bloqueio real encontrado no caminho:** publicar exige nome do app,
+  e-mail de suporte, URL da página inicial e **URL de Política de
+  Privacidade** — essa última não existia. Criada
+  `frontend/src/app/privacidade/page.tsx` (página estática, explica
+  login via Google/escopos básicos, o que é armazenado, visibilidade de
+  POI, os 3 serviços de terceiros usados — Claude/OSRM/tiles de mapa —,
+  e como pedir exclusão de conta). Publicada:
+  https://mapinha-iota.vercel.app/privacidade
+- **Cuidado de privacidade no meio do processo:** o rascunho inicial da
+  página já saiu com o e-mail pessoal do dono do projeto como contato —
+  parei e pedi confirmação explícita antes de publicar algo com o e-mail
+  dele exposto publicamente (não presumi consentimento só porque é
+  prático). Confirmado por ele, segue publicado.
+- **Logotipo e Termos de Serviço deixados em branco de propósito** —
+  nenhum dos dois é exigido pra liberar "Publicar app" (confirmado pelo
+  próprio aviso do Google ao lado do botão desabilitado, que só citava
+  os 4 campos acima); fazer upload de logotipo, especificamente, obriga
+  o app a passar por **verificação do Google** (processo de
+  dias/semanas) antes de poder sair do modo Teste — o oposto do que
+  resolveria o pedido rápido.
+- Guiado o dono do projeto passo a passo pela UI nova do Google
+  ("Google Auth Platform", que substituiu a antiga "OAuth consent
+  screen" dentro de "APIs & Services") — `Branding` (preencher os
+  campos) → `Público-alvo` → "Publicar app". Confirmado por prints em
+  cada etapa; status final **"Em produção"**.
+- De quebra, removido da lista "Funcionalidades Futuras (v2+)"
+  (`docs/00_OVERVIEW.md`) o item "upload direto de GIFs animados
+  (armazenamento no R2, não apenas URL externa)" — obsoleto, já
+  implementado de verdade desde a Sprint 3.
+- **Sugestão do dono do projeto avaliada e descartada, sem mudar
+  código:** dialog de login obrigatório antes do mapa pra quem não está
+  logado. Recomendei manter como está — o mapa público navegável sem
+  login é intencional (visitantes/recrutadores veem o projeto sem
+  precisar de conta Google), e um dialog bloqueando atrapalharia esse
+  objetivo; o botão "Entrar" já existe, sempre visível no header
+  (`auth-button.tsx`). Concordou em deixar como está.
