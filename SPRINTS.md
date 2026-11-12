@@ -1549,3 +1549,41 @@ ajuste pequeno. `ai_feedback` segue só coletando dado do
 POICategorizerAgent (via `accept`/`dismiss`, ver limpeza do recommender
 acima), pronto pra usar quando/se essa sprint acontecer. Não iniciar sem
 pedido explícito.
+
+## Validação real de upload de mídia de POI (12/11/2026)
+
+Achado original (Fase 9, achado incidental): `POST /media/presigned-url`
+aceitava qualquer `content_type` sem checagem, e nada conferia se os
+bytes de verdade enviados no PUT direto pro R2 batiam com o que foi
+declarado — um cliente podia mandar qualquer coisa disfarçada de imagem.
+Resolvido com duas camadas (`backend/app/core/storage.py`):
+
+- **No pedido do presigned URL** (`media.py`): `content_type` precisa
+  bater com uma whitelist por `media_type` (`image`→`image/*` exceto
+  `image/svg+xml`, de propósito — SVG é XML e pode embutir `<script>`,
+  risco de XSS armazenado; `gif`→`image/gif` exato; `audio`→`audio/*`).
+  Rejeita com 400 antes mesmo de gerar a URL.
+- **No anexar a mídia ao POI** (`attach_poi_media`, único momento em que
+  dá pra conferir o arquivo já enviado): `verify_uploaded_object` baixa o
+  objeto do R2, confere tamanho (15MB imagem / 20MB gif / 10MB áudio —
+  nenhum limite existia antes) e os bytes de verdade — `Pillow` decodifica
+  imagem/gif (com fallback por assinatura de contêiner pra HEIC, que o
+  Pillow não decodifica sem plugin extra, pra não rejeitar foto real de
+  iPhone), e assinatura de magic bytes pros formatos de áudio aceitos
+  (WAV/OGG/MP3/WebM/MP4 — cobre tanto arquivo escolhido quanto gravação
+  via `MediaRecorder` do navegador). Falhando qualquer checagem, apaga o
+  objeto do R2 e rejeita com 400 — nunca cria a linha de mídia.
+- **Limitação conhecida, não resolvida aqui:** não há condição de tamanho
+  no presigned URL em si (S3/PUT não suporta isso, só o presigned POST
+  suportaria — migrar pra isso mexeria no fluxo de upload da web e do
+  mobile também) — por isso o limite só é aplicado depois do upload já
+  ter terminado, nunca bloqueando o PUT em si (um upload gigante ainda
+  sobe pro R2 antes de ser rejeitado e apagado no `attach`).
+- **Validado de ponta a ponta com R2 de verdade** (não mock): upload de
+  JPEG real passa normal; `content_type` inválido rejeitado já no
+  presign; um "upload mentiroso" (presign como `image/jpeg`, mas body
+  real não é imagem nenhuma) é aceito pelo R2 no PUT (signature do
+  presigned URL não valida conteúdo) e rejeitado no `attach`, com o
+  objeto removido do bucket depois — confirmado consultando o R2 direto.
+  Script de teste e os objetos reais criados durante o teste, limpos ao
+  final.

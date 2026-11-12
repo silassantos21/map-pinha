@@ -12,7 +12,12 @@ from app.api.v1.auth import verify_internal_secret
 from app.core.media_processing import generate_image_thumbnail
 from app.core.rate_limit import enforce_ai_rate_limit
 from app.core.security import require_internal_secret_or_mobile_user
-from app.core.storage import build_public_url, delete_object_by_public_url
+from app.core.storage import (
+    UploadValidationError,
+    build_public_url,
+    delete_object_by_public_url,
+    verify_uploaded_object,
+)
 from app.db.session import SessionLocal, get_db
 from app.models.category import Category
 from app.models.follow import Follow
@@ -470,6 +475,14 @@ def attach_poi_media(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
     if poi.user_id != actor_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner of this POI")
+
+    # O cliente podia ter mentido o content_type ao pedir o presigned URL e
+    # mandado outros bytes no PUT direto pro R2 — só dá pra conferir tamanho
+    # e Content-Type de verdade agora, com o arquivo já lá.
+    try:
+        verify_uploaded_object(payload.object_key, payload.media_type)
+    except UploadValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     thumbnail_url = None
     if payload.media_type == MediaType.image:
