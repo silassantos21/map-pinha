@@ -1692,3 +1692,53 @@ cadastradas manualmente como "usuário de teste" (limite de 100).
   precisar de conta Google), e um dialog bloqueando atrapalharia esse
   objetivo; o botão "Entrar" já existe, sempre visível no header
   (`auth-button.tsx`). Concordou em deixar como está.
+
+## Bug real: login quebrava com "Erro do servidor" (13/11/2026)
+
+Reportado pelo dono do projeto logo depois de publicar o app no Google
+(ver seção acima): tentou logar com uma conta Google diferente da dele e
+caiu na tela genérica "Erro do servidor"/"Existe um problema com a
+configuração do servidor" do NextAuth.
+
+- **Investigação:** não tenho acesso a logs do Vercel/Render nesta
+  sessão — pedi pro dono do projeto confirmar as env vars de produção na
+  Vercel (todas presentes: `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_API_URL`, `INTERNAL_API_SECRET`) —
+  descartou variável faltando. Reproduzi a chamada `/auth/sync` com um
+  usuário totalmente novo contra o backend local: funcionou normal (sem
+  bug no `get_or_create_user`). Isso apontou pra fora do código de
+  negócio, pra alguma condição de timing/rede específica de produção.
+- **Causa raiz encontrada em `frontend/src/auth.ts`:** o callback `jwt`
+  do NextAuth chama o backend (`POST /auth/sync`) de forma síncrona, sem
+  timeout nem `try/catch`, durante o login. Isso **sempre foi um bug
+  latente** — só nunca tinha sido exercitado de verdade porque, até
+  publicar o app, só a conta do próprio dono do projeto logava, com uma
+  sessão JWT de longa duração que não refaz esse fluxo a cada acesso.
+  Uma conta nova faz o fluxo completo do zero. Combinado com o cold
+  start do Render Free (documentado em sessões anteriores, até ~50s) e o
+  limite padrão de execução de função da Vercel (10s no plano Hobby): se
+  o backend estiver "dormindo" no momento do login, a função é encerrada
+  à força pela Vercel antes do backend responder, e isso derruba o login
+  inteiro com a tela genérica de erro — não é específico de "conta
+  diferente", é específico de **timing** (qualquer login novo durante um
+  cold start quebraria, inclusive o do próprio dono do projeto).
+- **Fix** (`frontend/src/auth.ts` + `frontend/src/app/api/auth/[...nextauth]/route.ts`):
+  `AbortController` com timeout de 20s na chamada ao backend, envolvida
+  em `try/catch` — se abortar ou falhar por qualquer motivo, o login
+  **continua** (mesma degradação suave que já existia pro caso de
+  `res.ok` falso: sessão sem `userId` daquela vez, ressincroniza no
+  próximo login), em vez de derrubar a função inteira. `maxDuration = 30`
+  adicionado na rota do NextAuth pra dar mais margem real antes do
+  limite da Vercel bater.
+- **Validado:** `tsc`/`eslint` limpos; simulação isolada do bloco
+  `AbortController`/`try-catch` com um fetch que nunca resolve (timeout)
+  e um fetch que resolve bem — confirmado que o caso de timeout cai no
+  `catch` sem lançar exceção (login seguiria normalmente, só sem
+  `userId`) e o caso de sucesso continua setando `token.userId` como
+  antes. Dev server local sobe normal e `/api/auth/providers` responde
+  200 depois da mudança.
+- **Não resolvido aqui, fora do escopo do bug:** o cold start do Render
+  Free em si — é a causa de fundo que expôs o bug, mas o fix não
+  depende de eliminá-lo (mesmo com uma eventual migração de plano, o
+  `try/catch` continua sendo defesa correta contra qualquer falha de
+  rede transiente no login).
