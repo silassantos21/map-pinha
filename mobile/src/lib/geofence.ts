@@ -41,7 +41,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Você está perto de um POI!",
+      title: "Você está perto de um Marcador!",
       body: `${poiName} está aqui perto.`,
     },
     trigger: null,
@@ -68,7 +68,7 @@ export async function requestGeofencePermissions(): Promise<boolean> {
 async function ensureNotificationChannel() {
   if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync("proximity", {
-    name: "Proximidade de POIs",
+    name: "Proximidade de Marcadores",
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }

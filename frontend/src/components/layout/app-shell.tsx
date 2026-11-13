@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { CategoryChips } from "@/components/layout/category-chips";
 import { FollowersPanel } from "@/components/layout/followers-panel";
 import { GroupsPanel } from "@/components/layout/groups-panel";
+import { HeaderVisibility } from "@/components/layout/header-visibility";
 import { HudHeader } from "@/components/layout/hud-header";
 import { OnboardingDialog } from "@/components/layout/onboarding-dialog";
 import { PoiCreateButton } from "@/components/layout/poi-create-button";
@@ -37,10 +38,10 @@ export async function AppShell() {
         <MapViewLoader userId={userId} />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+      <HeaderVisibility>
         <HudHeader userId={userId} />
         <CategoryChips />
-      </div>
+      </HeaderVisibility>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {/* Mobile: barra de navegação full-width + FAB elevado por cima.

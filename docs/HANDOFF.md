@@ -1,7 +1,8 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 12/11/2026 (sessão de pendências fora do app nativo + fix de
-> 2 pontos do app nativo — ver seção "Rodada de 12/11/2026" abaixo). Isso
+> Atualizado em 13/11/2026 (sessão de pendências fora do app nativo, fix
+> do login quebrado em cold start, e 4 ajustes na web — ver seções
+> "Rodada de 12/11/2026" e "4 ajustes na web" abaixo). Isso
 > aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
@@ -502,12 +503,52 @@ Nada mais falta do roadmap original (`docs/04_TIMELINE.md`). Qualquer coisa
 nova a partir daqui é v2+ ou pedido explícito do dono do projeto — não
 presumir próximos passos, só perguntar ou aguardar instrução.
 
+### 4 ajustes na web, planejados e implementados (13/11/2026)
+
+Depois de um login real quebrar com o bug acima, o dono do projeto
+relatou mais 4 pontos testando o site publicado. Planejado em plan mode
+(3 agentes Explore + teste real contra o Nominatim antes de codar) e
+implementado na sequência — detalhes completos em `SPRINTS.md`:
+
+1. **Busca de endereço não achava endereço real / achava lugar errado**
+   — causa raiz dupla confirmada testando direto contra o Nominatim:
+   acento em "Sinfrônio" quebrava o match sozinho (contraintuitivo, o
+   nome oficial no OSM *tem* esse acento), e o complemento "Lj 3"
+   derrubava a busca inteira junto. Fix: `geocode/search/route.ts`
+   tenta de novo com uma versão simplificada (sem acento, sem
+   complemento) quando a busca completa falha; `poi-form-sheet.tsx`
+   agora mostra uma lista de opções (como a SearchBar já fazia) em vez
+   de confiar cegamente no 1º resultado do Nominatim. Limitação de
+   precisão de numeração em si continua (decisão: não trocar de
+   provedor geocoding pago).
+2. **Formulário de criar Marcador ocupava espaço demais no mobile** —
+   altura reduzida de 65vh pra 50vh (`poi-form-sheet.tsx`), offset do
+   mapa recalculado (`map-pan.ts`), e cabeçalho do mapa escondido
+   enquanto o formulário está aberto, só no mobile (novo
+   `header-visibility.tsx`, lê o `map-store.ts`). Desktop mantém o
+   cabeçalho sempre visível (formulário lateral não compete por altura
+   de mapa lá).
+3. **"POI" trocado por "Marcador" em todo texto visível ao usuário** —
+   web (~17 arquivos) + mobile (7 arquivos) + `README.md`. Nomes de
+   variável/rota/API/banco continuam exatamente como estavam. Achado
+   paralelo resolvido junto: o app mobile mostrava mensagens de erro
+   cruas em inglês do backend (`"POI not found"` etc.) — ganhou uma
+   tradução central das 3 mensagens conhecidas que mencionam POI.
+4. De quebra, corrigida uma frase do `README.md` que ainda citava "3
+   agentes de IA" e a recomendação de POIs próximos — esse agente foi
+   removido do backend numa sessão anterior (12/11/2026).
+
+Validado de ponta a ponta com Playwright (sessão forjada, viewport
+mobile e desktop) pros itens 1 e 2, e visualmente pro item 3 — não só
+por tipo/lint. `tsc`/`eslint` limpos e `next build` de produção
+completo sem erros.
+
 ## O que fazer agora
 
-Nenhuma pendência conhecida no momento. As 5 pendências "fora do app
-nativo" que vinham sendo registradas foram todas resolvidas em 12/11/2026,
-e o app já está publicado no Google (qualquer conta consegue logar) — ver
-seções acima. App nativo tem 2 fixes aguardando confirmação do dono
-do projeto no celular físico (zoom + mapa no formulário da build nova) —
-de resto, fica de prioridade baixa por pedido explícito, não investir mais
+O fix do login quebrado (cold start) já está commitado, no push e
+confirmado em produção. Os 4 ajustes de hoje (busca de endereço, layout
+mobile do formulário, rename POI→Marcador) estão implementados e
+validados, mas **ainda não commitados nem enviados ao remoto** (pendente
+de confirmação explícita do dono do projeto, como sempre). App nativo
+continua de prioridade baixa por pedido explícito — não investir mais
 tempo nele sem pedido novo.

@@ -40,6 +40,6 @@ export async function attachMediaToPoi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ object_key: objectKey, media_type: mediaType }),
   });
-  if (!res.ok) throw new Error("Falha ao anexar mídia ao POI");
+  if (!res.ok) throw new Error("Falha ao anexar mídia ao Marcador");
   return res.json();
 }

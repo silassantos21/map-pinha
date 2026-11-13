@@ -31,13 +31,13 @@ function formatNotificationText(n: AppNotification): string {
     case "new_follower":
       return `${actor} começou a seguir você`;
     case "poi_reaction":
-      return `${actor} reagiu com ${n.payload.emoji ?? "👍"} no seu POI ${n.payload.poi_name ?? ""}`;
+      return `${actor} reagiu com ${n.payload.emoji ?? "👍"} no seu Marcador ${n.payload.poi_name ?? ""}`;
     case "new_poi_from_followed":
-      return `${actor} cadastrou um novo POI: ${n.payload.poi_name ?? ""}`;
+      return `${actor} cadastrou um novo Marcador: ${n.payload.poi_name ?? ""}`;
     case "group_invite":
       return `${actor} te convidou pro grupo ${n.group_name ?? ""}`;
     case "poi_comment":
-      return `${actor} comentou no seu POI ${n.payload.poi_name ?? ""}: "${n.payload.body_preview ?? ""}"`;
+      return `${actor} comentou no seu Marcador ${n.payload.poi_name ?? ""}: "${n.payload.body_preview ?? ""}"`;
     case "group_invite_accepted":
       return `${actor} aceitou seu convite pro grupo ${n.group_name ?? ""}`;
     default:

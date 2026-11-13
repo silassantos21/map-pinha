@@ -149,7 +149,7 @@ export function UserProfileSheet({ currentUserId }: UserProfileSheetProps) {
 
             {pois.length > 0 && (
               <p className="text-xs font-medium text-muted-foreground">
-                POIs de {isOwnProfile ? "você" : (profile.name ?? "usuário")}
+                Marcadores de {isOwnProfile ? "você" : (profile.name ?? "usuário")}
               </p>
             )}
           </div>

@@ -484,10 +484,10 @@ function GroupDetailView({
         <div className="flex flex-col gap-1.5">
           <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <MapPinned className="size-3.5" />
-            POIs desse grupo{groupPois.length > 0 ? ` (${groupPois.length})` : ""}
+            Marcadores desse grupo{groupPois.length > 0 ? ` (${groupPois.length})` : ""}
           </p>
           {groupPois.length === 0 ? (
-            <EmptyState text="Nenhum POI marcado como deste grupo ainda." />
+            <EmptyState text="Nenhum Marcador marcado como deste grupo ainda." />
           ) : (
             groupPois.map((poi, index) => (
               <MotionListItem key={poi.id} index={index}>
@@ -515,7 +515,7 @@ function GroupDetailView({
               <AlertDialogHeader>
                 <AlertDialogTitle>Excluir grupo</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Excluir &quot;{group.name}&quot;? Os membros perdem acesso aos POIs desse grupo.
+                  Excluir &quot;{group.name}&quot;? Os membros perdem acesso aos Marcadores desse grupo.
                   Essa ação não pode ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>

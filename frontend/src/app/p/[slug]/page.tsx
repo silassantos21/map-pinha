@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const poi = await getPoi(slug);
   if (!poi) {
-    return { title: "POI não encontrado — MaPinha" };
+    return { title: "Marcador não encontrado — MaPinha" };
   }
 
   const hero = poi.media.find((m) => m.media_type === "image" || m.media_type === "gif");

@@ -4,9 +4,9 @@
 
 ## Sobre o projeto
 
-Ferramentas de mapeamento tradicionais são funcionais, mas genéricas: um pin do Google Maps não diz nada sobre quem marcou aquele lugar, nem por quê. O MaPinha resolve isso permitindo cadastrar Pontos de Interesse (POIs) pessoais — a barbearia de confiança, o restaurante favorito, aquele lugar secreto só seu — com nome, descrição, categoria, imagem e áudio, exibidos num mapa com identidade visual própria (quatro temas: Cartoon, RPG, Urbano e Satélite).
+Ferramentas de mapeamento tradicionais são funcionais, mas genéricas: um pin do Google Maps não diz nada sobre quem marcou aquele lugar, nem por quê. O MaPinha resolve isso permitindo cadastrar Marcadores (pontos de interesse) pessoais — a barbearia de confiança, o restaurante favorito, aquele lugar secreto só seu — com nome, descrição, categoria, imagem e áudio, exibidos num mapa com identidade visual própria (quatro temas: Cartoon, RPG, Urbano e Satélite).
 
-É voltado para quem quer um mapa pessoal com personalidade, em vez de um mapa genérico de navegação. Qualquer POI pode ser tornado público e compartilhado por link, com uma página própria otimizada para redes sociais.
+É voltado para quem quer um mapa pessoal com personalidade, em vez de um mapa genérico de navegação. Qualquer Marcador pode ser tornado público e compartilhado por link, com uma página própria otimizada para redes sociais.
 
 O projeto está em produção, com deploy completo (frontend, backend, banco de dados e cache, todos em serviços gratuitos):
 
@@ -17,13 +17,13 @@ O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SP
 
 ## Prévia
 
-| **Mapa principal** | **Cadastro de POI com sugestão de categoria por IA** |
+| **Mapa principal** | **Cadastro de Marcador com sugestão de categoria por IA** |
 |---|---|
-| ![Mapa principal](docs/portfolio-screenshots/01-mapa-inicial.png) | ![Cadastro de POI](docs/portfolio-screenshots/02-criar-poi.png) |
+| ![Mapa principal](docs/portfolio-screenshots/01-mapa-inicial.png) | ![Cadastro de Marcador](docs/portfolio-screenshots/02-criar-poi.png) |
 
-| **Detalhe do POI** | **Cálculo de rota** |
+| **Detalhe do Marcador** | **Cálculo de rota** |
 |---|---|
-| ![Detalhe do POI](docs/portfolio-screenshots/03-poi-detalhe.png) | ![Cálculo de rota](docs/portfolio-screenshots/04-rota.png) |
+| ![Detalhe do Marcador](docs/portfolio-screenshots/03-poi-detalhe.png) | ![Cálculo de rota](docs/portfolio-screenshots/04-rota.png) |
 
 | **Perfil e estatísticas** | **Página pública de compartilhamento** |
 |---|---|
@@ -37,11 +37,11 @@ O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SP
 
 **Mapa**
 - Mapa interativo (Leaflet) com quatro temas visuais trocáveis em tempo real: Cartoon, RPG, Urbano e Satélite
-- Busca de POIs por nome ou categoria, com clustering automático por zoom
+- Busca de Marcadores por nome ou categoria, com clustering automático por zoom
 - PWA instalável, com cache offline dos tiles do mapa via service worker
 
 **Pontos de interesse**
-- CRUD completo de POIs, com upload de imagem, avatar e áudio direto para o Cloudflare R2 (o binário nunca passa pelo servidor de aplicação)
+- CRUD completo de Marcadores, com upload de imagem, avatar e áudio direto para o Cloudflare R2 (o binário nunca passa pelo servidor de aplicação)
 - Seis categorias com ícone e cor próprios (Alimentação, Comércio, Saúde, Lazer, Entretenimento, Residencial)
 - Reações e favoritos
 
@@ -51,13 +51,13 @@ O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SP
 - Deep-link para abrir a rota direto no Google Maps
 
 **Compartilhamento e conta**
-- Compartilhamento público de POIs: cada um gera uma página própria, renderizada no servidor, com metadados Open Graph e Twitter Card
+- Compartilhamento público de Marcadores: cada um gera uma página própria, renderizada no servidor, com metadados Open Graph e Twitter Card
 - Login com Google (NextAuth.js / Auth.js v5)
-- Perfil com estatísticas de uso (POIs cadastrados, quilômetros mapeados)
+- Perfil com estatísticas de uso (Marcadores cadastrados, quilômetros mapeados)
 - Onboarding interativo de três passos no primeiro acesso
 
 **Inteligência artificial**
-- Três agentes baseados na API da Claude: categorização automática do POI a partir da descrição, geração de bio/descrição, e recomendação de POIs próximos
+- Dois agentes baseados na API da Claude: categorização automática do Marcador a partir da descrição, e geração de bio/descrição
 
 **Infraestrutura**
 - Monitoramento de erros (Sentry) no frontend e no backend
@@ -81,7 +81,7 @@ O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SP
 | Monitoramento de erros | Sentry |
 | Testes end-to-end | Playwright |
 
-O frontend renderiza o mapa no cliente e se comunica com o backend via REST, atrás de um BFF (as próprias rotas de API do Next.js) que injeta um segredo compartilhado nas chamadas que alteram dados. O upload de mídia vai direto do navegador para o Cloudflare R2 por meio de uma URL assinada gerada pelo backend. Quando um POI é criado, o backend salva sua geometria no PostgreSQL (com índice espacial via PostGIS) e, em segundo plano, aciona o agente de categorização da Claude, que sugere uma categoria com base no nome e na descrição — sugestão que o usuário pode aceitar ou dispensar diretamente no card do POI. O Redis cacheia as consultas de POIs por área do mapa e as respostas dos agentes de IA, para reduzir custo e latência.
+O frontend renderiza o mapa no cliente e se comunica com o backend via REST, atrás de um BFF (as próprias rotas de API do Next.js) que injeta um segredo compartilhado nas chamadas que alteram dados. O upload de mídia vai direto do navegador para o Cloudflare R2 por meio de uma URL assinada gerada pelo backend. Quando um Marcador é criado, o backend salva sua geometria no PostgreSQL (com índice espacial via PostGIS) e, em segundo plano, aciona o agente de categorização da Claude, que sugere uma categoria com base no nome e na descrição — sugestão que o usuário pode aceitar ou dispensar diretamente no card do Marcador. O Redis cacheia as consultas de Marcadores por área do mapa e as respostas dos agentes de IA, para reduzir custo e latência.
 
 Mais detalhes em [docs/01_ARCHITECTURE.md](docs/01_ARCHITECTURE.md) e [docs/02_TECH_STACK.md](docs/02_TECH_STACK.md).
 
@@ -91,12 +91,12 @@ Mais detalhes em [docs/01_ARCHITECTURE.md](docs/01_ARCHITECTURE.md) e [docs/02_T
 mappin-mapa-gamificado-poi/
 ├── frontend/              Next.js 16 (App Router)
 │   ├── src/app/             rotas, API routes (BFF), layout
-│   ├── src/components/      mapa, POIs, layout, UI
+│   ├── src/components/      mapa, Marcadores, layout, UI
 │   ├── src/lib/              clientes de API, temas do mapa, deep-links
 │   ├── src/stores/           estado global (Zustand)
 │   └── e2e/                  testes end-to-end (Playwright)
 ├── backend/               FastAPI (Python 3.12)
-│   ├── app/api/v1/           rotas (POIs, categorias, auth, mídia, rotas, IA, usuários, favoritos)
+│   ├── app/api/v1/           rotas (Marcadores, categorias, auth, mídia, rotas, IA, usuários, favoritos)
 │   ├── app/models/           modelos SQLAlchemy + PostGIS
 │   ├── app/services/         agentes de IA, integração com o R2
 │   └── alembic/              migrações do banco

@@ -176,11 +176,11 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/pois/${poi.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Falha ao excluir o POI");
+      if (!res.ok) throw new Error("Falha ao excluir o Marcador");
       onClose();
       await queryClient.invalidateQueries({ queryKey: ["pois"] });
       await queryClient.invalidateQueries({ queryKey: ["my-pois"] });
-      toast.add({ title: "POI excluído", description: poi.name, type: "success" });
+      toast.add({ title: "Marcador excluído", description: poi.name, type: "success" });
     } catch (error) {
       toast.add({
         title: "Não foi possível excluir",
@@ -465,7 +465,7 @@ function PoiDetailContent({ poi, currentUserId, onClose, onEdit, onRoute }: PoiD
 
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Excluir POI</AlertDialogTitle>
+                <AlertDialogTitle>Excluir Marcador</AlertDialogTitle>
                 <AlertDialogDescription>
                   Excluir &quot;{poi.name}&quot;? Essa ação não pode ser desfeita.
                 </AlertDialogDescription>

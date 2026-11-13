@@ -24,8 +24,8 @@ export function FavoritesScreen() {
       Alert.alert(
         granted ? "Avisos de proximidade ativados" : "Permissão não concedida",
         granted
-          ? "Você vai receber um aviso ao chegar perto de um POI favoritado ou seu."
-          : "Sem a permissão de localização em segundo plano, não é possível avisar quando você chega perto de um POI.",
+          ? "Você vai receber um aviso ao chegar perto de um Marcador favoritado ou seu."
+          : "Sem a permissão de localização em segundo plano, não é possível avisar quando você chega perto de um Marcador.",
       );
     } finally {
       setRequestingPermission(false);

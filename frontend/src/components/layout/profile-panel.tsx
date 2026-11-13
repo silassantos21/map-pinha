@@ -84,7 +84,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
         <SheetHeader>
           <SheetTitle className="font-display">Perfil</SheetTitle>
           <SheetDescription className="sr-only">
-            Seu avatar, estatísticas e POIs cadastrados.
+            Seu avatar, estatísticas e Marcadores cadastrados.
           </SheetDescription>
         </SheetHeader>
 
@@ -171,8 +171,8 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
 
           <p className="text-xs font-medium text-muted-foreground">
             {myPois.length > 0
-              ? `${myPois.length} POI(s) cadastrado(s) por você — toque pra voar até eles.`
-              : 'Você ainda não cadastrou nenhum POI. Toque no "+" pra criar o primeiro.'}
+              ? `${myPois.length} Marcador(es) cadastrado(s) por você — toque pra voar até eles.`
+              : 'Você ainda não cadastrou nenhum Marcador. Toque no "+" pra criar o primeiro.'}
           </p>
         </div>
 
@@ -196,7 +196,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
                       {poi.ai_category_slug && (
                         <span
                           className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
-                          title="A IA sugeriu uma categoria diferente pra esse POI — abra o pino no mapa pra ver"
+                          title="A IA sugeriu uma categoria diferente pra esse Marcador — abra o pino no mapa pra ver"
                         >
                           <Sparkles className="size-2.5" /> sugestão
                         </span>

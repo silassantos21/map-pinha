@@ -63,16 +63,16 @@ export function PoiPanel({ userId }: PoiPanelProps) {
 
   return (
     <Sheet>
-      <PanelTrigger icon={List} label="Ver POIs" />
+      <PanelTrigger icon={List} label="Ver Marcadores" />
 
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
       >
         <SheetHeader>
-          <SheetTitle className="font-display">POIs</SheetTitle>
+          <SheetTitle className="font-display">Marcadores</SheetTitle>
           <SheetDescription className="sr-only">
-            POIs próximos na área visível do mapa, e seus favoritos.
+            Marcadores próximos na área visível do mapa, e seus favoritos.
           </SheetDescription>
         </SheetHeader>
 
@@ -85,8 +85,8 @@ export function PoiPanel({ userId }: PoiPanelProps) {
           <TabsPanel value="nearby" className="gap-2 overflow-y-auto">
             <p className="px-1 text-xs text-muted-foreground">
               {pois.length > 0
-                ? `${pois.length} POI(s) na área visível do mapa.`
-                : "Nenhum POI na área visível — ajuste o mapa ou crie um novo."}
+                ? `${pois.length} Marcador(es) na área visível do mapa.`
+                : "Nenhum Marcador na área visível — ajuste o mapa ou crie um novo."}
             </p>
             {pois.map((poi, index) => (
               <MotionListItem key={poi.id} index={index}>
@@ -102,8 +102,8 @@ export function PoiPanel({ userId }: PoiPanelProps) {
           <TabsPanel value="favorites" className="gap-2 overflow-y-auto">
             <p className="px-1 text-xs text-muted-foreground">
               {favorites.length > 0
-                ? `${favorites.length} POI(s) favoritado(s) — toque pra voar até eles.`
-                : "Você ainda não favoritou nenhum POI. Toque na estrela no card de um POI pra guardá-lo aqui."}
+                ? `${favorites.length} Marcador(es) favoritado(s) — toque pra voar até eles.`
+                : "Você ainda não favoritou nenhum Marcador. Toque na estrela no card de um Marcador pra guardá-lo aqui."}
             </p>
             {favorites.map((poi, index) => (
               <MotionListItem key={poi.id} index={index}>

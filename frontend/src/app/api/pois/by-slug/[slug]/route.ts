@@ -10,7 +10,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
   const params = await props.params;
   const res = await backendFetch(`/api/v1/pois/by-slug/${encodeURIComponent(params.slug)}`);
   if (!res.ok) {
-    return NextResponse.json({ detail: "POI not found" }, { status: res.status });
+    return NextResponse.json({ detail: "Marcador not found" }, { status: res.status });
   }
   const data = await res.json();
   return NextResponse.json(data);

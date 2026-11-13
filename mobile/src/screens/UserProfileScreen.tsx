@@ -51,7 +51,7 @@ export function UserProfileScreen() {
           <Text style={styles.name}>{profile.name ?? "Sem nome"}</Text>
           <Text style={styles.stats}>
             {profile.followers_count} seguidores · {profile.following_count} seguindo ·{" "}
-            {profile.total_pois} POIs
+            {profile.total_pois} Marcadores
           </Text>
           {profile.is_following !== null && (
             <TouchableOpacity style={styles.followButton} onPress={toggleFollow}>
@@ -60,10 +60,10 @@ export function UserProfileScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.poisTitle}>POIs</Text>
+          <Text style={styles.poisTitle}>Marcadores</Text>
         </View>
       }
-      ListEmptyComponent={<Text style={styles.empty}>Nenhum POI visível.</Text>}
+      ListEmptyComponent={<Text style={styles.empty}>Nenhum Marcador visível.</Text>}
       renderItem={({ item }) => (
         <View style={styles.poiRow}>
           <Text style={styles.poiName}>{item.name}</Text>

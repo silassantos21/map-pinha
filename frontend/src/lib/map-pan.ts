@@ -5,12 +5,15 @@ import type { Map as LeafletMap } from "leaflet";
 // podia cair exatamente atrás dela, escondido, e o usuário não tinha como
 // arrastá-lo.
 const DESKTOP_SHEET_OFFSET_PX = 170;
-// No mobile a mesma Sheet abre embaixo (`max-h-[65vh]`), não do lado — um
-// deslocamento horizontal não ajuda em nada aí (e ainda empurra o ponto pra
-// um lugar sem motivo, visto como "o mapa pulou pra outro canto"). O que
-// precisa é empurrar o ponto pra CIMA, pra dentro da faixa que sobra visível
-// acima da Sheet inferior.
-const MOBILE_SHEET_OFFSET_PX = 140;
+// No mobile a mesma Sheet abre embaixo (`max-h-[50vh]`, reduzido de 65vh —
+// ver `poi-form-sheet.tsx`), não do lado — um deslocamento horizontal não
+// ajuda em nada aí (e ainda empurra o ponto pra um lugar sem motivo, visto
+// como "o mapa pulou pra outro canto"). O que precisa é empurrar o ponto pra
+// CIMA, só o suficiente pra passar da borda superior da Sheet. Com 50vh de
+// Sheet, essa borda já fica bem perto do centro vertical da tela (ponto de
+// partida antes de qualquer offset) — bem menos deslocamento que os 140px
+// usados quando a Sheet cobria 65vh, já que a faixa livre de mapa aumentou.
+const MOBILE_SHEET_OFFSET_PX = 40;
 // Mesmo breakpoint usado em `useMediaQuery("(max-width: 639px)")`
 // (`hooks/use-media-query.ts`) pra decidir o lado da Sheet.
 const MOBILE_BREAKPOINT_PX = 640;

@@ -81,7 +81,7 @@ export function PoiDetailScreen() {
   };
 
   const handleDeletePoi = () => {
-    Alert.alert("Excluir POI", "Tem certeza? Essa ação não pode ser desfeita.", [
+    Alert.alert("Excluir Marcador", "Tem certeza? Essa ação não pode ser desfeita.", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",

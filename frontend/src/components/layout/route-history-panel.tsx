@@ -34,7 +34,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
           <SheetDescription>
             {history.length > 0
               ? `${history.length} rota(s) calculada(s) recentemente — toque pra traçar de novo.`
-              : 'Nenhuma rota ainda. Toque em "Como chegar" num POI pra calcular uma.'}
+              : 'Nenhuma rota ainda. Toque em "Como chegar" num Marcador pra calcular uma.'}
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">

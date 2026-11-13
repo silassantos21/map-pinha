@@ -24,13 +24,13 @@ const STEPS = [
     icon: Sparkles,
     title: "Dê a cara dele",
     description:
-      "Adicione fotos, GIFs e até um áudio no POI. A IA também pode sugerir categoria e escrever uma descrição divertida pra você.",
+      "Adicione fotos, GIFs e até um áudio no Marcador. A IA também pode sugerir categoria e escrever uma descrição divertida pra você.",
   },
   {
     icon: Navigation,
     title: "Trace rotas e explore",
     description:
-      "Toque em um POI pra calcular a rota até lá, acompanhar a navegação em tempo real e trocar entre 4 temas visuais de mapa.",
+      "Toque em um Marcador pra calcular a rota até lá, acompanhar a navegação em tempo real e trocar entre 4 temas visuais de mapa.",
   },
 ] as const;
 

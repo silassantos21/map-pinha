@@ -32,9 +32,9 @@ export function PoiCreateButtonClient({ isAuthenticated }: PoiCreateButtonClient
           }
         >
           <Plus />
-          <span className="sr-only">Entre para criar POIs</span>
+          <span className="sr-only">Entre para criar Marcadores</span>
         </TooltipTrigger>
-        <TooltipContent side="left">Entre com sua conta para criar POIs</TooltipContent>
+        <TooltipContent side="left">Entre com sua conta para criar Marcadores</TooltipContent>
       </Tooltip>
     );
   }
@@ -49,14 +49,14 @@ export function PoiCreateButtonClient({ isAuthenticated }: PoiCreateButtonClient
               variant={isCreatingPoi ? "destructive" : "default"}
               onClick={isCreatingPoi ? cancelCreatingPoi : startCreatingPoi}
               className="rounded-full shadow-lg"
-              aria-label={isCreatingPoi ? "Cancelar criação de POI" : "Criar novo POI"}
+              aria-label={isCreatingPoi ? "Cancelar criação de Marcador" : "Criar novo Marcador"}
             />
           }
         >
           {isCreatingPoi ? <X /> : <Plus />}
         </TooltipTrigger>
         <TooltipContent side="left">
-          {isCreatingPoi ? "Cancelar criação" : "Criar novo POI"}
+          {isCreatingPoi ? "Cancelar criação" : "Criar novo Marcador"}
         </TooltipContent>
       </Tooltip>
     </div>

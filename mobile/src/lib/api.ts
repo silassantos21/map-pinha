@@ -32,11 +32,24 @@ class ApiError extends Error {
   }
 }
 
+// O backend responde esses `detail` em inglês (pensados originalmente só pro
+// BFF do Next.js registrar em log) — o app mostra `error.message` direto em
+// `Alert.alert` em vários pontos, então sem essa tradução o usuário veria o
+// texto cru em inglês, incluindo a palavra "POI" depois da troca pra
+// "Marcador" na UI.
+const KNOWN_ERROR_TRANSLATIONS: Record<string, string> = {
+  "POI not found": "Marcador não encontrado",
+  "Not the owner of this POI": "Você não é o dono desse Marcador",
+  "Only the comment's author or the POI's owner can delete it":
+    "Só quem comentou ou o dono do Marcador pode excluir",
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new ApiError(body?.detail ?? response.statusText, response.status);
+    const detail: string = body?.detail ?? response.statusText;
+    throw new ApiError(KNOWN_ERROR_TRANSLATIONS[detail] ?? detail, response.status);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

@@ -1742,3 +1742,126 @@ configuração do servidor" do NextAuth.
   depende de eliminá-lo (mesmo com uma eventual migração de plano, o
   `try/catch` continua sendo defesa correta contra qualquer falha de
   rede transiente no login).
+
+## 4 ajustes na web, planejados e implementados (13/11/2026)
+
+Depois de testar o site publicado, o dono do projeto relatou 4 pontos.
+Planejamento feito em plan mode (3 agentes Explore + teste real contra o
+Nominatim antes de codar, 2 decisões de escopo confirmadas por pergunta
+direta — ver plano aprovado), implementação e validação na sequência.
+
+### 1. Busca de endereço não achava endereço real / achava lugar errado
+
+**Causa raiz, confirmada testando direto contra `nominatim.openstreetmap.org`**
+(não só lendo código): o endereço relatado
+("Av. Sinfrônio Brochado, 1420 - Lj 3 - Barreiro, Belo Horizonte - MG,
+30640-000", copiado do Google Maps) retorna **zero resultados** no
+Nominatim com a string completa. Isolei por eliminação (testando
+dezenas de variações): **dois problemas somados**, não um só —
+(a) o acento em "Sinfrônio" sozinho já quebra o match em alguns casos
+(tokenização do Nominatim não normaliza de forma simétrica entre a
+query e o índice — contraintuitivo, já que o nome oficial da rua no OSM
+*tem* esse acento), e (b) o complemento "Lj 3" (loja 3) não corresponde
+a nada indexável e derruba a busca inteira junto. Nem o número nem o
+CEP nem o bairro causavam problema sozinhos — confirmado testando cada
+combinação. Problema 2 relatado (endereço errado) tinha causa
+diferente: `searchByAddress()` só usava `results[0]` do Nominatim,
+nunca mostrando os outros 4 que a API já retorna.
+
+**Fix:**
+- `frontend/src/app/api/geocode/search/route.ts`: se a busca completa
+  não retornar nada, tenta de novo automaticamente com uma versão
+  simplificada (acentos removidos via `normalize("NFD")`, complementos
+  tipo "Lj N"/"Loja N"/"Sala N"/"Apto N"/"Bloco N" removidos por regex)
+  — transparente pro cliente, sem mudar `searchAddresses()`.
+- `frontend/src/components/poi/poi-form-sheet.tsx`: com 1 resultado só,
+  marca direto (sem ambiguidade); com mais de 1, mostra uma lista (até
+  5, ícone `Signpost`, mesmo padrão já usado em `search-bar.tsx`) pro
+  usuário escolher, em vez do app adivinhar.
+- **Limitação que continua, documentada e não resolvida (decisão
+  confirmada com o dono do projeto — trocar de provedor geocoding por
+  um pago está descartado por ora):** a precisão exata da numeração
+  continua dependendo da qualidade dos dados do OpenStreetMap pro
+  endereço específico — quando não há um ponto exato pro número, o
+  Nominatim cai pro centro da via inteira. A lista de opções (acima)
+  ajuda o usuário a perceber e corrigir isso na hora, mas não elimina a
+  limitação de dado em si.
+- **Validado de ponta a ponta**, não só por unidade: testei o endpoint
+  real (`/api/geocode/search`) com o endereço exato relatado — achou a
+  rua (2 resultados) depois do fallback; testei um endereço que já
+  funcionava antes (Avenida Paulista) pra confirmar que não regrediu;
+  via Playwright, confirmei a lista aparecendo no formulário de
+  verdade e a seleção marcando a posição/preenchendo o endereço
+  corretamente. `tsc`/`eslint` limpos.
+
+### 2. Formulário de criar Marcador ocupava espaço demais no mobile
+
+- `poi-form-sheet.tsx`: altura máxima no mobile reduzida de `65vh` pra
+  `50vh`.
+- `lib/map-pan.ts`: `MOBILE_SHEET_OFFSET_PX` (desloca o mapa pra o pino
+  marcado ficar visível acima da Sheet) recalculado de `140px` pra
+  `40px` — com `50vh` de Sheet, a borda superior dela já fica
+  praticamente no centro vertical da tela (ponto de partida antes de
+  qualquer deslocamento), então precisa de bem menos offset que os
+  `65vh` de antes.
+- **Cabeçalho do mapa escondido enquanto o formulário está aberto, só
+  no mobile:** novo `frontend/src/components/layout/header-visibility.tsx`
+  (client component) lendo `isCreatingPoi || editingPoiId !== null` do
+  `map-store.ts` — substitui o `<div>` sem condicional nenhuma que
+  existia antes em `app-shell.tsx` (que é Server Component, não
+  acessa o Zustand direto). Usa `max-sm:hidden` (classe Tailwind pura,
+  mesmo breakpoint de 640px usado em todo o resto do app) — sem
+  precisar de `useMediaQuery` nem risco de mismatch de hidratação. No
+  desktop o formulário abre lateral e não compete por altura de mapa,
+  então o cabeçalho continua sempre visível lá.
+- **Validado de ponta a ponta com Playwright** (sessão forjada, viewport
+  mobile 390×844 e desktop 1280×900): confirmado por medição de
+  bounding box (não só visual) que a Sheet ocupa exatamente 50% da
+  altura, que o cabeçalho some ao abrir o formulário e volta ao
+  fechar (só no mobile — no desktop permanece visível o tempo todo), e
+  por screenshot que o pino marcado fica visível com boa margem acima
+  da Sheet. `tsc`/`eslint` limpos.
+
+### 3. Trocado "POI" por "Marcador" em todo texto visível ao usuário
+
+**Escopo confirmado com o dono do projeto:** só texto de UI — nomes de
+variável/tipo/rota de API/campo de banco continuam exatamente como
+estavam (`poi_id`, `PoiPublic`, `/api/v1/pois`, `usePois`, etc.).
+
+- **Web:** ~17 arquivos (`poi-panel.tsx`, `profile-panel.tsx`,
+  `poi-form-sheet.tsx`, `poi-create-button-client.tsx`,
+  `search-bar.tsx`, `groups-panel.tsx`, `notification-bell.tsx`,
+  `onboarding-dialog.tsx`, `poi-detail-sheet.tsx`,
+  `user-profile-sheet.tsx`, `route-history-panel.tsx`,
+  `lib/poi-schema.ts`, `lib/upload-media.ts`, `lib/api-client.ts`,
+  `app/p/[slug]/page.tsx`, `app/privacidade/page.tsx`,
+  `app/api/pois/by-slug/[slug]/route.ts`).
+- **Mobile:** 7 arquivos (`PoiFormScreen.tsx`, `PoiDetailScreen.tsx`,
+  `NotificationsScreen.tsx`, `FavoritesScreen.tsx`,
+  `GroupDetailScreen.tsx`, `UserProfileScreen.tsx`, `lib/geofence.ts` —
+  este último incluindo o nome do **canal de notificação Android**
+  (`setNotificationChannelAsync`), que também é visível ao usuário nas
+  configurações do sistema, não só a notificação em si).
+- **`README.md`:** ~15 ocorrências, incluindo reescrita da frase de
+  apresentação ("cadastra Marcadores (pontos de interesse) pessoais").
+  De quebra, corrigida uma frase desatualizada nela mesma: ainda
+  citava "três agentes" e "recomendação de POIs próximos" — o
+  `NearbyRecommenderAgent` foi removido do backend numa sessão
+  anterior (12/11/2026); agora diz corretamente "dois agentes".
+- **Achado paralelo, resolvido junto:** o app mobile mostrava pro
+  usuário o texto cru em inglês que o backend manda em erro (`"POI not
+  found"`, `"Not the owner of this POI"`, etc. via `Alert.alert`) — sem
+  tocar nisso, ficaria inconsistente com o resto da UI em português/
+  "Marcador". `mobile/src/lib/api.ts` ganhou um mapeamento centralizado
+  (`KNOWN_ERROR_TRANSLATIONS`) das 3 mensagens conhecidas que mencionam
+  POI, aplicado uma vez no `request()` — não é tradução geral de erros
+  do backend, só essas 3.
+- **Validado:** grep de varredura em `frontend/src`, `mobile/src` e
+  `README.md` confirmando zero ocorrências remanescentes de "POI" em
+  texto de UI (só identificadores internos/comentários, nunca tocados).
+  `tsc --noEmit` limpo nos dois projetos, `eslint` limpo no frontend,
+  **`next build` de produção completo sem erros**. Confirmado também
+  visualmente via Playwright: título "Novo Marcador", botão "Salvar
+  Marcador", placeholder "Buscar Marcadores ou endereços...", painel
+  "Ver Marcadores"/"Marcadores" — todos renderizando certo na app de
+  verdade, não só no código.

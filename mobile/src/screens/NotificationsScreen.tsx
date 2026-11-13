@@ -17,15 +17,15 @@ function formatText(notification: AppNotification): string {
     case "new_follower":
       return `${actor} começou a seguir você`;
     case "poi_reaction":
-      return `${actor} reagiu ${notification.payload.emoji ?? ""} ao seu POI "${notification.payload.poi_name ?? ""}"`;
+      return `${actor} reagiu ${notification.payload.emoji ?? ""} ao seu Marcador "${notification.payload.poi_name ?? ""}"`;
     case "new_poi_from_followed":
-      return `${actor} criou um novo POI: "${notification.payload.poi_name ?? ""}"`;
+      return `${actor} criou um novo Marcador: "${notification.payload.poi_name ?? ""}"`;
     case "group_invite":
       return `${actor} te convidou pro grupo "${notification.group_name ?? ""}"`;
     case "group_invite_accepted":
       return `${actor} aceitou seu convite pro grupo "${notification.group_name ?? ""}"`;
     case "poi_comment":
-      return `${actor} comentou no seu POI "${notification.payload.poi_name ?? ""}": ${notification.payload.body_preview ?? ""}`;
+      return `${actor} comentou no seu Marcador "${notification.payload.poi_name ?? ""}": ${notification.payload.body_preview ?? ""}`;
     default:
       return actor;
   }

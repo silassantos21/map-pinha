@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Loader2, LocateFixed, Search, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, LocateFixed, Search, Signpost, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
@@ -27,7 +27,7 @@ import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
 import { poiFormSchema, type PoiFormValues } from "@/lib/poi-schema";
 import { attachMediaToPoi, uploadMediaFile } from "@/lib/upload-media";
 import { useMapStore } from "@/stores/map-store";
-import type { PoiMedia } from "@/types/poi";
+import type { AddressResult, PoiMedia } from "@/types/poi";
 
 const EMPTY_FORM_VALUES: PoiFormValues = {
   name: "",
@@ -55,8 +55,10 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
   const isOpen = isCreatingPoi || isEditMode;
   // Sheet lateral (w-3/4 da tela) deixa pouco espaço de mapa visível pra
   // marcar a posição no celular — abre de baixo pra cima no mobile, mantendo
-  // uma faixa do mapa sempre tocável (ver `max-h` abaixo), e continua lateral
-  // a partir do breakpoint `sm` do Tailwind (640px), onde o espaço já sobra.
+  // metade da tela sempre tocável (ver `max-h` abaixo, reduzido de 65vh pra
+  // 50vh a pedido do dono do projeto — o formulário tomava espaço demais do
+  // mapa), e continua lateral a partir do breakpoint `sm` do Tailwind
+  // (640px), onde o espaço já sobra.
   const isMobile = useMediaQuery("(max-width: 639px)");
   const { data: editingPoi } = usePoi(editingPoiId, userId);
   const { data: categories } = useCategories();
@@ -72,6 +74,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
 
   const [positionInputMode, setPositionInputMode] = useState<"address" | "latlng">("address");
   const [addressQuery, setAddressQuery] = useState("");
+  const [addressResults, setAddressResults] = useState<AddressResult[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [latInput, setLatInput] = useState("");
   const [lngInput, setLngInput] = useState("");
@@ -164,6 +167,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
       setIconName(null);
       setPositionInputMode("address");
       setAddressQuery("");
+      setAddressResults([]);
       setLatInput("");
       setLngInput("");
       setPositionError(null);
@@ -200,6 +204,12 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     }
   };
 
+  const selectAddressResult = (result: AddressResult) => {
+    setDraftPoiPosition({ lat: result.lat, lng: result.lng });
+    setValue("address", result.address, { shouldDirty: true });
+    setAddressResults([]);
+  };
+
   const searchByAddress = async () => {
     if (addressQuery.trim().length < 3) {
       setPositionError("Digite pelo menos 3 caracteres do endereço");
@@ -207,15 +217,22 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     }
     setIsGeocoding(true);
     setPositionError(null);
+    setAddressResults([]);
     try {
       const results = await searchAddresses(addressQuery, mapBounds);
-      const result = results[0] ?? null;
-      if (!result) {
+      if (results.length === 0) {
         setPositionError("Endereço não encontrado");
         return;
       }
-      setDraftPoiPosition({ lat: result.lat, lng: result.lng });
-      setValue("address", result.address, { shouldDirty: true });
+      // Com só 1 opção não há ambiguidade — marca direto. Com mais de uma,
+      // o app não tem como saber qual é a certa (ex: numeração imprecisa
+      // do Nominatim); melhor mostrar as opções do que adivinhar e marcar
+      // o lugar errado em silêncio.
+      if (results.length === 1) {
+        selectAddressResult(results[0]);
+        return;
+      }
+      setAddressResults(results);
     } catch {
       setPositionError("Falha ao buscar o endereço");
     } finally {
@@ -297,7 +314,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Falha ao criar o POI");
+        if (!res.ok) throw new Error("Falha ao criar o Marcador");
         const created: { id: string } = await res.json();
         poiId = created.id;
       }
@@ -329,7 +346,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
       await queryClient.invalidateQueries({ queryKey: ["my-pois"] });
       if (isEditMode) await queryClient.invalidateQueries({ queryKey: ["poi", poiId] });
       toast.add({
-        title: isEditMode ? "POI atualizado" : "POI criado",
+        title: isEditMode ? "Marcador atualizado" : "Marcador criado",
         description: values.name,
         type: "success",
       });
@@ -356,11 +373,11 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
     >
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col", isMobile && "max-h-[50vh]")}
         showOverlay={false}
       >
         <SheetHeader>
-          <SheetTitle className="font-display">{isEditMode ? "Editar POI" : "Novo POI"}</SheetTitle>
+          <SheetTitle className="font-display">{isEditMode ? "Editar Marcador" : "Novo Marcador"}</SheetTitle>
           <SheetDescription>
             {draftPosition
               ? "O pino tracejado roxo no mapa (atrás desta janela) marca a posição — arraste-o para ajustar, ou use a busca abaixo."
@@ -463,6 +480,25 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
                 >
                   <LocateFixed className="size-3.5" />
                 </Button>
+              </div>
+            )}
+
+            {addressResults.length > 0 && (
+              <div className="flex flex-col gap-0.5 rounded-md border border-border bg-background p-1">
+                <p className="px-1.5 pt-0.5 text-[10px] text-muted-foreground">
+                  {addressResults.length} opções encontradas — toque na certa:
+                </p>
+                {addressResults.map((result, index) => (
+                  <button
+                    key={`${result.lat},${result.lng},${index}`}
+                    type="button"
+                    onClick={() => selectAddressResult(result)}
+                    className="flex items-start gap-1.5 rounded-sm px-1.5 py-1.5 text-left hover:bg-muted"
+                  >
+                    <Signpost className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
+                    <span className="truncate text-xs text-foreground">{result.address}</span>
+                  </button>
+                ))}
               </div>
             )}
 
@@ -692,7 +728,7 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
 
           <SheetFooter>
             <Button type="submit" variant="accent" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : isEditMode ? "Salvar alterações" : "Salvar POI"}
+              {isSubmitting ? "Salvando..." : isEditMode ? "Salvar alterações" : "Salvar Marcador"}
             </Button>
           </SheetFooter>
         </form>

@@ -138,10 +138,10 @@ export function GroupDetailScreen() {
             <Text style={styles.dangerButtonText}>{isOwner ? "Excluir grupo" : "Sair do grupo"}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.sectionTitle}>POIs desse grupo</Text>
+          <Text style={styles.sectionTitle}>Marcadores desse grupo</Text>
         </View>
       }
-      ListEmptyComponent={<Text style={styles.empty}>Nenhum POI ainda.</Text>}
+      ListEmptyComponent={<Text style={styles.empty}>Nenhum Marcador ainda.</Text>}
       renderItem={({ item }) => (
         <TouchableOpacity
           style={styles.poiRow}

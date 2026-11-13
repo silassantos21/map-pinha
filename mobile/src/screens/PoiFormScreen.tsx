@@ -157,7 +157,7 @@ export function PoiFormScreen() {
   const hasExistingMedia = (existingPoi?.media.length ?? 0) > 0;
 
   const handleSave = async () => {
-    if (!name.trim()) return Alert.alert("Nome obrigatório", "Dê um nome pro POI.");
+    if (!name.trim()) return Alert.alert("Nome obrigatório", "Dê um nome pro Marcador.");
     if (!categoryId) return Alert.alert("Categoria obrigatória", "Escolha uma categoria.");
     if (lat === null || lng === null) {
       return Alert.alert("Localização obrigatória", "Toque no mapa ou use sua posição atual.");
@@ -166,7 +166,7 @@ export function PoiFormScreen() {
       return Alert.alert("Grupo obrigatório", "Escolha um grupo pra essa visibilidade.");
     }
     if (!isEditing && !pendingImageUri) {
-      return Alert.alert("Foto obrigatória", "Adicione ao menos 1 foto pro POI.");
+      return Alert.alert("Foto obrigatória", "Adicione ao menos 1 foto pro Marcador.");
     }
 
     setSaving(true);
@@ -200,7 +200,7 @@ export function PoiFormScreen() {
         await uploadToPresignedUrl(upload_url, pendingImageUri, "image/jpeg");
         await attachPoiMedia(token, currentUser.id, poi.id, object_key, "image");
       } else if (!isEditing && !hasExistingMedia) {
-        throw new Error("POI precisa de ao menos 1 foto");
+        throw new Error("Marcador precisa de ao menos 1 foto");
       }
 
       navigation.goBack();
@@ -228,7 +228,7 @@ export function PoiFormScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.label}>Nome</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nome do POI" />
+      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nome do Marcador" />
 
       <Text style={styles.label}>Descrição</Text>
       <TextInput
@@ -344,7 +344,7 @@ export function PoiFormScreen() {
         {saving ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.primaryButtonText}>{isEditing ? "Salvar alterações" : "Criar POI"}</Text>
+          <Text style={styles.primaryButtonText}>{isEditing ? "Salvar alterações" : "Criar Marcador"}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>

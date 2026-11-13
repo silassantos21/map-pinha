@@ -102,11 +102,11 @@ export function SearchBar({ userId }: SearchBarProps) {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            aria-label="Buscar POIs ou endereços"
+            aria-label="Buscar Marcadores ou endereços"
             className="pointer-events-auto flex w-full items-center gap-1.5 rounded-full border border-border bg-card/80 py-2 pl-3 pr-3 text-left text-muted-foreground backdrop-blur-md"
           >
             <Search className="size-4 shrink-0" />
-            <span className="truncate text-sm">Buscar POIs ou endereços...</span>
+            <span className="truncate text-sm">Buscar Marcadores ou endereços...</span>
           </button>
         </div>
 
@@ -129,7 +129,7 @@ export function SearchBar({ userId }: SearchBarProps) {
                 id="poi-search"
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
-                placeholder="Buscar POIs ou endereços..."
+                placeholder="Buscar Marcadores ou endereços..."
                 className="min-w-0 flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <button
@@ -172,7 +172,7 @@ export function SearchBar({ userId }: SearchBarProps) {
           onChange={(event) => setInputValue(event.target.value)}
           onFocus={() => setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
-          placeholder="Buscar POIs ou endereços..."
+          placeholder="Buscar Marcadores ou endereços..."
           className="w-full min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
       </div>

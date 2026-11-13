@@ -71,7 +71,7 @@ export async function fetchPois({ bounds, categorySlug, q }: FetchPoisParams): P
   if (q) params.set("q", q);
 
   const res = await fetch(`/api/pois?${params.toString()}`);
-  if (!res.ok) throw new Error("Falha ao carregar POIs");
+  if (!res.ok) throw new Error("Falha ao carregar Marcadores");
   return res.json();
 }
 
@@ -93,7 +93,7 @@ export async function searchAddresses(q: string, viewbox?: MapBounds | null): Pr
 
 export async function fetchPoiById(id: string): Promise<Poi> {
   const res = await fetch(`/api/pois/${id}`);
-  if (!res.ok) throw new Error("Falha ao carregar o POI");
+  if (!res.ok) throw new Error("Falha ao carregar o Marcador");
   return res.json();
 }
 
@@ -105,7 +105,7 @@ export async function fetchFavorites(): Promise<Poi[]> {
 
 export async function fetchMyPois(): Promise<Poi[]> {
   const res = await fetch("/api/pois/mine");
-  if (!res.ok) throw new Error("Falha ao carregar seus POIs");
+  if (!res.ok) throw new Error("Falha ao carregar seus Marcadores");
   return res.json();
 }
 
@@ -271,7 +271,7 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
 
 export async function fetchUserPois(userId: string): Promise<PoiPublic[]> {
   const res = await fetch(`/api/users/${userId}/pois`);
-  if (!res.ok) throw new Error("Falha ao carregar os POIs desse usuário");
+  if (!res.ok) throw new Error("Falha ao carregar os Marcadores desse usuário");
   return res.json();
 }
 
@@ -385,7 +385,7 @@ export async function leaveOrRemoveFromGroup(groupId: string, userId: string): P
 
 export async function fetchGroupPois(groupId: string): Promise<Poi[]> {
   const res = await fetch(`/api/groups/${groupId}/pois`);
-  if (!res.ok) throw new Error("Falha ao carregar os POIs do grupo");
+  if (!res.ok) throw new Error("Falha ao carregar os Marcadores do grupo");
   return res.json();
 }
 
