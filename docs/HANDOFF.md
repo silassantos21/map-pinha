@@ -1,9 +1,10 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 13/11/2026 (sessão de pendências fora do app nativo, fix
-> do login quebrado em cold start, 4 ajustes na web e as correções
-> pós-deploy em cima deles — ver seções "Rodada de 12/11/2026", "4
-> ajustes na web" e "Correções pós-deploy" abaixo). Isso
+> Atualizado em 14/11/2026 (sessão de pendências fora do app nativo, fix
+> do login quebrado em cold start, 4 ajustes na web, as correções
+> pós-deploy em cima deles, e o botão de tirar foto na criação de
+> Marcador — ver seções "Rodada de 12/11/2026", "4 ajustes na web",
+> "Correções pós-deploy" e "Botão de tirar foto" abaixo). Isso
 > aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
@@ -573,11 +574,68 @@ mais 3 pontos pequenos, resolvidos na sequência — detalhes completos no
    painéis com o mesmo padrão não foram tocados).
 
 Tudo validado com Playwright (medição de bounding box, não só visual) e
-`tsc`/`eslint` limpos.
+`tsc`/`eslint` limpos. **Commitado e no push** (`d79fdcf`), deploy
+confirmado em produção.
+
+### Botão de tirar foto na criação de Marcador (14/11/2026)
+
+Pedido: além de escolher mídia já salva no celular, dar pra tirar foto
+na hora direto da câmera. Novo botão "Tirar foto" em
+`media-uploader.tsx`, com um `<input type="file" accept="image/*"
+capture="environment">` **separado** do input de upload normal (o
+atributo `capture` não combina com `multiple` nem é alternável em
+runtime no mesmo input — por isso dois inputs reaproveitando a mesma
+`addImageFiles()`). Validado com Playwright (botão visível, input
+correto, clique disparando o seletor nativo) — não dá pra automatizar a
+câmera real em teste headless. **Commitado e no push** (`e13a2b1`),
+deploy confirmado em produção (checado o bundle JS publicado, já que o
+texto não aparece no HTML inicial — componente client-only).
+
+### Teste local no celular via Wi-Fi — pegadinha do `NEXT_PUBLIC_API_URL`
+
+Pra testar o site rodando localmente (`npm run dev`) a partir do
+celular (mesma rede Wi-Fi, `http://<IP-da-máquina>:3000`), **não
+basta** o frontend estar acessível pelo IP — `lib/api-client.ts` chama
+o backend **direto do navegador** (sem passar pelo BFF) pra 2
+endpoints públicos (`fetchCategories`, `fetchRoute`), usando
+`NEXT_PUBLIC_API_URL` do `.env.local`. Como essa env var é inlined no
+bundle do cliente, se ela apontar pra `localhost:8000`, o celular tenta
+falar com o **próprio** `localhost` dele (inexistente) — não com a
+máquina de desenvolvimento. Fix de sessão (não commitado, `.env.local`
+é gitignored): trocar `NEXT_PUBLIC_API_URL` pro IP da máquina na rede
+(`http://192.168.0.7:8000` nesta máquina — reiniciar o `next dev`
+depois de mudar, a env var só é lida na subida do processo) — funciona
+tanto do PC quanto do celular, já que o IP é alcançável dos dois. Essa
+mudança **não sobrevive** a uma troca de IP da máquina (DHCP) nem a um
+`git clone` novo — é só uma conveniência de sessão, não um fix de
+código.
+
+- **Login com Google não funciona** testando por IP — o redirect OAuth
+  só está autorizado no Google Cloud Console pra
+  `http://localhost:3000/api/auth/callback/google`. Pra testar fluxos
+  que exigem login via celular na rede local, teria que cadastrar o IP
+  (ou um túnel tipo ngrok) como redirect URI autorizado — não feito,
+  fora de escopo até pedido explícito.
+
+### Confirmado (sem mudança de código): notificação de novo Marcador de quem você segue
+
+O dono do projeto perguntou se seguir alguém notifica quando essa
+pessoa cria um Marcador novo — já existe desde a Fase 7
+(`NotificationType.new_poi_from_followed`, disparado em
+`create_poi`/`pois.py` pra todo `follower_id` do dono, só quando a
+visibilidade é `public`/`followers` — POI de grupo fica de fora de
+propósito) e já renderiza certo no sininho
+(`notification-bell.tsx`: "{nome} cadastrou um novo Marcador: {nome}").
+Nenhum código tocado, só confirmado lendo o fluxo de ponta a ponta.
 
 ## O que fazer agora
 
-Tudo commitado e no push — os 4 ajustes de ontem (`1c1b9ca`) e as 3
-correções pós-deploy de hoje. Nada pendente de confirmação no momento.
-App nativo continua de prioridade baixa por pedido explícito — não
+Tudo commitado e no push — os 4 ajustes de 13/11 (`1c1b9ca`), as 3
+correções pós-deploy (`d79fdcf`) e o botão de tirar foto (`e13a2b1`).
+Nada pendente de confirmação no momento. Servidores de dev locais
+(frontend `npm run dev`, backend via `docker compose up -d`) seguem
+rodando desta sessão, com `.env.local` do frontend apontando
+`NEXT_PUBLIC_API_URL` pro IP da rede (ver nota acima) — se voltar a
+testar só no PC e algo parecer estranho, conferir se o IP mudou. App
+nativo continua de prioridade baixa por pedido explícito — não
 investir mais tempo nele sem pedido novo.
