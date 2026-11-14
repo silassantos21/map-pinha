@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Square, Trash2, Upload } from "lucide-react";
+import { Camera, Mic, Square, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,6 +22,7 @@ interface MediaUploaderProps {
 
 export function MediaUploader({ value, onChange }: MediaUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -121,6 +122,26 @@ export function MediaUploader({ value, onChange }: MediaUploaderProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => cameraInputRef.current?.click()}
+          className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1.5 text-xs text-foreground"
+        >
+          <Camera className="size-3.5" />
+          Tirar foto
+        </button>
+        {/* `capture="environment"` abre a câmera traseira direto no mobile
+            (iOS/Android) em vez do seletor genérico de arquivo/galeria —
+            input separado do de cima porque o atributo não é removível em
+            runtime nem combinável com `multiple`. */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(event) => addImageFiles(event.target.files)}
+        />
         <button
           type="button"
           onClick={isRecording ? stopRecording : startRecording}

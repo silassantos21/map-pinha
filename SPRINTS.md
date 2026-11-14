@@ -1938,3 +1938,25 @@ próprio).
   em `groups-panel.tsx`, `followers-panel.tsx`, `profile-panel.tsx` e
   `user-search-panel.tsx`, mas o pedido foi só pros dois painéis citados
   — não mexido nos outros.
+
+## Botão "Tirar foto" na criação de Marcador (14/11/2026)
+
+Pedido: além de escolher mídia já salva no celular, dar pra tirar uma
+foto na hora direto da câmera ao criar/editar um Marcador.
+
+- **`frontend/src/components/poi/media-uploader.tsx`:** novo botão
+  "Tirar foto" (ícone `Camera`), ao lado de "Gravar áudio"/"Enviar
+  áudio". Abre um `<input type="file" accept="image/*"
+  capture="environment">` **separado** do input de upload normal — o
+  atributo `capture` força o navegador mobile a abrir a câmera
+  traseira direto (iOS/Android), em vez do seletor genérico de
+  arquivo/galeria; não dá pra combinar com `multiple` nem alternar em
+  runtime no mesmo input, por isso são dois inputs distintos
+  reaproveitando a mesma `addImageFiles()`.
+- **Validado com Playwright** (sessão forjada, viewport mobile): botão
+  visível, input com `capture="environment"`/`accept="image/*"`
+  confirmado via DOM, e o clique disparando o evento `filechooser` do
+  navegador (não dá pra automatizar a câmera real em teste headless,
+  mas o disparo do seletor nativo é o que o código controla). `tsc`/
+  `eslint` limpos.
+- Upload por galeria (dropzone existente) continua intocado.
