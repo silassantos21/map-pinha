@@ -67,7 +67,7 @@ export function PoiPanel({ userId }: PoiPanelProps) {
 
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col gap-0", isMobile && "h-[65vh]!")}
       >
         <SheetHeader>
           <SheetTitle className="font-display">Marcadores</SheetTitle>
@@ -82,7 +82,7 @@ export function PoiPanel({ userId }: PoiPanelProps) {
             <TabsTab value="favorites">Favoritos</TabsTab>
           </TabsList>
 
-          <TabsPanel value="nearby" className="gap-2 overflow-y-auto">
+          <TabsPanel value="nearby" className="gap-2 overflow-y-auto pb-4">
             <p className="px-1 text-xs text-muted-foreground">
               {pois.length > 0
                 ? `${pois.length} Marcador(es) na área visível do mapa.`
@@ -99,7 +99,7 @@ export function PoiPanel({ userId }: PoiPanelProps) {
             ))}
           </TabsPanel>
 
-          <TabsPanel value="favorites" className="gap-2 overflow-y-auto">
+          <TabsPanel value="favorites" className="gap-2 overflow-y-auto pb-4">
             <p className="px-1 text-xs text-muted-foreground">
               {favorites.length > 0
                 ? `${favorites.length} Marcador(es) favoritado(s) — toque pra voar até eles.`

@@ -30,7 +30,7 @@ export function MapControls({ userPosition }: MapControlsProps) {
               disabled={!userPosition}
               onClick={() => {
                 if (userPosition) {
-                  map.flyTo([userPosition.lat, userPosition.lng], 15, {
+                  map.flyTo([userPosition.lat, userPosition.lng], 17, {
                     duration: 1,
                   });
                 }

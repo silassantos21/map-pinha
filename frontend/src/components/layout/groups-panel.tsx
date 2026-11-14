@@ -613,7 +613,7 @@ export function GroupsPanel({ isAuthenticated, currentUserId }: GroupsPanelProps
 
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col gap-0", isMobile && "h-[65vh]!")}
       >
         <SheetHeader>
           <SheetTitle className="font-display">Grupos</SheetTitle>

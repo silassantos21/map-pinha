@@ -96,7 +96,7 @@ export function UserSearchPanel() {
 
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col", isMobile && "h-[65vh]!")}
       >
         <SheetHeader>
           <SheetTitle className="font-display">Buscar pessoas</SheetTitle>

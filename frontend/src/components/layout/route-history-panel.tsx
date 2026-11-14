@@ -28,7 +28,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
     <Sheet>
       <PanelTrigger icon={History} label="Rotas" disabled={!isAuthenticated} />
 
-      <SheetContent side={isMobile ? "bottom" : "right"} className={cn(isMobile && "max-h-[65vh]")}>
+      <SheetContent side={isMobile ? "bottom" : "right"} className={cn("flex flex-col", isMobile && "h-[65vh]!")}>
         <SheetHeader>
           <SheetTitle className="font-display">Minhas rotas</SheetTitle>
           <SheetDescription>
@@ -37,7 +37,7 @@ export function RouteHistoryPanel({ isAuthenticated }: RouteHistoryPanelProps) {
               : 'Nenhuma rota ainda. Toque em "Como chegar" num Marcador pra calcular uma.'}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 pb-4">
           {history.map((entry, index) => {
             const category = categoryById.get(entry.poi_category_id);
             const Icon = getCategoryIcon(category);

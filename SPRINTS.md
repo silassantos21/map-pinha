@@ -1865,3 +1865,76 @@ estavam (`poi_id`, `PoiPublic`, `/api/v1/pois`, `usePois`, etc.).
   Marcador", placeholder "Buscar Marcadores ou endereços...", painel
   "Ver Marcadores"/"Marcadores" — todos renderizando certo na app de
   verdade, não só no código.
+
+## Correções pós-deploy nos 4 ajustes acima (13/11/2026)
+
+Depois do deploy, o dono do projeto testou de novo no celular e trouxe
+mais 2 pontos:
+
+### 1. Zoom do botão "Centralizar na minha localização" baixo demais
+
+`frontend/src/components/map/map-controls.tsx` chamava
+`map.flyTo([...], 15, ...)` — zoom 15 é um nível de bairro, não de rua.
+Trocado para zoom 17 (mesmo patamar usado em outros pontos do app que
+aproximam num ponto específico, ex. `selected-poi-flyto.tsx` usa zoom
+mínimo 16).
+
+### 2. Altura "encolhendo pro conteúdo" nos painéis sem Marcador, viram
+   altura fixa
+
+O pedido original da sessão anterior ("formulário de criar Marcador
+reduzido de 65vh pra 50vh") foi interpretado corretamente — só
+`poi-form-sheet.tsx` foi alterado — mas isso expôs um comportamento que
+já existia nos **outros** painéis (`Grupos`, `Social`/`Seguidores`,
+`Minhas rotas`, `Marcadores`, `Perfil`, `Editar perfil de usuário`,
+`Buscar pessoas`): usavam `max-h-[65vh]` (um teto) junto com `h-auto`
+implícito (herdado da própria `SheetContent` base, que define
+`data-[side=bottom]:h-auto`) — então, com pouco conteúdo (ex: 0 grupos,
+0 seguidores), a Sheet encolhia pra caber só o conteúdo, deixando a
+maior parte da tela de mapa visível e o painel baixinho. O dono do
+projeto, testando esses estados vazios, interpretou isso (razoavelmente)
+como se a mudança de altura/esconder cabeçalho pensada só pro formulário
+de Marcador tivesse vazado pra esses painéis também — não vazou (o
+cabeçalho nunca escondeu neles, confirmado por teste real), mas pediu
+altura fixa de qualquer forma, pra não ficarem com essa aparência
+"pequena demais" quando vazios.
+
+- **Fix:** nos 7 arquivos que usam esse padrão (`followers-panel.tsx`,
+  `groups-panel.tsx`, `poi-panel.tsx`, `profile-panel.tsx`,
+  `route-history-panel.tsx`, `user-search-panel.tsx`,
+  `user-profile-sheet.tsx`), trocado `max-h-[65vh]` (teto) por
+  `h-[65vh]` (altura fixa) — **exceto** `poi-form-sheet.tsx`, que
+  continua com `max-h-[50vh]` (precisa encolher quando o teclado mobile
+  abre, e já enche naturalmente de conteúdo).
+- **Pegadinha de especificidade CSS:** só `h-[65vh]` sozinho não
+  bastou — a própria `SheetContent` base já define
+  `data-[side=bottom]:h-auto`, e um seletor de atributo
+  (`[data-side=bottom]`) tem mais especificidade que uma classe simples,
+  então o `h-auto` da base continuava vencendo mesmo com `h-[65vh]`
+  depois no `cn()`. Resolvido com o modificador `!important` do
+  Tailwind v4 (`h-[65vh]!`), que força a prioridade independente da
+  ordem/especificidade.
+- **Validado com Playwright** (sessão forjada, viewport 390×844):
+  medição de bounding box confirmando 65% exatos da viewport nos 3
+  painéis testados (`Grupos`, `Minhas rotas`, `Marcadores`) mesmo vazios,
+  e 50% inalterados no formulário de criar Marcador. `tsc --noEmit` e
+  `eslint` limpos.
+
+### 3. Lista colada na borda inferior em "Minhas rotas" e "Marcadores"
+
+Com a altura agora fixa (item 2 acima), testando com dados de verdade
+(5 rotas, 5 Marcadores) o dono do projeto notou que o último item da
+lista encostava direto na borda inferior da Sheet, sem respiro. Causa:
+os containers com `overflow-y-auto` desses dois painéis
+(`route-history-panel.tsx`, `poi-panel.tsx`) só tinham padding
+horizontal (`px-4`), nenhum padding inferior — a `SheetContent` base
+também não adiciona nenhum (só `SheetHeader`/`SheetFooter` têm `p-4`
+próprio).
+
+- **Fix:** `pb-4` adicionado nos containers roláveis de
+  `route-history-panel.tsx` (a `div` da lista) e `poi-panel.tsx` (as
+  duas `TabsPanel`, "Próximos" e "Favoritos").
+- **Escopo intencionalmente restrito:** o mesmo padrão (sem `pb`) existe
+  em `groups-panel.tsx`, `followers-panel.tsx`, `profile-panel.tsx` e
+  `user-search-panel.tsx`, mas o pedido foi só pros dois painéis citados
+  — não mexido nos outros.

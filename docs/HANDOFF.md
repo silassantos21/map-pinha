@@ -1,8 +1,9 @@
 # Handoff — continuação de sessão
 
 > Atualizado em 13/11/2026 (sessão de pendências fora do app nativo, fix
-> do login quebrado em cold start, e 4 ajustes na web — ver seções
-> "Rodada de 12/11/2026" e "4 ajustes na web" abaixo). Isso
+> do login quebrado em cold start, 4 ajustes na web e as correções
+> pós-deploy em cima deles — ver seções "Rodada de 12/11/2026", "4
+> ajustes na web" e "Correções pós-deploy" abaixo). Isso
 > aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
@@ -541,14 +542,42 @@ implementado na sequência — detalhes completos em `SPRINTS.md`:
 Validado de ponta a ponta com Playwright (sessão forjada, viewport
 mobile e desktop) pros itens 1 e 2, e visualmente pro item 3 — não só
 por tipo/lint. `tsc`/`eslint` limpos e `next build` de produção
-completo sem erros.
+completo sem erros. **Commitado e enviado ao remoto** (`1c1b9ca`),
+deploy confirmado em produção (checado o conteúdo renderizado de
+`/privacidade`, não só o status HTTP).
+
+### Correções pós-deploy nos 4 ajustes acima (13/11/2026)
+
+Depois do deploy, o dono do projeto testou de novo no celular e trouxe
+mais 3 pontos pequenos, resolvidos na sequência — detalhes completos no
+`SPRINTS.md`:
+
+1. Zoom do botão "Centralizar na minha localização" (`map-controls.tsx`)
+   estava baixo demais (nível de bairro, zoom 15) — subido pra zoom 17
+   (nível de rua).
+2. Os outros painéis mobile (Grupos, Social, Minhas rotas, Marcadores,
+   Perfil, Editar perfil, Buscar pessoas) encolhiam pro tamanho do
+   conteúdo quando vazios (`max-h-[65vh]` só limita o teto, não fixa a
+   altura) — o dono do projeto confundiu isso com a mudança pensada só
+   pro formulário de Marcador (não tinha vazado — testei e confirmei
+   que o cabeçalho nunca escondia nesses painéis). Mesmo assim, pediu
+   altura fixa neles também. Trocado `max-h-[65vh]` por `h-[65vh]!` (o
+   `!important` foi necessário — a `SheetContent` base já define
+   `data-[side=bottom]:h-auto`, que vence por especificidade de
+   seletor de atributo). `poi-form-sheet.tsx` continua intocado, com
+   `max-h-[50vh]`.
+3. Com a altura fixa e dados reais (5 rotas, 5 Marcadores), o último
+   item da lista encostava na borda inferior sem respiro — `pb-4`
+   adicionado nos containers roláveis de `route-history-panel.tsx` e
+   `poi-panel.tsx` (só esses dois, por pedido explícito — os outros
+   painéis com o mesmo padrão não foram tocados).
+
+Tudo validado com Playwright (medição de bounding box, não só visual) e
+`tsc`/`eslint` limpos.
 
 ## O que fazer agora
 
-O fix do login quebrado (cold start) já está commitado, no push e
-confirmado em produção. Os 4 ajustes de hoje (busca de endereço, layout
-mobile do formulário, rename POI→Marcador) estão implementados e
-validados, mas **ainda não commitados nem enviados ao remoto** (pendente
-de confirmação explícita do dono do projeto, como sempre). App nativo
-continua de prioridade baixa por pedido explícito — não investir mais
-tempo nele sem pedido novo.
+Tudo commitado e no push — os 4 ajustes de ontem (`1c1b9ca`) e as 3
+correções pós-deploy de hoje. Nada pendente de confirmação no momento.
+App nativo continua de prioridade baixa por pedido explícito — não
+investir mais tempo nele sem pedido novo.

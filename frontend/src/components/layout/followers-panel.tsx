@@ -68,7 +68,7 @@ export function FollowersPanel({ isAuthenticated }: FollowersPanelProps) {
 
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col gap-0", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col gap-0", isMobile && "h-[65vh]!")}
       >
         <SheetHeader className="flex-row items-center justify-between">
           <div>

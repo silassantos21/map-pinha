@@ -79,7 +79,7 @@ export function ProfilePanel({ isAuthenticated, userName, userAvatarUrl }: Profi
     <Sheet open={profilePanelOpen} onOpenChange={setProfilePanelOpen}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col", isMobile && "max-h-[65vh]")}
+        className={cn("flex flex-col", isMobile && "h-[65vh]!")}
       >
         <SheetHeader>
           <SheetTitle className="font-display">Perfil</SheetTitle>
