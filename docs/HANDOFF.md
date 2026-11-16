@@ -1,11 +1,12 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 14/11/2026 (sessão de pendências fora do app nativo, fix
+> Atualizado em 16/11/2026 (sessão de pendências fora do app nativo, fix
 > do login quebrado em cold start, 4 ajustes na web, as correções
-> pós-deploy em cima deles, e o botão de tirar foto na criação de
-> Marcador — ver seções "Rodada de 12/11/2026", "4 ajustes na web",
-> "Correções pós-deploy" e "Botão de tirar foto" abaixo). Isso
-> aqui é só o que **não** está documentado em
+> pós-deploy em cima deles, o botão de tirar foto na criação de
+> Marcador, e os screenshots/README novos como peça de portfólio — ver
+> seções "Rodada de 12/11/2026", "4 ajustes na web", "Correções
+> pós-deploy", "Botão de tirar foto" e "Screenshots reais e README
+> como portfólio" abaixo). Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -628,14 +629,34 @@ propósito) e já renderiza certo no sininho
 (`notification-bell.tsx`: "{nome} cadastrou um novo Marcador: {nome}").
 Nenhum código tocado, só confirmado lendo o fluxo de ponta a ponta.
 
+### Screenshots reais e README como portfólio (16/11/2026)
+
+Os screenshots de `docs/portfolio-screenshots/` (de 01/11, antes do
+rename POI→Marcador) foram recapturados via Playwright contra o app
+local, logado com a conta real do dono do projeto
+(`silasribeiro11@gmail.com`, já tinha 10 Marcadores reais no banco
+local — sessão forjada sem chamar `/auth/sync`, pra não arriscar
+sobrescrever os dados dele). `README.md` reescrito como peça de
+portfólio, incluindo uma seção **Social** nova (seguir/grupos/
+comentários/notificações) que nunca tinha sido documentada ali apesar
+de implementada desde a Fase 7. Detalhes completos (achados de
+clustering do Leaflet, limite de tiles do Stadia Maps) no `SPRINTS.md`.
+
+- **`.env.local` do frontend ganhou `NEXT_PUBLIC_STADIA_API_KEY`**
+  (fornecida pelo dono do projeto, só local/gitignored) — sem ela, os
+  tiles do mapa no dev local usam cota anônima do Stadia Maps, que
+  esgota rápido sob uso intenso (ex: uma sessão de captura de
+  screenshots). Produção já tem sua própria key configurada na Vercel.
+
 ## O que fazer agora
 
 Tudo commitado e no push — os 4 ajustes de 13/11 (`1c1b9ca`), as 3
-correções pós-deploy (`d79fdcf`) e o botão de tirar foto (`e13a2b1`).
-Nada pendente de confirmação no momento. Servidores de dev locais
-(frontend `npm run dev`, backend via `docker compose up -d`) seguem
-rodando desta sessão, com `.env.local` do frontend apontando
-`NEXT_PUBLIC_API_URL` pro IP da rede (ver nota acima) — se voltar a
-testar só no PC e algo parecer estranho, conferir se o IP mudou. App
-nativo continua de prioridade baixa por pedido explícito — não
-investir mais tempo nele sem pedido novo.
+correções pós-deploy (`d79fdcf`), o botão de tirar foto (`e13a2b1`), e
+os screenshots/README novos (`66d8a7f`, `dd1a1dd`). Nada pendente de
+confirmação no momento. Servidores de dev locais (frontend `npm run
+dev`, backend via `docker compose up -d`) seguem rodando desta sessão,
+com `.env.local` do frontend apontando `NEXT_PUBLIC_API_URL` pro IP da
+rede (ver nota acima) — se voltar a testar só no PC e algo parecer
+estranho, conferir se o IP mudou. App nativo continua de prioridade
+baixa por pedido explícito — não investir mais tempo nele sem pedido
+novo.

@@ -1960,3 +1960,54 @@ foto na hora direto da câmera ao criar/editar um Marcador.
   mas o disparo do seletor nativo é o que o código controla). `tsc`/
   `eslint` limpos.
 - Upload por galeria (dropzone existente) continua intocado.
+
+## Screenshots reais e README como peça de portfólio (16/11/2026)
+
+Pedido: capturar screenshots reais do app rodando (não os antigos de
+01/11, já desatualizados — antes do rename POI→Marcador, do botão de
+câmera e da reorganização do HUD) e reescrever o `README.md` como peça
+de portfólio.
+
+- **Captura via Playwright** contra o app local (frontend + backend em
+  Docker), logado com uma sessão forjada **da conta real do dono do
+  projeto** (`silasribeiro11@gmail.com`, 10 Marcadores reais já
+  cadastrados no banco local) — sem chamar `/auth/sync` (só assina o
+  JWT direto com os dados que já existem no banco), pra não arriscar
+  sobrescrever avatar/nome dele com placeholder. Nenhum dado novo
+  criado (o Marcador preenchido no print do formulário não foi
+  salvo/submetido).
+- **Achado no caminho:** heurística de "clicar no Marcador mais perto
+  do centro da tela" precisou lidar com 2 detalhes do clustering do
+  Leaflet — (1) a geolocalização simulada não pode coincidir com as
+  coordenadas de um Marcador real, senão o pino "Você está aqui" e o
+  pino do Marcador ficam no mesmo pixel; (2) o marcador mais perto do
+  centro pode ser um **cluster** (vários Marcadores próximos agrupados)
+  em vez do pino individual — precisa clicar no cluster primeiro pra
+  espalhar o grupo, e só então clicar no pino de verdade.
+- **Achado real, sem relação com o código do projeto:** os tiles do
+  mapa (Stadia Maps) pararam de carregar no meio da captura — `401
+  Unauthorized`/"Account Limit Exceeded", porque o `.env.local` nunca
+  teve uma `NEXT_PUBLIC_STADIA_API_KEY` configurada (requisições
+  anônimas têm cota bem menor que com API key, e essa cota esgotou no
+  meio da sessão de testes). Resolvido com uma API key fornecida pelo
+  dono do projeto, adicionada ao `.env.local` (gitignored).
+- **7 screenshots recapturados**, 2 com nome novo (`02-criar-poi.png` →
+  `02-criar-marcador.png`, `03-poi-detalhe.png` →
+  `03-marcador-detalhe.png` — arquivos antigos removidos): mapa
+  principal, formulário de criar Marcador (mostrando busca de endereço
+  e o botão "Tirar foto"), detalhe de Marcador com foto/áudio/
+  comentários, rota calculada, perfil com estatísticas reais, página
+  pública de compartilhamento, e versão mobile.
+- **Ajuste pós-revisão:** a página pública inicial usava a foto de um
+  Marcador cuja imagem era um meme de internet com texto sobreposto —
+  trocada pela do Marcador "Igreja em Cristo" (foto sem texto por
+  cima), a única entre as opções públicas do usuário sem conteúdo de
+  piada na imagem.
+- **`README.md` reescrito** seguindo a estrutura pedida (título,
+  sobre o projeto, prévia, funcionalidades por área, arquitetura e
+  stack, estrutura do projeto, como rodar localmente, fechamento).
+  Duas mudanças de conteúdo além da troca de screenshots: nova seção
+  **Social** (seguir, grupos, comentários, notificações, 4 níveis de
+  visibilidade) que estava totalmente ausente do README apesar de
+  implementada desde a Fase 7; e status do projeto atualizado de
+  "Sprint 6 em andamento" pra "roadmap completo".
