@@ -13,17 +13,17 @@ O projeto está em produção, com deploy completo (frontend, backend, banco de 
 - Aplicação: https://mapinha-iota.vercel.app
 - API: https://mapinha-backend.onrender.com/docs
 
-O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SPRINTS.md) — decisões técnicas, bugs encontrados e como foram resolvidos, tudo registrado cronologicamente. Status atual: Sprint 6 de 6 em andamento (compartilhamento, PWA, monitoramento de erros e deploy já concluídos).
+O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SPRINTS.md) — decisões técnicas, bugs encontrados e como foram resolvidos, tudo registrado cronologicamente. Status atual: em produção, com o roadmap original (9 fases) totalmente implementado; evolução contínua a partir de uso real.
 
 ## Prévia
 
-| **Mapa principal** | **Cadastro de Marcador com sugestão de categoria por IA** |
+| **Mapa principal** | **Cadastro de Marcador, com busca de endereço e câmera** |
 |---|---|
-| ![Mapa principal](docs/portfolio-screenshots/01-mapa-inicial.png) | ![Cadastro de Marcador](docs/portfolio-screenshots/02-criar-poi.png) |
+| ![Mapa principal](docs/portfolio-screenshots/01-mapa-inicial.png) | ![Cadastro de Marcador](docs/portfolio-screenshots/02-criar-marcador.png) |
 
 | **Detalhe do Marcador** | **Cálculo de rota** |
 |---|---|
-| ![Detalhe do Marcador](docs/portfolio-screenshots/03-poi-detalhe.png) | ![Cálculo de rota](docs/portfolio-screenshots/04-rota.png) |
+| ![Detalhe do Marcador](docs/portfolio-screenshots/03-marcador-detalhe.png) | ![Cálculo de rota](docs/portfolio-screenshots/04-rota.png) |
 
 | **Perfil e estatísticas** | **Página pública de compartilhamento** |
 |---|---|
@@ -40,10 +40,16 @@ O desenvolvimento é feito em sprints, documentado em detalhe em [SPRINTS.md](SP
 - Busca de Marcadores por nome ou categoria, com clustering automático por zoom
 - PWA instalável, com cache offline dos tiles do mapa via service worker
 
-**Pontos de interesse**
-- CRUD completo de Marcadores, com upload de imagem, avatar e áudio direto para o Cloudflare R2 (o binário nunca passa pelo servidor de aplicação)
+**Marcadores**
+- CRUD completo, com upload de imagem (inclusive direto da câmera no celular), avatar e áudio direto para o Cloudflare R2 (o binário nunca passa pelo servidor de aplicação)
 - Seis categorias com ícone e cor próprios (Alimentação, Comércio, Saúde, Lazer, Entretenimento, Residencial)
 - Reações e favoritos
+
+**Social**
+- Seguir outros usuários, com notificações in-app (novo seguidor, Marcador novo de quem você segue, reação, comentário)
+- Grupos fechados por convite (aceitar/recusar), com Marcadores exclusivos dos membros
+- Comentários nos Marcadores
+- Quatro níveis de visibilidade por Marcador: público, seguidores, grupo específico ou privado
 
 **Rotas e navegação**
 - Cálculo de rotas via OSRM, com distância e tempo estimado
