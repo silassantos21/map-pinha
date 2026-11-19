@@ -1,12 +1,14 @@
 # Handoff — continuação de sessão
 
-> Atualizado em 16/11/2026 (sessão de pendências fora do app nativo, fix
+> Atualizado em 18/11/2026 (sessão de pendências fora do app nativo, fix
 > do login quebrado em cold start, 4 ajustes na web, as correções
 > pós-deploy em cima deles, o botão de tirar foto na criação de
-> Marcador, e os screenshots/README novos como peça de portfólio — ver
-> seções "Rodada de 12/11/2026", "4 ajustes na web", "Correções
-> pós-deploy", "Botão de tirar foto" e "Screenshots reais e README
-> como portfólio" abaixo). Isso aqui é só o que **não** está documentado em
+> Marcador, os screenshots/README novos como peça de portfólio, o
+> alerta de RLS do Supabase e o bug de sincronização de login sem retry
+> — ver seções "Rodada de 12/11/2026", "4 ajustes na web", "Correções
+> pós-deploy", "Botão de tirar foto", "Screenshots reais e README
+> como portfólio" e "Alerta de segurança do Supabase (RLS) + bug real
+> de sincronização de login" abaixo). Isso aqui é só o que **não** está documentado em
 > outro arquivo: convenções de trabalho estabelecidas em conversa e o estado
 > atual depois da última sessão. O stack e a estrutura do projeto já estão no
 > `CLAUDE.md` (carregado automaticamente); histórico detalhado de cada mudança
@@ -239,6 +241,36 @@ Padrões/bugs de sessões anteriores que vale lembrar pra não reintroduzir:
 6. Rotas BFF que devolvem 204 no sucesso mas 400/403/404 **com corpo**
    (`{detail: "..."}`) no erro precisam repassar esse corpo, não só o status —
    ver `forwardJsonOr204` em `api-server.ts`, criado exatamente pra isso.
+7. **Toda tabela nova criada via migration do Alembic nasce com RLS (Row
+   Level Security) desativado no Supabase** — o Supabase roda um linter de
+   segurança automático (Security Advisor) que dispara e-mail de alerta
+   ("Table publicly accessible"/`rls_disabled_in_public`) pra cada tabela
+   assim, mesmo sem exposição real (ver "Alerta de segurança do Supabase
+   (RLS desativado)" em `SPRINTS.md`, 17/11/2026, pra contexto completo do
+   porquê isso aconteceu e como foi resolvido). **Não é um bug nem uma
+   invasão** — é só o Supabase avisando que a API REST autogerada dele
+   (PostgREST) deixaria a tabela acessível pra quem tiver a `anon key` do
+   projeto (que este projeto nunca usa nem expõe em lugar nenhum, conferido
+   no código). Ainda assim, vale ativar RLS em toda tabela nova assim que
+   ela for criada, direto no SQL Editor do Supabase (dashboard, fora deste
+   repo): `ALTER TABLE public.<tabela> ENABLE ROW LEVEL SECURITY;`, sem
+   nenhuma policy — o backend conecta como o usuário `postgres` (ignora RLS
+   por padrão), então isso nunca quebra a aplicação, só fecha o acesso via
+   PostgREST. Tabelas de sistema (`spatial_ref_sys` do PostGIS,
+   `alembic_version` do Alembic) também disparam o mesmo alerta, mas não
+   guardam dado nenhum de usuário — deixar como está nelas é aceitável.
+8. **Qualquer retry/degradação suave em `auth.ts` (callback `jwt`) precisa
+   ser tentada de novo em renovações seguintes, não só no login inicial**
+   — ver "Bug real: usuário de teste sumia do banco..." em `SPRINTS.md`
+   (18/11/2026). `account` só vem preenchido no momento exato do login;
+   se uma chamada condicionada a `if (account)` falhar uma vez (ex: cold
+   start do Render Free) e não houver uma tentativa futura condicionada a
+   "ainda não tenho o dado que preciso" (ex: `!token.userId`), a sessão
+   fica permanentemente incompleta até a pessoa deslogar e logar de novo
+   — o que ela não tem motivo nenhum pra fazer, já que o app parece
+   funcionar normalmente. Qualquer novo dado sincronizado nesse callback
+   no futuro deve seguir esse padrão de retry-até-confirmar, não só
+   tentar-uma-vez-no-login.
 
 ### Fase 10 Parte 1 — Fundação de autenticação mobile
 
@@ -648,15 +680,44 @@ clustering do Leaflet, limite de tiles do Stadia Maps) no `SPRINTS.md`.
   esgota rápido sob uso intenso (ex: uma sessão de captura de
   screenshots). Produção já tem sua própria key configurada na Vercel.
 
+### Alerta de segurança do Supabase (RLS) + bug real de sincronização de login (17–18/11/2026)
+
+Dois achados de produção na mesma sessão, ambos já resolvidos — contexto
+completo em `SPRINTS.md` nas seções "Alerta de segurança do Supabase
+(RLS desativado)" e "Bug real: usuário de teste sumia do banco e não
+conseguia criar Marcador". Resumo:
+
+- **RLS desativado** (alerta automático do Supabase, não uma invasão
+  real): resolvido habilitando RLS sem policy nas 13 tabelas da
+  aplicação, direto no SQL Editor do Supabase. Documentado como padrão
+  a repetir a cada migration nova (item 7 da lista acima).
+- **Dois usuários de teste não conseguiam criar Marcador, e um deles
+  nem aparecia na busca** — causa raiz: a sincronização de login
+  (`/auth/sync`) só era tentada uma vez, no momento exato do login; se
+  falhasse por cold start do Render Free (comum, até ~50s), a sessão
+  ficava sem `userId` pra sempre, incapaz de criar Marcador (o usuário
+  nunca chegava a ser criado no Postgres). Corrigido em
+  `frontend/src/auth.ts` pra tentar de novo em qualquer renovação de
+  token enquanto `userId` não for confirmado — a sessão se autocura
+  sozinha, sem precisar deslogar. Documentado como padrão a repetir
+  (item 8 da lista acima). Aproveitado pra também corrigir mensagens de
+  erro genéricas no formulário de Marcador (`poi-form-sheet.tsx`,
+  `upload-media.ts`) que escondiam o `detail` real do backend.
+
 ## O que fazer agora
 
 Tudo commitado e no push — os 4 ajustes de 13/11 (`1c1b9ca`), as 3
-correções pós-deploy (`d79fdcf`), o botão de tirar foto (`e13a2b1`), e
-os screenshots/README novos (`66d8a7f`, `dd1a1dd`). Nada pendente de
-confirmação no momento. Servidores de dev locais (frontend `npm run
-dev`, backend via `docker compose up -d`) seguem rodando desta sessão,
-com `.env.local` do frontend apontando `NEXT_PUBLIC_API_URL` pro IP da
-rede (ver nota acima) — se voltar a testar só no PC e algo parecer
-estranho, conferir se o IP mudou. App nativo continua de prioridade
-baixa por pedido explícito — não investir mais tempo nele sem pedido
-novo.
+correções pós-deploy (`d79fdcf`), o botão de tirar foto (`e13a2b1`), os
+screenshots/README novos (`66d8a7f`, `dd1a1dd`), o fix do RLS e da
+sincronização de login (ver seção acima). Nada pendente de confirmação
+no momento. **Ainda falta confirmação real dos dois usuários de teste**
+tentando criar um Marcador de novo depois do deploy — se continuar
+falhando, a mensagem de erro agora mostra o motivo real do backend em
+vez do texto genérico, o que deve dar o próximo passo direto (não mais
+precisa de investigação de código às cegas). Servidores de dev locais
+(frontend `npm run dev`, backend via `docker compose up -d`) seguem
+rodando desta sessão, com `.env.local` do frontend apontando
+`NEXT_PUBLIC_API_URL` pro IP da rede (ver nota acima) — se voltar a
+testar só no PC e algo parecer estranho, conferir se o IP mudou. App
+nativo continua de prioridade baixa por pedido explícito — não investir
+mais tempo nele sem pedido novo.

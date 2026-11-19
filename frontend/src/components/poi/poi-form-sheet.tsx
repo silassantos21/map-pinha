@@ -22,7 +22,7 @@ import { toast } from "@/components/ui/toast";
 import { useCategories } from "@/hooks/use-categories";
 import { useMyGroups } from "@/hooks/use-groups";
 import { usePoi } from "@/hooks/use-poi";
-import { generatePoiBio, searchAddresses } from "@/lib/api-client";
+import { extractErrorDetail, generatePoiBio, searchAddresses } from "@/lib/api-client";
 import { ICON_PICKER_OPTIONS, resolveIconName } from "@/lib/poi-icons";
 import { poiFormSchema, type PoiFormValues } from "@/lib/poi-schema";
 import { attachMediaToPoi, uploadMediaFile } from "@/lib/upload-media";
@@ -307,14 +307,14 @@ export function PoiFormSheet({ userId }: PoiFormSheetProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Falha ao salvar as alterações");
+        if (!res.ok) throw new Error(await extractErrorDetail(res, "Falha ao salvar as alterações"));
       } else {
         const res = await fetch("/api/pois", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Falha ao criar o Marcador");
+        if (!res.ok) throw new Error(await extractErrorDetail(res, "Falha ao criar o Marcador"));
         const created: { id: string } = await res.json();
         poiId = created.id;
       }

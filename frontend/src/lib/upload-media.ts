@@ -1,3 +1,4 @@
+import { extractErrorDetail } from "@/lib/api-client";
 import type { MediaType, PoiMedia } from "@/types/poi";
 
 interface PresignedResponse {
@@ -17,7 +18,7 @@ export async function uploadMediaFile(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename, content_type: contentType, media_type: mediaType }),
   });
-  if (!presignRes.ok) throw new Error("Falha ao gerar URL de upload");
+  if (!presignRes.ok) throw new Error(await extractErrorDetail(presignRes, "Falha ao gerar URL de upload"));
   const presigned: PresignedResponse = await presignRes.json();
 
   const uploadRes = await fetch(presigned.upload_url, {
@@ -40,6 +41,6 @@ export async function attachMediaToPoi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ object_key: objectKey, media_type: mediaType }),
   });
-  if (!res.ok) throw new Error("Falha ao anexar mídia ao Marcador");
+  if (!res.ok) throw new Error(await extractErrorDetail(res, "Falha ao anexar mídia ao Marcador"));
   return res.json();
 }

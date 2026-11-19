@@ -12,15 +12,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, account }) {
-      // Só roda no login inicial (account só vem preenchido nesse momento),
-      // não em toda renovação de token.
       if (account) {
+        token.googleId = account.providerAccountId;
+      }
+
+      // Tenta sincronizar no login inicial E, pra se autocurar, em qualquer
+      // renovação seguinte enquanto `userId` ainda não tiver sido obtido —
+      // cobre o caso real (17/11/2026, dois usuários de teste) em que o
+      // backend (Render Free) "dorme" sem tráfego e pode levar até ~50s pra
+      // acordar; o timeout abaixo é menor que isso, então a 1ª tentativa no
+      // login pode falhar, mas sem o retry a sessão ficava "quebrada" pra
+      // sempre (sem `userId`, incapaz de criar Marcador e nem aparecer na
+      // busca de usuários) até a pessoa deslogar e logar de novo — agora a
+      // próxima requisição tenta de novo, e o backend já estará acordado.
+      if ((account || !token.userId) && token.googleId) {
         try {
-          // O backend (Render Free) "dorme" sem tráfego e pode levar até ~50s
-          // pra acordar na primeira requisição (documentado em SPRINTS.md) —
-          // sem abortar antes do limite da função na Vercel, um cold start
-          // derrubava o login inteiro com a tela genérica de erro do NextAuth
-          // (achado real, 13/11/2026, numa conta nova logando pela 1ª vez).
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 20_000);
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/sync`, {
@@ -33,7 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email: token.email,
               name: token.name,
               avatar_url: token.picture,
-              google_id: account.providerAccountId,
+              google_id: token.googleId,
             }),
             signal: controller.signal,
           });
@@ -44,12 +50,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.userId = backendUser.id;
           }
         } catch (error) {
-          // Mesma degradação suave que já existia pro caso de `res.ok` falso
-          // (login completa sem `userId` na sessão) — só agora também cobre
-          // timeout/erro de rede, em vez de deixar a exceção derrubar o
-          // login inteiro. Na prática, um próximo login tenta sincronizar de
-          // novo (o backend já estará "acordado").
-          console.error("Falha ao sincronizar usuário com o backend no login", error);
+          // Degradação suave: login/sessão seguem valendo sem `userId` por
+          // enquanto — a própria condição acima tenta de novo na próxima vez.
+          console.error("Falha ao sincronizar usuário com o backend", error);
         }
       }
 

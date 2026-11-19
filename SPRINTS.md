@@ -2011,3 +2011,104 @@ de portfólio.
   visibilidade) que estava totalmente ausente do README apesar de
   implementada desde a Fase 7; e status do projeto atualizado de
   "Sprint 6 em andamento" pra "roadmap completo".
+
+## Alerta de segurança do Supabase (RLS desativado) — 17/11/2026
+
+O dono do projeto recebeu um e-mail automático do Supabase ("These
+issues require your immediate attention") avisando de uma tabela
+"publicly accessible" por `rls_disabled_in_public`. Investigado antes
+de qualquer ação:
+
+- **Causa:** o Supabase roda um linter de segurança (Security Advisor)
+  que audita todo projeto e sinaliza qualquer tabela do schema `public`
+  sem Row Level Security (RLS) habilitado — porque o Supabase expõe
+  automaticamente uma API REST (PostgREST) sobre toda tabela, e sem RLS
+  ela fica acessível por quem tiver a `anon key` do projeto. O Advisor
+  do dashboard mostrava **15 erros**: as 13 tabelas da aplicação
+  (`users`, `categories`, `pois`, `poi_media`, `poi_reactions`,
+  `favorites`, `follows`, `groups`, `group_members`, `comments`,
+  `notifications`, `routes`, `ai_feedback`) + 2 tabelas de sistema
+  (`spatial_ref_sys` do PostGIS, `alembic_version` do Alembic).
+- **Por que não é (nem nunca foi) uma invasão real:** conferido no
+  código que o projeto nunca usa o SDK do Supabase nem expõe uma `anon
+  key` em lugar nenhum (frontend, backend, `.env.example`) — o backend
+  conecta direto no Postgres via `DATABASE_URL`/SQLAlchemy, nunca pelo
+  PostgREST. Isso é consequência de criar as tabelas via migration do
+  Alembic (não pela UI do Supabase) — elas nascem sem RLS por padrão, e
+  o linter sinaliza isso **independente de exposição real**, só por ser
+  best practice. Mesmo assim, resolvido por segurança em profundidade.
+- **Fix aplicado pelo dono do projeto**, no SQL Editor do Supabase
+  (fora deste repo, não versionado em lugar nenhum): `ALTER TABLE
+  public.<tabela> ENABLE ROW LEVEL SECURITY;` pras 13 tabelas da
+  aplicação, sem nenhuma policy — seguro porque o backend conecta como
+  o usuário `postgres`, que ignora RLS por padrão, então nada na
+  aplicação quebrou. Confirmado no Security Advisor: os 13 erros
+  sumiram, sobrando só os 2 de tabela de sistema (aceitável deixar como
+  está, não guardam dado de usuário).
+- **Registrado como padrão a repetir no futuro** (ver item 7 da lista
+  de padrões/bugs em `docs/HANDOFF.md`): toda tabela nova criada por
+  migration do Alembic vai nascer sem RLS e vai gerar o mesmo alerta —
+  não é regressão nem bug, é só lembrar de rodar o mesmo `ALTER TABLE`
+  no Supabase depois de cada migration que cria tabela nova.
+
+## Bug real: usuário de teste sumia do banco e não conseguia criar Marcador — "sincronização sem retry" (18/11/2026)
+
+Dois usuários convidados pra testar o app em produção relataram "Falha
+ao criar o Marcador" ao tentar cadastrar um ponto; o dono do projeto
+também não conseguia achar um desses usuários na busca de pessoas do
+app. Investigado a fundo antes de qualquer fix, sem acesso a logs do
+Render/Supabase nesta sessão:
+
+- **Primeiro passo: descartar a mudança do dia anterior.** `curl` direto
+  em `GET /api/v1/categories` (endpoint público, sem dependência de
+  usuário) em produção devolveu 200 com dados completos — confirma que
+  o RLS habilitado no Supabase (seção acima) não quebrou o backend, já
+  que o papel `postgres` ignora RLS por padrão independente da
+  operação (SELECT ou INSERT).
+- **Pedi pro dono do projeto rodar uma query no SQL Editor do Supabase**
+  (`select id, name, email, created_at from users order by created_at
+  desc limit 10`) — confirmou que **o usuário de teste nunca existiu na
+  tabela `users`**, só apareceram ele mesmo e outra pessoa. Isso foi o
+  dado decisivo: explica os dois sintomas relatados (busca e criação de
+  Marcador) com uma causa só, em vez de dois bugs separados.
+- **Causa raiz, em `frontend/src/auth.ts`:** o fix de 13/11/2026 (ver
+  seção "Bug real: login quebrava com 'Erro do servidor'" acima) parou
+  de derrubar o login inteiro quando `/auth/sync` falha por timeout
+  (cold start do Render Free, até ~50s, contra um `AbortController` de
+  20s) — mas **só tentava sincronizar uma vez, no exato momento do
+  login** (bloco `if (account)`, e `account` só vem preenchido nesse
+  instante). Se essa tentativa falhasse, a sessão ficava com `userId`
+  vazio **para sempre**, em qualquer renovação de token seguinte, até a
+  pessoa deslogar e logar de novo — o que nenhum dos dois testadores
+  fez, porque a sessão parecia funcionar normalmente (dava pra ver o
+  mapa). Sem `userId`, `requireSessionUserId()` (`lib/api-server.ts`)
+  lança 401 "Not authenticated" **antes mesmo de chamar o backend** —
+  por isso criar Marcador falhava sem gerar nenhum log do lado do
+  FastAPI/Render (não tinha como aparecer nos logs do backend, a
+  requisição nunca chegou lá), e por isso o usuário nunca foi criado no
+  Postgres (o `get_or_create_user()` nunca rodou pra ele).
+- **Achado secundário, corrigido junto:** a mensagem "Falha ao criar o
+  Marcador" era um texto fixo no frontend (`poi-form-sheet.tsx`), que
+  descartava o `detail` real devolvido pelo backend em qualquer erro —
+  mesmo com a causa raiz corrigida, esse padrão escondia informação útil
+  pra diagnóstico futuro. Corrigido reaproveitando um helper que já
+  existia pra isso (`extractErrorDetail`, em `api-client.ts`, só não
+  estava exportado/usado aqui) — aplicado também em `upload-media.ts`
+  (presigned URL e anexar mídia), que tinha o mesmo padrão.
+- **Fix** (`frontend/src/auth.ts` + `frontend/src/types/next-auth.d.ts`):
+  o callback `jwt` agora persiste o `google_id` no próprio token
+  (`token.googleId`, antes só existia como variável local durante o
+  login) e tenta sincronizar de novo em **qualquer renovação de token**
+  enquanto `token.userId` continuar vazio, não só no login inicial —
+  condição mudou de `if (account)` pra `if ((account || !token.userId)
+  && token.googleId)`. Na prática: se a 1ª tentativa falhar por cold
+  start, a próxima ação da pessoa no site (que dispara uma nova
+  verificação de sessão) já tenta de novo, e dessa vez o backend já
+  estará acordado — a sessão se autocura sozinha, sem precisar deslogar.
+- **Resolve os dois usuários já afetados também**, sem precisar mexer no
+  banco manualmente — na próxima interação deles no site depois do
+  deploy, a sincronização é tentada de novo automaticamente.
+- **Validado:** `tsc --noEmit` e `eslint` limpos nos arquivos alterados.
+  Não reproduzido localmente contra o cold start real (só existe em
+  produção, no plano free da Render) — confirmação final depende dos
+  testadores tentarem de novo depois do deploy.

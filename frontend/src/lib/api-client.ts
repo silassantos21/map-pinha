@@ -129,7 +129,7 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   return res.json();
 }
 
-async function extractErrorDetail(res: Response, fallback: string): Promise<string> {
+export async function extractErrorDetail(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
     return typeof body?.detail === "string" ? body.detail : fallback;
